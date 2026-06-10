@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/", "destination": "/pension-simulator.html" },
+    { "source": "/api/(.*)", "destination": "/api/$1" }
+  ]
+}

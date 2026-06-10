@@ -1,0 +1,1646 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>자산 기록 기반 연금 시뮬레이터</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --surface: #ffffff;
+      --border: #d9e2ef;
+      --text: #172033;
+      --muted: #667085;
+      --accent: #2563eb;
+      --accent-soft: #dbeafe;
+      --header: #1d4ed8;
+      --estimate: #f8e7d1;
+      --net: #dfeeda;
+      --negative: #ff0000;
+      --green: #34a853;
+      --amber: #f59e0b;
+      --red: #ef4444;
+      --navy: #1e3a8a;
+      --shadow: 0 14px 34px rgba(23, 32, 51, .08);
+      font-family: "Malgun Gothic", "Apple SD Gothic Neo", "Segoe UI", system-ui, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    main {
+      width: min(1480px, calc(100vw - 20px));
+      margin: 0 auto;
+      padding: 10px 0 20px;
+    }
+
+    button, input, select {
+      font: inherit;
+    }
+
+    button {
+      min-height: 34px;
+      border: 0;
+      border-radius: 7px;
+      padding: 0 12px;
+      background: var(--accent-soft);
+      color: #1e3a8a;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    button.primary {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    input, select {
+      width: 100%;
+      height: 34px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0 8px;
+      background: #fff;
+      color: var(--text);
+    }
+
+    input.money, input.num {
+      text-align: right;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 22px;
+      letter-spacing: 0;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 8px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .tab {
+      background: #e8eef8;
+      color: var(--text);
+    }
+
+    .tab.active {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .panel {
+      display: none;
+    }
+
+    .panel.active {
+      display: block;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: 0 10px 24px rgba(23, 32, 51, .06);
+    }
+
+    .asset-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 340px;
+      gap: 10px;
+      align-items: start;
+    }
+
+    .asset-charts {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .asset-chart-card {
+      padding: 10px;
+    }
+
+    .asset-chart-card canvas {
+      height: 330px;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      padding: 8px;
+      margin-bottom: 8px;
+    }
+
+    .toolbar label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .toolbar input {
+      width: 92px;
+    }
+
+    .status {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .asset-table-wrap {
+      overflow: hidden;
+      padding: 6px;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+    }
+
+    .asset-table {
+      table-layout: fixed;
+      font-size: 12px;
+      background: #fff;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+
+    th, td {
+      border: 0;
+      border-bottom: 1px solid #e5eaf2;
+      padding: 4px 6px;
+      white-space: nowrap;
+    }
+
+    th {
+      background: #f8fafc;
+      color: #475467;
+      text-align: center;
+      font-weight: 800;
+      height: 30px;
+    }
+
+    th.estimate {
+      background: var(--estimate);
+    }
+
+    td.category {
+      text-align: center;
+      font-weight: 700;
+      background: #f8fafc;
+      color: #334155;
+      width: 72px;
+    }
+
+    td.label {
+      text-align: left;
+      width: 176px;
+      color: #27364a;
+    }
+
+    td.value {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    td.value input {
+      height: 24px;
+      border: 0;
+      border-radius: 0;
+      padding: 0 2px;
+      text-align: right;
+      background: transparent;
+      font-variant-numeric: tabular-nums;
+      font-size: 12px;
+    }
+
+    td.manual input:focus {
+      outline: 2px solid var(--accent);
+      background: #fff;
+    }
+
+    .negative {
+      color: var(--negative);
+    }
+
+    .net-row td {
+      background: var(--net);
+      font-weight: 900;
+      border-top: 1px solid #a9c9a1;
+    }
+
+    .growth-row td {
+      text-align: right;
+      background: #fff;
+    }
+
+    .holdings-card {
+      padding: 10px;
+    }
+
+    .holdings-card h2, .mini-title {
+      margin: 0 0 8px;
+      font-size: 14px;
+      letter-spacing: 0;
+    }
+
+    .holding-form {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .holding-form label {
+      display: grid;
+      gap: 4px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .holding-form .wide {
+      grid-column: span 2;
+    }
+
+    .holding-actions {
+      display: flex;
+      gap: 8px;
+      grid-column: span 2;
+    }
+
+    .holdings-table {
+      width: 100%;
+      font-size: 11px;
+      margin-top: 6px;
+    }
+
+    .holdings-table th, .holdings-table td {
+      border-color: var(--border);
+      padding: 4px;
+      text-align: right;
+    }
+
+    .holdings-table th:first-child,
+    .holdings-table td:first-child {
+      text-align: left;
+    }
+
+    .holdings-table button {
+      min-height: 26px;
+      padding: 0 8px;
+    }
+
+    .analysis-strip {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .metric {
+      padding: 10px;
+      min-height: 70px;
+    }
+
+    .metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 7px;
+    }
+
+    .metric strong {
+      font-size: 20px;
+      line-height: 1.1;
+    }
+
+    .sim-grid {
+      display: grid;
+      grid-template-columns: 380px minmax(0, 1fr);
+      gap: 12px;
+      align-items: start;
+    }
+
+    .sidebar {
+      max-height: calc(100vh - 80px);
+      overflow: auto;
+      padding-right: 6px;
+    }
+
+    fieldset {
+      margin: 0 0 8px;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+    }
+
+    legend {
+      padding: 0 6px;
+      font-weight: 800;
+      font-size: 14px;
+    }
+
+    .field {
+      display: grid;
+      grid-template-columns: 130px minmax(0, 1fr) 28px;
+      gap: 6px;
+      align-items: center;
+      margin: 6px 0;
+      font-size: 13px;
+    }
+
+    .field input {
+      text-align: right;
+      background: #f8fafc;
+    }
+
+    .sim-actions {
+      display: grid;
+      gap: 6px;
+      margin: 2px 0 8px;
+    }
+
+    .guide {
+      padding: 10px;
+      margin-bottom: 8px;
+      max-height: 150px;
+      overflow: auto;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .content {
+      display: grid;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .charts {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 10px;
+    }
+
+    .chart-card {
+      padding: 10px;
+      min-width: 0;
+    }
+
+    .chart-title {
+      font-weight: 800;
+      font-size: 14px;
+      margin-bottom: 6px;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 310px;
+    }
+
+    .sim-table-wrap {
+      max-height: 404px;
+      overflow: auto;
+    }
+
+    .sim-table {
+      min-width: 1440px;
+      font-size: 13px;
+    }
+
+    .sim-table th, .sim-table td {
+      border: 1px solid #eef2f7;
+      padding: 7px 8px;
+      text-align: right;
+    }
+
+    .sim-table th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: #edf2f7;
+    }
+
+    .sim-table th.main {
+      background: var(--header);
+      color: #fff;
+    }
+
+    .sim-table td.center {
+      text-align: center;
+    }
+
+    .tooltip {
+      position: fixed;
+      pointer-events: none;
+      z-index: 10;
+      display: none;
+      padding: 8px 10px;
+      border: 1px solid #334155;
+      border-radius: 7px;
+      background: rgba(255, 255, 255, .97);
+      color: var(--text);
+      box-shadow: 0 12px 28px rgba(15, 23, 42, .18);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    @media (max-width: 1100px) {
+      .asset-grid, .sim-grid, .charts, .summary, .analysis-strip {
+        grid-template-columns: 1fr;
+      }
+      .sidebar {
+        max-height: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="topbar">
+      <h1>자산 기록 기반 연금 시뮬레이터</h1>
+      <nav class="tabs">
+        <button type="button" class="tab active" data-tab="assets">자산 기록</button>
+        <button type="button" class="tab" data-tab="pension">연금 시뮬레이션</button>
+      </nav>
+    </div>
+
+    <section id="assetsPanel" class="panel active">
+      <div class="analysis-strip">
+        <div class="card metric"><span>최근 순자산</span><strong id="latestNetWorth">-</strong></div>
+        <div class="card metric"><span>최근 증가율</span><strong id="latestGrowth">-</strong></div>
+        <div class="card metric"><span>주식 평가액</span><strong id="latestStockValue">-</strong></div>
+        <div class="card metric"><span>대출 잔액</span><strong id="latestDebt">-</strong></div>
+      </div>
+
+      <div class="asset-grid">
+        <section>
+          <div class="card toolbar">
+            <label>시작연도 <input id="assetStartYear" class="num" value="2024"></label>
+            <label>종료연도 <input id="assetEndYear" class="num" value="2030"></label>
+            <button type="button" id="rebuildAssetYears">연도 적용</button>
+            <button type="button" id="checkProxy">프록시 확인</button>
+            <button type="button" class="primary" id="updatePrices">종가 업데이트</button>
+            <button type="button" id="exportAssetCsv">자산 CSV 저장</button>
+            <button type="button" id="saveAssetData">브라우저 저장</button>
+            <button type="button" id="loadAssetData">불러오기</button>
+            <span class="status" id="priceStatus">월별 자동 기록용 종가 업데이트는 start_price_proxy.cmd 실행 후 사용하는 것이 가장 안정적입니다.</span>
+          </div>
+          <div class="card asset-table-wrap">
+            <table class="asset-table">
+              <colgroup id="assetCols"></colgroup>
+              <thead id="assetHead"></thead>
+              <tbody id="assetBody"></tbody>
+            </table>
+          </div>
+          <div class="asset-charts">
+            <div class="card asset-chart-card">
+              <div class="chart-title">연도별 순자산</div>
+              <canvas id="assetNetChart" width="650" height="330"></canvas>
+            </div>
+            <div class="card asset-chart-card">
+              <div class="chart-title">연도별 자산 비중</div>
+              <canvas id="assetMixChart" width="650" height="330"></canvas>
+            </div>
+          </div>
+        </section>
+
+        <aside class="card holdings-card">
+          <h2>주식 종목 입력</h2>
+          <div class="holding-form">
+            <label class="wide">연결할 소분류
+              <select id="holdingBucket">
+                <option value="retirementStock">(상윤+혜진) 연금 계좌</option>
+                <option value="hynixStock">(상윤+혜진)하이닉스</option>
+              </select>
+            </label>
+            <label>종목명 <input id="holdingName" value="" placeholder="예: SK하이닉스"></label>
+            <label>심볼 <input id="holdingSymbol" value="" placeholder="자동 검색 또는 000660.KS"></label>
+            <label>주식 수 <input id="holdingShares" class="num" value="0"></label>
+            <label>수동 현재가 <input id="holdingManualPrice" class="num" value="0"></label>
+            <div class="holding-actions">
+              <button type="button" id="searchHolding">종목 검색</button>
+              <button type="button" class="primary" id="addHolding">종목 추가</button>
+              <button type="button" id="clearHoldings">종목 초기화</button>
+            </div>
+          </div>
+          <div class="mini-title">KRX 금 현물</div>
+          <div class="holding-form gold-form">
+            <label>보유 g <input id="goldGrams" class="num" value="0"></label>
+            <label>1g 가격 <input id="goldPrice" class="num" value="0"></label>
+            <div class="holding-actions">
+              <button type="button" class="primary" id="updateGoldPrice">KRX 금 가격 업데이트</button>
+              <button type="button" id="applyGoldManual">금 반영</button>
+            </div>
+          </div>
+          <div class="mini-title">보유 종목</div>
+          <table class="holdings-table">
+            <thead>
+              <tr><th>종목</th><th>수량</th><th>가격</th><th>평가액</th><th></th></tr>
+            </thead>
+            <tbody id="holdingsBody"></tbody>
+          </table>
+          <p class="status">
+            가격 갱신은 Yahoo Finance 직접 호출을 먼저 시도하고, 브라우저 CORS 제한이 있으면 프록시를 자동으로 시도합니다.
+            그래도 실패하면 수동 현재가를 입력하면 됩니다.
+          </p>
+        </aside>
+      </div>
+    </section>
+
+    <section id="pensionPanel" class="panel">
+      <div class="sim-grid">
+        <aside class="sidebar">
+          <h1>연금 수령 설정</h1>
+          <form id="inputForm"></form>
+          <div class="sim-actions">
+            <button type="button" class="primary" id="runBtn">시뮬레이션 실행</button>
+            <button type="button" id="csvBtn">CSV 저장</button>
+            <button type="button" id="resetBtn">기본값 복원</button>
+            <button type="button" id="useLatestAssets">최근 자산을 초기값에 반영</button>
+          </div>
+          <div id="status" class="status">입력값을 바꾸면 자동으로 다시 계산합니다.</div>
+          <div class="card guide">
+            개인연금은 매년 기본 수령액을 먼저 수령합니다. 목표 실수령액이 부족하면
+            IRP 퇴직재원, IRP 과세재원, 개인연금 추가 인출 순서로 보충합니다.
+          </div>
+        </aside>
+
+        <section class="content">
+          <section class="summary">
+            <div class="card metric"><span>고갈 예상</span><strong id="depletionAge">-</strong></div>
+            <div class="card metric"><span>최종 총 잔액</span><strong id="finalBalance">-</strong></div>
+            <div class="card metric"><span>총 실수령액</span><strong id="totalNet">-</strong></div>
+            <div class="card metric"><span>총 과세</span><strong id="totalTaxation">-</strong></div>
+            <div class="card metric"><span>목표 미달 연도</span><strong id="shortfallYears">-</strong></div>
+          </section>
+
+          <section class="charts">
+            <div class="card chart-card">
+              <div class="chart-title">연금 재원 잔액 추이</div>
+              <canvas id="balanceChart" width="650" height="310"></canvas>
+            </div>
+            <div class="card chart-card">
+              <div class="chart-title">연간 수령액 추이</div>
+              <canvas id="incomeChart" width="650" height="310"></canvas>
+            </div>
+          </section>
+
+          <section class="card sim-table-wrap">
+            <table class="sim-table">
+              <thead id="tableHead"></thead>
+              <tbody id="tableBody"></tbody>
+            </table>
+          </section>
+        </section>
+      </div>
+    </section>
+  </main>
+  <div class="tooltip" id="tooltip"></div>
+
+  <script>
+    const ASSET_ROWS = [
+      { id: "apartment", category: "부동산", label: "아파트 (실거래가 기준)", type: "manual", values: { 2024: 440000000, 2025: 445000000, 2026: 460000000, 2027: 460000000, 2028: 460000000, 2029: 460000000, 2030: 460000000 } },
+      { id: "retirementStock", category: "주식", label: "(상윤+혜진) 연금 계좌", type: "stock", values: { 2024: 75500000, 2025: 100000000, 2026: 151000000 } },
+      { id: "hynixStock", category: "주식", label: "(상윤+혜진)하이닉스", type: "stock", values: { 2024: 44710000, 2025: 193800000, 2026: 852440000 } },
+      { id: "gold", category: "금/비트", label: "금", type: "manual", values: { 2024: 0, 2025: 11715000, 2026: 22300000 } },
+      { id: "cash", category: "현금", label: "보유 현금", type: "manual", values: { 2024: 39000000, 2025: 117000000, 2026: 42000000 } },
+      { id: "isa", category: "현금", label: "ISA", type: "manual", values: { 2024: 16000000, 2025: 18100000, 2026: 18360000 } },
+      { id: "subscription", category: "현금", label: "청약계좌", type: "manual", values: { 2024: 18000000, 2025: 18000000, 2026: 18000000, 2027: 18000000, 2028: 18000000, 2029: 18000000, 2030: 18000000 } },
+      { id: "mortgage", category: "대출", label: "주택 담보 대출", type: "manual", debt: true, values: { 2024: -44000000, 2025: 0, 2026: 0, 2027: 0, 2028: 0, 2029: 0, 2030: 0 } },
+      { id: "saneLoan", category: "대출", label: "사내 대출", type: "manual", debt: true, values: { 2024: -75000000, 2025: -64500000, 2026: -60300000 } },
+      { id: "hynixStockLoan", category: "대출", label: "(상윤) 하이닉스 주식 대출", type: "manual", debt: true, values: { 2024: -11600000, 2025: -11600000, 2026: -11600000 } }
+    ];
+
+    const HOLDINGS = [
+      { bucket: "retirementStock", name: "삼성전자", symbol: "005930.KS", shares: 0, price: 0, updatedAt: "" },
+      { bucket: "hynixStock", name: "SK하이닉스", symbol: "000660.KS", shares: 0, price: 0, updatedAt: "" }
+    ];
+
+    const SYMBOL_ALIASES = {
+      "삼성전자": { name: "삼성전자", symbol: "005930.KS" },
+      "삼전": { name: "삼성전자", symbol: "005930.KS" },
+      "sk하이닉스": { name: "SK하이닉스", symbol: "000660.KS" },
+      "하이닉스": { name: "SK하이닉스", symbol: "000660.KS" },
+      "tiger미국s&p500": { name: "TIGER 미국S&P500", symbol: "360750.KS" },
+      "tiger미국sp500": { name: "TIGER 미국S&P500", symbol: "360750.KS" },
+      "tiger s&p500": { name: "TIGER 미국S&P500", symbol: "360750.KS" },
+      "tiger sp500": { name: "TIGER 미국S&P500", symbol: "360750.KS" },
+      "sol미국s&p500미국채혼합50": { name: "SOL 미국S&P500미국채혼합50", symbol: "0080X0.KS" },
+      "sol미국sp500미국채혼합50": { name: "SOL 미국S&P500미국채혼합50", symbol: "0080X0.KS" },
+      "미국s&p500미국채혼합50": { name: "SOL 미국S&P500미국채혼합50", symbol: "0080X0.KS" },
+      "미국sp500미국채혼합50": { name: "SOL 미국S&P500미국채혼합50", symbol: "0080X0.KS" },
+      "미국s&p500": { name: "TIGER 미국S&P500", symbol: "360750.KS" },
+      "미국sp500": { name: "TIGER 미국S&P500", symbol: "360750.KS" }
+    };
+
+    let assetRows = structuredClone(ASSET_ROWS);
+    let holdings = structuredClone(HOLDINGS);
+    let assetYears = [2024, 2025, 2026, 2027, 2028, 2029, 2030];
+    let pensionRows = [];
+    let goldState = { grams: 0, price: 0, updatedAt: "", source: "" };
+    const PRICE_API_BASES = [location.protocol.startsWith("http") ? "" : null, "http://127.0.0.1:8765"].filter(Boolean);
+
+    const FIELD_GROUPS = [
+      ["나이 입력", [
+        ["start_age", "시작 나이", "60", "age"],
+        ["end_age", "종료 나이", "90", "age"],
+        ["national_pension_start_age", "국민연금 시작 나이", "68", "age"]
+      ]],
+      ["연금 원액", [
+        ["private_balance", "개인연금 원액", "500,000,000원", "money"],
+        ["irp_retire_balance", "IRP 퇴직재원", "600,000,000원", "money"],
+        ["irp_taxable_balance", "IRP 과세재원", "600,000,000원", "money"]
+      ]],
+      ["연간 수령액", [
+        ["target_net_cash", "목표 연간 실수령액", "80,000,000원", "money"],
+        ["private_annual_withdrawal", "개인연금 연간 수령액", "15,000,000원", "money"],
+        ["national_pension_annual", "국민연금 연간액", "24,840,000원", "money"],
+        ["nhis_fixed_monthly", "월 건강보험료", "400,000원", "money"]
+      ]],
+      ["정밀 예측", [
+        ["target_growth_rate", "목표 생활비 증가율", "2.0%", "percent"],
+        ["national_pension_growth", "국민연금 증가율", "2.0%", "percent"],
+        ["one_time_expense_age", "일시 지출 나이", "70", "age"],
+        ["one_time_expense_amount", "일시 지출 금액", "0원", "money"]
+      ]],
+      ["수익률/세금", [
+        ["private_return", "개인연금 수익률", "8%", "percent"],
+        ["irp_retire_return", "IRP 퇴직재원 수익률", "5.0%", "percent"],
+        ["irp_taxable_return", "IRP 과세재원 수익률", "5.0%", "percent"],
+        ["irp_retire_effective_tax", "퇴직소득 유효세율", "3.0%", "percent"]
+      ]]
+    ];
+
+    const SIM_COLUMNS = ["나이", "연금 수령 연차", "실수령액", "총 잔액", "총 과세", "일시 지출", "국민연금", "IRP(퇴직재원)", "IRP(과세재원)", "개인연금", "총수령액", "세금", "건보료", "개인연금 잔액", "IRP(과세재원) 잔액", "IRP(퇴직재원) 잔액"];
+    const SIM_MONEY = new Set(SIM_COLUMNS.slice(2));
+    const simInputs = {};
+    const simDefaults = {};
+
+    function toNumber(value) {
+      if (typeof value === "number") return value;
+      let text = String(value || "").trim().replaceAll(",", "").replaceAll(" ", "").replaceAll("₩", "").replaceAll("원", "").replaceAll("%", "");
+      if (!text) return 0;
+      const wrappedNegative = text.startsWith("(") && text.endsWith(")");
+      text = text.replace(/[()]/g, "");
+      const sign = wrappedNegative || text.startsWith("-") ? -1 : 1;
+      text = text.replace(/^[+-]/, "");
+      let total = 0;
+      let matched = false;
+      const eok = text.match(/(\d+(?:\.\d+)?)억/);
+      if (eok) { total += Number(eok[1]) * 100000000; text = text.replace(eok[0], ""); matched = true; }
+      const man = text.match(/(\d+(?:\.\d+)?)만/);
+      if (man) { total += Number(man[1]) * 10000; text = text.replace(man[0], ""); matched = true; }
+      if (text) { total += Number(text) || 0; matched = true; }
+      return matched ? sign * total : 0;
+    }
+
+    function won(value) {
+      const rounded = Math.round(value || 0);
+      const formatted = `₩${Math.abs(rounded).toLocaleString("ko-KR")}`;
+      return rounded < 0 ? `(${formatted})` : formatted;
+    }
+
+    function compactWon(value) {
+      const abs = Math.abs(value || 0);
+      const sign = value < 0 ? "-" : "";
+      if (abs >= 100000000) return `${sign}${(abs / 100000000).toFixed(1)}억`;
+      if (abs >= 10000) return `${sign}${Math.round(abs / 10000).toLocaleString("ko-KR")}만`;
+      return won(value);
+    }
+
+    function pct(value) {
+      if (!Number.isFinite(value)) return "-";
+      return `${(value * 100).toFixed(1)}%`;
+    }
+
+    function latestActualYear() {
+      return Math.max(...assetYears.filter((year) => year <= new Date().getFullYear()));
+    }
+
+    function rowValue(row, year) {
+      return Number(row.values[year] || 0);
+    }
+
+    function stockValue(bucket) {
+      return holdings.filter((h) => h.bucket === bucket).reduce((sum, h) => sum + toNumber(h.shares) * toNumber(h.price), 0);
+    }
+
+    function normalizeQuery(text) {
+      return String(text || "").toLowerCase().replace(/\s+/g, "").replace(/㈜|\(주\)/g, "");
+    }
+
+    function applyGoldToAssetRow() {
+      const row = assetRows.find((item) => item.id === "gold");
+      if (!row) return;
+      goldState.grams = toNumber(document.getElementById("goldGrams").value);
+      goldState.price = toNumber(document.getElementById("goldPrice").value);
+      row.values[latestActualYear()] = goldState.grams * goldState.price;
+      renderAssetTable();
+    }
+
+    async function resolveSymbol(query) {
+      const raw = String(query || "").trim();
+      const normalized = normalizeQuery(raw);
+      if (!raw) throw new Error("종목명을 입력해주세요.");
+      if (/^\d{6}$/.test(raw)) return { name: raw, symbol: `${raw}.KS`, source: "직접 코드" };
+      if (/^[A-Za-z0-9.^=-]+(\.[A-Za-z]{1,3})?$/.test(raw) && !/[가-힣]/.test(raw)) {
+        return { name: raw.toUpperCase(), symbol: raw.toUpperCase(), source: "직접 심볼" };
+      }
+      if (SYMBOL_ALIASES[normalized]) return { ...SYMBOL_ALIASES[normalized], source: "내장 검색" };
+
+      try {
+        const data = await fetchPriceApi(`/api/search?q=${encodeURIComponent(raw)}`);
+        if (data.symbol) return { ...data, source: `가격 API/${data.source || "search"}` };
+      } catch (_error) {
+        // 가격 API가 없으면 브라우저 직접 호출 경로로 이어간다.
+      }
+
+      const url = `https://query2.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(raw)}&quotesCount=8&newsCount=0&lang=ko-KR&region=KR`;
+      const { data, source } = await fetchJsonWithFallback(url);
+      const quotes = Array.isArray(data.quotes) ? data.quotes : [];
+      const preferred = quotes.find((q) => q.symbol && (q.symbol.endsWith(".KS") || q.symbol.endsWith(".KQ")))
+        || quotes.find((q) => q.symbol);
+      if (!preferred) throw new Error(`${raw} 검색 결과가 없습니다.`);
+      return {
+        name: preferred.shortname || preferred.longname || raw,
+        symbol: preferred.symbol,
+        source: `Yahoo 검색/${source}`
+      };
+    }
+
+    function updateStockRowsFromHoldings() {
+      const year = latestActualYear();
+      for (const row of assetRows.filter((item) => item.type === "stock")) {
+        const bucketHoldings = holdings.filter((h) => h.bucket === row.id);
+        const hasPositionInput = bucketHoldings.some((h) => toNumber(h.shares) !== 0 || toNumber(h.price) !== 0);
+        if (hasPositionInput) row.values[year] = stockValue(row.id);
+      }
+    }
+
+    function categorySpans() {
+      const spans = {};
+      for (const row of assetRows) spans[row.category] = (spans[row.category] || 0) + 1;
+      return spans;
+    }
+
+    function renderAssetTable() {
+      updateStockRowsFromHoldings();
+      const cols = document.getElementById("assetCols");
+      const head = document.getElementById("assetHead");
+      const body = document.getElementById("assetBody");
+      cols.innerHTML = `<col style="width:70px"><col style="width:178px">${assetYears.map(() => "<col>").join("")}`;
+      head.innerHTML = `<tr><th>대분류</th><th>소분류</th>${assetYears.map((year) => `<th class="${year > new Date().getFullYear() ? "estimate" : ""}">${year}${year > new Date().getFullYear() ? "(E)" : ""}</th>`).join("")}</tr>`;
+      const spans = categorySpans();
+      const used = new Set();
+      const html = [];
+      for (const row of assetRows) {
+        const cells = [];
+        if (!used.has(row.category)) {
+          cells.push(`<td class="category" rowspan="${spans[row.category]}">${row.category}</td>`);
+          used.add(row.category);
+        }
+        cells.push(`<td class="label">${row.label}</td>`);
+        for (const year of assetYears) {
+          const value = rowValue(row, year);
+          const neg = value < 0 ? " negative" : "";
+          if (row.type === "stock" && year === latestActualYear()) {
+            cells.push(`<td class="value${neg}" data-row="${row.id}" data-year="${year}">${won(value)}</td>`);
+          } else {
+            cells.push(`<td class="value manual${neg}"><input class="money" data-row="${row.id}" data-year="${year}" value="${won(value)}"></td>`);
+          }
+        }
+        html.push(`<tr>${cells.join("")}</tr>`);
+      }
+
+      const netByYear = assetYears.map((year) => assetRows.reduce((sum, row) => sum + rowValue(row, year), 0));
+      html.push(`<tr class="net-row"><td></td><td class="label">순자산</td>${netByYear.map((value) => `<td class="value">${won(value)}</td>`).join("")}</tr>`);
+      html.push(`<tr class="growth-row"><td></td><td class="label">순자산 증가폭</td>${netByYear.map((value, index) => {
+        if (index === 0) return "<td></td>";
+        const prev = netByYear[index - 1];
+        return `<td>${prev ? pct((value - prev) / Math.abs(prev)) : "-"}</td>`;
+      }).join("")}</tr>`);
+      body.innerHTML = html.join("");
+      body.querySelectorAll("input[data-row]").forEach((input) => input.addEventListener("change", onAssetCellChange));
+      renderAssetSummary();
+      renderAssetCharts();
+    }
+
+    function onAssetCellChange(event) {
+      const input = event.target;
+      const row = assetRows.find((item) => item.id === input.dataset.row);
+      row.values[input.dataset.year] = toNumber(input.value);
+      input.value = won(row.values[input.dataset.year]);
+      renderAssetTable();
+    }
+
+    function renderAssetSummary() {
+      const year = latestActualYear();
+      const prevYear = assetYears[assetYears.indexOf(year) - 1];
+      const net = assetRows.reduce((sum, row) => sum + rowValue(row, year), 0);
+      const prevNet = prevYear ? assetRows.reduce((sum, row) => sum + rowValue(row, prevYear), 0) : 0;
+      const stock = assetRows.filter((row) => row.category === "주식").reduce((sum, row) => sum + rowValue(row, year), 0);
+      const debt = assetRows.filter((row) => row.category === "대출").reduce((sum, row) => sum + rowValue(row, year), 0);
+      document.getElementById("latestNetWorth").textContent = compactWon(net);
+      document.getElementById("latestGrowth").textContent = prevNet ? pct((net - prevNet) / Math.abs(prevNet)) : "-";
+      document.getElementById("latestStockValue").textContent = compactWon(stock);
+      document.getElementById("latestDebt").textContent = compactWon(debt);
+    }
+
+    function assetCategoryTotals(year) {
+      const totals = { "부동산": 0, "주식": 0, "금/비트": 0, "현금": 0, "대출": 0 };
+      for (const row of assetRows) {
+        if (totals[row.category] === undefined) totals[row.category] = 0;
+        totals[row.category] += rowValue(row, year);
+      }
+      return totals;
+    }
+
+    function drawAssetNetChart() {
+      const canvas = document.getElementById("assetNetChart");
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const area = { left: 96, top: 34, right: canvas.width - 86, bottom: canvas.height - 44 };
+      area.width = area.right - area.left;
+      area.height = area.bottom - area.top;
+      const series = [
+        { key: "부동산", color: "#5b9bd5" },
+        { key: "주식", color: "#ed7d31" },
+        { key: "금/비트", color: "#a5a5a5" },
+        { key: "현금", color: "#ffc000" },
+        { key: "대출", color: "#a9d18e" }
+      ];
+      const totals = assetYears.map((year) => assetCategoryTotals(year));
+      const netValues = totals.map((total) => Object.values(total).reduce((sum, value) => sum + value, 0));
+      const positiveMax = Math.max(...totals.map((total) => series.filter((s) => s.key !== "대출").reduce((sum, s) => sum + Math.max(0, total[s.key] || 0), 0)), 1);
+      const negativeMin = Math.min(...totals.map((total) => Math.min(0, total["대출"] || 0)), 0);
+      const maxY = positiveMax * 1.12;
+      const minY = negativeMin * 1.35;
+      const yFor = (value) => area.top + (maxY - value) / (maxY - minY) * area.height;
+      const gap = 14;
+      const barW = Math.max(20, (area.width - gap * (assetYears.length - 1)) / assetYears.length * .72);
+      const zeroY = yFor(0);
+
+      ctx.fillStyle = "#111";
+      ctx.font = "bold 24px Malgun Gothic, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("연도별 순자산", canvas.width / 2, 24);
+      ctx.textAlign = "left";
+      ctx.strokeStyle = "#e5e7eb";
+      ctx.lineWidth = 1;
+      ctx.font = "12px Malgun Gothic, sans-serif";
+      ctx.fillStyle = "#111";
+      for (let i = 0; i <= 6; i += 1) {
+        const value = minY + (maxY - minY) * i / 6;
+        const y = yFor(value);
+        ctx.beginPath();
+        ctx.moveTo(area.left, y);
+        ctx.lineTo(area.right, y);
+        ctx.stroke();
+        ctx.fillText(won(value), 8, y + 4);
+      }
+      ctx.strokeStyle = "#8b8b8b";
+      ctx.beginPath();
+      ctx.moveTo(area.left, zeroY);
+      ctx.lineTo(area.right, zeroY);
+      ctx.stroke();
+
+      totals.forEach((total, index) => {
+        const x = area.left + index * (area.width / Math.max(assetYears.length - 1, 1)) - barW / 2;
+        let top = zeroY;
+        for (const item of series.filter((s) => s.key !== "대출")) {
+          const value = Math.max(0, total[item.key] || 0);
+          const h = zeroY - yFor(value);
+          ctx.fillStyle = item.color;
+          ctx.fillRect(x, top - h, barW, h);
+          top -= h;
+        }
+        const debt = total["대출"] || 0;
+        if (debt < 0) {
+          ctx.fillStyle = "#a9d18e";
+          ctx.fillRect(x, zeroY, barW, yFor(debt) - zeroY);
+        }
+        ctx.fillStyle = "#111";
+        ctx.font = "bold 12px Malgun Gothic, sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText(`${assetYears[index]}${assetYears[index] > new Date().getFullYear() ? "(E)" : ""}`, x + barW / 2, canvas.height - 12);
+      });
+
+      ctx.strokeStyle = "#1f40ff";
+      ctx.fillStyle = "#1f40ff";
+      ctx.lineWidth = 2.4;
+      ctx.beginPath();
+      netValues.forEach((value, index) => {
+        const x = area.left + index * (area.width / Math.max(assetYears.length - 1, 1));
+        const y = yFor(value);
+        if (index === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+      netValues.forEach((value, index) => {
+        const x = area.left + index * (area.width / Math.max(assetYears.length - 1, 1));
+        const y = yFor(value);
+        ctx.beginPath();
+        ctx.arc(x, y, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.font = "12px Malgun Gothic, sans-serif";
+        ctx.fillText(won(value), x, y - 8);
+      });
+
+      const legend = [{ name: "순자산", color: "#1f40ff", line: true }, ...series.map((s) => ({ name: s.key === "금/비트" ? "금" : s.key, color: s.color }))];
+      legend.forEach((item, index) => {
+        const x = area.right + 14;
+        const y = area.top + index * 24;
+        ctx.fillStyle = item.color;
+        ctx.fillRect(x, y - 10, 12, 12);
+        ctx.fillStyle = "#111";
+        ctx.textAlign = "left";
+        ctx.fillText(item.name, x + 20, y);
+      });
+    }
+
+    function drawAssetMixChart() {
+      const canvas = document.getElementById("assetMixChart");
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const area = { left: 58, top: 42, right: canvas.width - 22, bottom: canvas.height - 62 };
+      area.width = area.right - area.left;
+      area.height = area.bottom - area.top;
+      const series = [
+        { key: "부동산", color: "#5b9bd5" },
+        { key: "주식", color: "#ed7d31" },
+        { key: "금/비트", label: "금", color: "#a5a5a5" },
+        { key: "현금", label: "보유 현금", color: "#ffc000" }
+      ];
+      ctx.fillStyle = "#111";
+      ctx.font = "bold 24px Malgun Gothic, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("연도별 자산 비중", canvas.width / 2, 28);
+      ctx.strokeStyle = "#d0d7de";
+      ctx.font = "12px Malgun Gothic, sans-serif";
+      ctx.fillStyle = "#111";
+      for (let i = 0; i <= 4; i += 1) {
+        const y = area.bottom - area.height * i / 4;
+        ctx.beginPath();
+        ctx.moveTo(area.left, y);
+        ctx.lineTo(area.right, y);
+        ctx.stroke();
+        ctx.textAlign = "right";
+        ctx.fillText(`${(i * 25).toFixed(2)}%`, area.left - 8, y + 4);
+      }
+      const gap = 22;
+      const barW = Math.max(24, (area.width - gap * (assetYears.length - 1)) / assetYears.length * .64);
+      assetYears.forEach((year, index) => {
+        const totals = assetCategoryTotals(year);
+        const positive = series.reduce((sum, item) => sum + Math.max(0, totals[item.key] || 0), 0) || 1;
+        const x = area.left + index * (area.width / Math.max(assetYears.length - 1, 1)) - barW / 2;
+        let bottom = area.bottom;
+        for (const item of series) {
+          const ratio = Math.max(0, totals[item.key] || 0) / positive;
+          const h = ratio * area.height;
+          ctx.fillStyle = item.color;
+          ctx.fillRect(x, bottom - h, barW, h);
+          if (ratio >= .045) {
+            ctx.fillStyle = "#111";
+            ctx.textAlign = "center";
+            ctx.font = "12px Malgun Gothic, sans-serif";
+            ctx.fillText(`${(ratio * 100).toFixed(1)}%`, x + barW / 2, bottom - h / 2 + 4);
+          }
+          bottom -= h;
+        }
+        ctx.fillStyle = "#111";
+        ctx.font = "12px Malgun Gothic, sans-serif";
+        ctx.fillText(`${year}${year > new Date().getFullYear() ? "(E)" : ""}`, x + barW / 2, canvas.height - 34);
+      });
+      const legendY = canvas.height - 16;
+      const legend = series.slice().reverse();
+      let startX = canvas.width / 2 - 130;
+      legend.forEach((item) => {
+        ctx.fillStyle = item.color;
+        ctx.fillRect(startX, legendY - 10, 12, 12);
+        ctx.fillStyle = "#111";
+        ctx.textAlign = "left";
+        ctx.fillText(item.label || item.key, startX + 18, legendY);
+        startX += 78;
+      });
+    }
+
+    function renderAssetCharts() {
+      drawAssetNetChart();
+      drawAssetMixChart();
+    }
+
+    function renderHoldings() {
+      const body = document.getElementById("holdingsBody");
+      body.innerHTML = holdings.map((h, index) => `
+        <tr>
+          <td>${h.name}<br><span class="status">${h.symbol}</span></td>
+          <td><input class="num holding-edit" data-index="${index}" data-field="shares" value="${h.shares}"></td>
+          <td><input class="num holding-edit" data-index="${index}" data-field="price" value="${h.price}"></td>
+          <td>${won(toNumber(h.shares) * toNumber(h.price))}</td>
+          <td><button type="button" data-delete="${index}">삭제</button></td>
+        </tr>
+      `).join("");
+      body.querySelectorAll(".holding-edit").forEach((input) => input.addEventListener("change", onHoldingEdit));
+      body.querySelectorAll("button[data-delete]").forEach((button) => button.addEventListener("click", () => {
+        const index = Number(button.dataset.delete);
+        const bucket = holdings[index].bucket;
+        holdings.splice(index, 1);
+        const row = assetRows.find((item) => item.id === bucket);
+        if (row) row.values[latestActualYear()] = stockValue(bucket);
+        renderHoldings();
+        renderAssetTable();
+      }));
+    }
+
+    function onHoldingEdit(event) {
+      const input = event.target;
+      holdings[Number(input.dataset.index)][input.dataset.field] = toNumber(input.value);
+      renderHoldings();
+      renderAssetTable();
+    }
+
+    async function fetchJsonWithFallback(url) {
+      const urls = [
+        { label: "Yahoo 직접", url },
+        { label: "AllOrigins", url: `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}` },
+        { label: "CorsProxy", url: `https://corsproxy.io/?${encodeURIComponent(url)}` }
+      ];
+      const errors = [];
+      for (const item of urls) {
+        try {
+          const response = await fetch(item.url, { cache: "no-store" });
+          if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+          const text = await response.text();
+          return { data: JSON.parse(text), source: item.label };
+        } catch (error) {
+          errors.push(`${item.label}: ${error.message}`);
+        }
+      }
+      throw new Error(errors.join(" / "));
+    }
+
+    async function fetchPriceApi(path) {
+      const errors = [];
+      for (const base of PRICE_API_BASES) {
+        try {
+          const response = await fetch(`${base}${path}`, { cache: "no-store" });
+          if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+          return await response.json();
+        } catch (error) {
+          errors.push(`${base || "same-origin"}: ${error.message}`);
+        }
+      }
+      throw new Error(errors.join(" / "));
+    }
+
+    async function checkLocalProxy() {
+      const status = document.getElementById("priceStatus");
+      try {
+        await fetchPriceApi("/api/health");
+        status.textContent = "가격 API 연결됨. 종가 자동 업데이트를 안정적으로 사용할 수 있습니다.";
+        return true;
+      } catch (_error) {
+        status.textContent = "가격 API에 연결할 수 없습니다. 웹 배포 API 또는 로컬 프록시가 필요합니다.";
+        return false;
+      }
+    }
+
+    async function fetchYahooClose(symbol) {
+      try {
+        const data = await fetchPriceApi(`/api/close?symbol=${encodeURIComponent(symbol.trim())}`);
+        if (Number.isFinite(data.price)) return { price: data.price, date: data.date, source: `가격 API/${data.source || "close"}` };
+      } catch (_error) {
+        // 가격 API가 없으면 브라우저 직접 호출 경로로 이어간다.
+      }
+
+      const encoded = encodeURIComponent(symbol.trim());
+      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encoded}?range=5d&interval=1d`;
+      const { data, source } = await fetchJsonWithFallback(url);
+      const result = data.chart && data.chart.result && data.chart.result[0];
+      const closes = result && result.indicators && result.indicators.quote && result.indicators.quote[0].close;
+      const timestamps = result && result.timestamp;
+      if (!closes) throw new Error(`${symbol} 종가 없음`);
+      for (let i = closes.length - 1; i >= 0; i -= 1) {
+        if (Number.isFinite(closes[i])) {
+          return { price: closes[i], date: new Date(timestamps[i] * 1000).toISOString().slice(0, 10), source };
+        }
+      }
+      throw new Error(`${symbol} 유효한 종가 없음`);
+    }
+
+    function recentKoreanDates(days = 10) {
+      const dates = [];
+      const now = new Date();
+      for (let i = 0; i < days; i += 1) {
+        const date = new Date(now);
+        date.setDate(now.getDate() - i);
+        const day = date.getDay();
+        if (day === 0 || day === 6) continue;
+        dates.push(`${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, "0")}${String(date.getDate()).padStart(2, "0")}`);
+      }
+      return dates;
+    }
+
+    function findGoldCloseInJson(data) {
+      const rows = [];
+      const walk = (value) => {
+        if (Array.isArray(value)) value.forEach(walk);
+        else if (value && typeof value === "object") {
+          if (Object.values(value).some((v) => String(v).includes("금") || String(v).includes("Gold") || String(v).includes("04020000"))) rows.push(value);
+          Object.values(value).forEach(walk);
+        }
+      };
+      walk(data);
+      for (const row of rows) {
+        const priceValue = row.TDD_CLSPRC || row.CLSPRC || row.CLOSE_PRC || row.END_PRC || row.PRICE || row.trdPrc || row.close;
+        const parsed = toNumber(priceValue);
+        if (parsed > 0) return parsed;
+      }
+      return 0;
+    }
+
+    async function fetchKrxGoldClose() {
+      try {
+        const data = await fetchPriceApi("/api/gold");
+        if (Number.isFinite(data.price)) return { price: data.price, date: data.date, source: `가격 API/${data.source || "gold"}` };
+      } catch (_error) {
+        // 가격 API가 없으면 브라우저 직접 호출 경로로 이어간다.
+      }
+
+      const endpoint = "https://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd";
+      const blds = [
+        "dbms/MDC/STAT/standard/MDCSTAT22801",
+        "dbms/MDC/STAT/standard/MDCSTAT22901",
+        "dbms/MDC/STAT/standard/MDCSTAT23001"
+      ];
+      const errors = [];
+      for (const trdDd of recentKoreanDates()) {
+        for (const bld of blds) {
+          const params = new URLSearchParams({
+            bld,
+            locale: "ko_KR",
+            mktId: "GLD",
+            trdDd,
+            isuCd: "04020000",
+            isuCd2: "04020000",
+            share: "1",
+            money: "1"
+          });
+          try {
+            const { data, source } = await fetchJsonWithFallback(`${endpoint}?${params}`);
+            const price = findGoldCloseInJson(data);
+            if (price > 0) return { price, date: trdDd, source: `KRX/${source}` };
+          } catch (error) {
+            errors.push(error.message);
+          }
+        }
+      }
+      throw new Error(errors.at(-1) || "KRX 금 가격을 찾지 못했습니다.");
+    }
+
+    async function updateGoldPrice() {
+      const status = document.getElementById("priceStatus");
+      status.textContent = "KRX 금 가격 업데이트 중...";
+      try {
+        const quote = await fetchKrxGoldClose();
+        goldState.price = Math.round(quote.price);
+        goldState.updatedAt = quote.date;
+        goldState.source = quote.source;
+        document.getElementById("goldPrice").value = goldState.price;
+        applyGoldToAssetRow();
+        status.textContent = `KRX 금 1g 가격 업데이트 완료: ${won(goldState.price)} (${quote.date}, ${quote.source})`;
+      } catch (error) {
+        status.textContent = `KRX 금 자동 업데이트 실패. 수동 1g 가격을 입력해주세요. ${error.message}`;
+      }
+    }
+
+    async function updatePrices() {
+      const status = document.getElementById("priceStatus");
+      status.textContent = "종가 업데이트 중...";
+      let ok = 0;
+      const errors = [];
+      const sources = new Set();
+      for (const holding of holdings) {
+        if (!holding.symbol) continue;
+        try {
+          const quote = await fetchYahooClose(holding.symbol);
+          holding.price = Math.round(quote.price);
+          holding.updatedAt = quote.date;
+          sources.add(quote.source);
+          ok += 1;
+        } catch (error) {
+          errors.push(error.message);
+        }
+      }
+      renderHoldings();
+      renderAssetTable();
+      status.textContent = ok
+        ? `${ok}개 종목 가격 업데이트 완료 (${[...sources].join(", ")})${errors.length ? `, 실패 ${errors.length}개` : ""}`
+        : `자동 업데이트 실패. 웹 배포 API 또는 로컬 프록시가 필요합니다. ${errors[0] || ""}`;
+    }
+
+    async function searchHoldingSymbol() {
+      const status = document.getElementById("priceStatus");
+      const nameInput = document.getElementById("holdingName");
+      const symbolInput = document.getElementById("holdingSymbol");
+      const query = nameInput.value || symbolInput.value;
+      status.textContent = `${query} 검색 중...`;
+      try {
+        const resolved = await resolveSymbol(query);
+        nameInput.value = resolved.name;
+        symbolInput.value = resolved.symbol;
+        status.textContent = `${resolved.name} → ${resolved.symbol} (${resolved.source})`;
+      } catch (error) {
+        status.textContent = `종목 검색 실패: ${error.message}`;
+      }
+    }
+
+    function rebuildAssetYears() {
+      const start = Math.round(toNumber(document.getElementById("assetStartYear").value));
+      const end = Math.round(toNumber(document.getElementById("assetEndYear").value));
+      assetYears = [];
+      for (let year = start; year <= end; year += 1) assetYears.push(year);
+      renderAssetTable();
+    }
+
+    async function addHolding() {
+      let name = document.getElementById("holdingName").value.trim();
+      let symbol = document.getElementById("holdingSymbol").value.trim();
+      try {
+        const resolved = await resolveSymbol(name || symbol);
+        name = resolved.name;
+        symbol = resolved.symbol;
+      } catch (_error) {
+        name = name || "새 종목";
+        if (!symbol) symbol = name;
+      }
+      holdings.push({
+        bucket: document.getElementById("holdingBucket").value,
+        name,
+        symbol,
+        shares: toNumber(document.getElementById("holdingShares").value),
+        price: toNumber(document.getElementById("holdingManualPrice").value),
+        updatedAt: ""
+      });
+      renderHoldings();
+      renderAssetTable();
+    }
+
+    function exportAssetCsv() {
+      const header = ["대분류", "소분류", ...assetYears];
+      const lines = assetRows.map((row) => [row.category, row.label, ...assetYears.map((year) => Math.round(rowValue(row, year)))].join(","));
+      const net = ["", "순자산", ...assetYears.map((year) => Math.round(assetRows.reduce((sum, row) => sum + rowValue(row, year), 0)))];
+      const csv = "\ufeff" + [header.join(","), ...lines, net.join(",")].join("\n");
+      const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "asset_history.csv";
+      link.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function saveAssetData() {
+      localStorage.setItem("pensionAssetRows", JSON.stringify(assetRows));
+      localStorage.setItem("pensionHoldings", JSON.stringify(holdings));
+      localStorage.setItem("pensionAssetYears", JSON.stringify(assetYears));
+      localStorage.setItem("pensionGoldState", JSON.stringify(goldState));
+      document.getElementById("priceStatus").textContent = "브라우저 저장 완료";
+    }
+
+    function loadAssetData() {
+      const savedRows = localStorage.getItem("pensionAssetRows");
+      const savedHoldings = localStorage.getItem("pensionHoldings");
+      const savedYears = localStorage.getItem("pensionAssetYears");
+      const savedGold = localStorage.getItem("pensionGoldState");
+      if (savedRows) assetRows = JSON.parse(savedRows);
+      if (savedHoldings) holdings = JSON.parse(savedHoldings);
+      if (savedYears) assetYears = JSON.parse(savedYears);
+      if (savedGold) goldState = JSON.parse(savedGold);
+      document.getElementById("assetStartYear").value = assetYears[0];
+      document.getElementById("assetEndYear").value = assetYears.at(-1);
+      document.getElementById("goldGrams").value = goldState.grams || 0;
+      document.getElementById("goldPrice").value = goldState.price || 0;
+      renderHoldings();
+      renderAssetTable();
+    }
+
+    function renderSimInputs() {
+      const form = document.getElementById("inputForm");
+      form.innerHTML = "";
+      for (const [group, fields] of FIELD_GROUPS) {
+        const fs = document.createElement("fieldset");
+        fs.innerHTML = `<legend>${group}</legend>`;
+        for (const [key, label, value, kind] of fields) {
+          simDefaults[key] = value;
+          fs.insertAdjacentHTML("beforeend", `<div class="field"><label for="${key}">${label}</label><input id="${key}" data-kind="${kind}" value="${value}"><span>${kind === "percent" ? "%" : kind === "age" ? "세" : "원"}</span></div>`);
+        }
+        form.append(fs);
+      }
+      form.querySelectorAll("input").forEach((input) => {
+        simInputs[input.id] = input;
+        input.addEventListener("input", runPension);
+      });
+    }
+
+    function readSimInputs() {
+      const p = {};
+      for (const [key, input] of Object.entries(simInputs)) {
+        let value = toNumber(input.value);
+        if (input.dataset.kind === "percent") value /= 100;
+        if (input.dataset.kind === "age") value = Math.round(value);
+        p[key] = value;
+      }
+      if (p.start_age > p.end_age) throw new Error("시작 나이는 종료 나이보다 작거나 같아야 합니다.");
+      return p;
+    }
+
+    function taxRateByAge(age) {
+      if (age < 70) return 0.055;
+      if (age < 80) return 0.044;
+      return 0.033;
+    }
+
+    function taxableTax(amount, age) {
+      if (amount <= 0) return 0;
+      if (amount <= 15000000) return amount * taxRateByAge(age);
+      return amount * 0.15;
+    }
+
+    function retireTax(amount, receiptYear, p) {
+      if (amount <= 0) return 0;
+      return amount * p.irp_retire_effective_tax * (receiptYear > 10 ? 0.60 : 0.70);
+    }
+
+    function nhis(privateW, irpTaxW, nationalPension, p) {
+      const reflected = (privateW + irpTaxW + nationalPension) * 0.30;
+      const annualHealth = (p.nhis_fixed_monthly + reflected / 12 * 0.0719) * 12;
+      return annualHealth + annualHealth * 0.1314;
+    }
+
+    function yearResult(age, privateW, irpTaxW, irpRetW, receiptYear, nationalPension, p) {
+      const nextYear = (irpRetW > 0 || irpTaxW > 0) ? receiptYear + 1 : receiptYear;
+      const tax = taxableTax(privateW, age) + taxableTax(irpTaxW, age) + retireTax(irpRetW, nextYear, p);
+      const health = nhis(privateW, irpTaxW, nationalPension, p);
+      const gross = nationalPension + privateW + irpTaxW + irpRetW;
+      return { total_tax: tax, nhis_total: health, gross_total: gross, net_cash: gross - tax - health };
+    }
+
+    function nextWithdrawal(age, balances, receiptYear, nationalPension, target, p) {
+      const basePrivate = Math.min(p.private_annual_withdrawal, balances.private);
+      const withdrawals = { private: basePrivate, irp_taxable: 0, irp_retire: 0 };
+      const caps = { irp_retire: balances.irp_retire, irp_taxable: balances.irp_taxable, private_extra: Math.max(0, balances.private - basePrivate) };
+      const resultFor = (w) => yearResult(age, w.private, w.irp_taxable, w.irp_retire, receiptYear, nationalPension, p);
+      let chosen = resultFor(withdrawals);
+      for (const source of ["irp_retire", "irp_taxable", "private_extra"]) {
+        if (chosen.net_cash >= target || caps[source] <= 0) continue;
+        let low = 0;
+        let high = caps[source];
+        let candidate = { ...withdrawals };
+        if (source === "private_extra") candidate.private = basePrivate + high;
+        else candidate[source] = high;
+        let highResult = resultFor(candidate);
+        if (highResult.net_cash < target) {
+          Object.assign(withdrawals, candidate);
+          chosen = highResult;
+          continue;
+        }
+        for (let i = 0; i < 30; i += 1) {
+          const mid = (low + high) / 2;
+          candidate = { ...withdrawals };
+          if (source === "private_extra") candidate.private = basePrivate + mid;
+          else candidate[source] = mid;
+          const midResult = resultFor(candidate);
+          if (midResult.net_cash >= target) { high = mid; highResult = midResult; }
+          else low = mid;
+        }
+        if (source === "private_extra") withdrawals.private = basePrivate + high;
+        else withdrawals[source] = high;
+        chosen = highResult;
+      }
+      return { private_withdraw: withdrawals.private, irp_taxable_withdraw: withdrawals.irp_taxable, irp_retire_withdraw: withdrawals.irp_retire, ...chosen };
+    }
+
+    function simulatePension() {
+      const p = readSimInputs();
+      let privateBal = p.private_balance;
+      let irpRetBal = p.irp_retire_balance;
+      let irpTaxBal = p.irp_taxable_balance;
+      let receiptYear = 0;
+      const out = [];
+      for (let i = 0, age = p.start_age; age <= p.end_age; i += 1, age += 1) {
+        privateBal += privateBal * p.private_return;
+        const retireGrowth = irpRetBal * p.irp_retire_return;
+        const taxableGrowth = irpTaxBal * p.irp_taxable_return;
+        irpTaxBal += taxableGrowth + retireGrowth;
+        const targetBase = p.target_net_cash * ((1 + p.target_growth_rate) ** i);
+        const oneTime = age === p.one_time_expense_age ? p.one_time_expense_amount : 0;
+        const target = targetBase + oneTime;
+        const national = age >= p.national_pension_start_age ? p.national_pension_annual * ((1 + p.national_pension_growth) ** (age - p.national_pension_start_age)) : 0;
+        const chosen = nextWithdrawal(age, { private: privateBal, irp_retire: irpRetBal, irp_taxable: irpTaxBal }, receiptYear, national, target, p);
+        const privateW = Math.min(chosen.private_withdraw, privateBal);
+        const irpTaxW = Math.min(chosen.irp_taxable_withdraw, irpTaxBal);
+        const irpRetW = Math.min(chosen.irp_retire_withdraw, irpRetBal);
+        if (irpRetW > 0 || irpTaxW > 0) receiptYear += 1;
+        privateBal -= privateW;
+        irpTaxBal -= irpTaxW;
+        irpRetBal -= irpRetW;
+        out.push({ "나이": age, "연금 수령 연차": receiptYear, "실수령액": chosen.net_cash, "총 잔액": privateBal + irpTaxBal + irpRetBal, "총 과세": chosen.total_tax + chosen.nhis_total, "일시 지출": oneTime, "국민연금": national, "IRP(퇴직재원)": irpRetW, "IRP(과세재원)": irpTaxW, "개인연금": privateW, "총수령액": chosen.gross_total, "세금": chosen.total_tax, "건보료": chosen.nhis_total, "그해 목표 실수령액": target, "개인연금 잔액": privateBal, "IRP(과세재원) 잔액": irpTaxBal, "IRP(퇴직재원) 잔액": irpRetBal });
+      }
+      return out;
+    }
+
+    function renderPension() {
+      const final = pensionRows.at(-1);
+      const depletion = pensionRows.find((r) => r["총 잔액"] <= 0.5);
+      const totalNet = pensionRows.reduce((s, r) => s + r["실수령액"], 0);
+      const totalTax = pensionRows.reduce((s, r) => s + r["총 과세"], 0);
+      const shortfall = pensionRows.filter((r) => r["실수령액"] + 0.5 < r["그해 목표 실수령액"]).length;
+      document.getElementById("depletionAge").textContent = depletion ? `${depletion["나이"]}세` : "고갈 없음";
+      document.getElementById("finalBalance").textContent = compactWon(final["총 잔액"]);
+      document.getElementById("totalNet").textContent = compactWon(totalNet);
+      document.getElementById("totalTaxation").textContent = compactWon(totalTax);
+      document.getElementById("shortfallYears").textContent = `${shortfall}년`;
+      document.getElementById("status").textContent = `계산 완료: 최종 잔액 ${won(final["총 잔액"])}`;
+      renderSimTable();
+      renderCharts();
+    }
+
+    function renderSimTable() {
+      document.getElementById("tableHead").innerHTML = `<tr>${SIM_COLUMNS.map((c, i) => `<th class="${i < 5 ? "main" : ""}">${c}</th>`).join("")}</tr>`;
+      document.getElementById("tableBody").innerHTML = pensionRows.map((row) => `<tr>${SIM_COLUMNS.map((c, i) => `<td class="${i < 2 ? "center" : ""}">${SIM_MONEY.has(c) ? won(row[c]) : row[c]}</td>`).join("")}</tr>`).join("");
+    }
+
+    function drawChart(canvas, series, lineSeries) {
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const area = { left: 58, top: 16, right: canvas.width - 18, bottom: canvas.height - 34 };
+      area.width = area.right - area.left;
+      area.height = area.bottom - area.top;
+      const maxStack = Math.max(...pensionRows.map((r) => series.reduce((s, item) => s + Math.max(0, r[item.key]), 0)), 1) / 100000000;
+      const maxLine = Math.max(...lineSeries.map((line) => Math.max(...pensionRows.map((r) => Math.max(0, r[line.key]) / 100000000))), 0);
+      const yMax = Math.max(maxStack, maxLine, 1) * 1.12;
+      ctx.strokeStyle = "#d9e2ef";
+      ctx.fillStyle = "#667085";
+      ctx.font = "12px Malgun Gothic, sans-serif";
+      for (let i = 0; i <= 5; i += 1) {
+        const y = area.bottom - area.height * i / 5;
+        ctx.beginPath(); ctx.moveTo(area.left, y); ctx.lineTo(area.right, y); ctx.stroke();
+        ctx.fillText(`${(yMax * i / 5).toFixed(1)}억`, 8, y + 4);
+      }
+      const gap = 5;
+      const barW = Math.max(6, (area.width - gap * (pensionRows.length - 1)) / pensionRows.length);
+      pensionRows.forEach((row, index) => {
+        const x = area.left + index * (barW + gap);
+        let bottom = area.bottom;
+        for (const item of series) {
+          const h = Math.max(0, row[item.key] / 100000000 / yMax * area.height);
+          ctx.fillStyle = item.color;
+          ctx.globalAlpha = .84;
+          ctx.fillRect(x, bottom - h, barW, h);
+          ctx.globalAlpha = 1;
+          bottom -= h;
+        }
+      });
+      const yFor = (value) => area.bottom - value / 100000000 / yMax * area.height;
+      for (const line of lineSeries) {
+        ctx.strokeStyle = line.color;
+        ctx.lineWidth = line.dash ? 1.5 : 2.4;
+        ctx.setLineDash(line.dash ? [7, 5] : []);
+        ctx.beginPath();
+        pensionRows.forEach((row, index) => {
+          const x = area.left + index * (barW + gap) + barW / 2;
+          const y = yFor(row[line.key]);
+          if (index === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+      ctx.fillStyle = "#667085";
+      const every = Math.max(1, Math.ceil(pensionRows.length / 8));
+      pensionRows.forEach((row, index) => {
+        if (index % every === 0 || index === pensionRows.length - 1) ctx.fillText(row["나이"], area.left + index * (barW + gap), canvas.height - 12);
+      });
+    }
+
+    function renderCharts() {
+      drawChart(document.getElementById("balanceChart"), [
+        { key: "개인연금 잔액", color: "#34a853" },
+        { key: "IRP(과세재원) 잔액", color: "#f59e0b" },
+        { key: "IRP(퇴직재원) 잔액", color: "#ef4444" }
+      ], [{ key: "총 잔액", color: "#1e3a8a" }]);
+      drawChart(document.getElementById("incomeChart"), [
+        { key: "국민연금", color: "#3b82f6" },
+        { key: "IRP(퇴직재원)", color: "#ef4444" },
+        { key: "IRP(과세재원)", color: "#f59e0b" },
+        { key: "개인연금", color: "#34a853" }
+      ], [{ key: "총 과세", color: "#1e3a8a" }, { key: "그해 목표 실수령액", color: "#b42318", dash: true }]);
+    }
+
+    function runPension() {
+      try {
+        pensionRows = simulatePension();
+        renderPension();
+      } catch (error) {
+        document.getElementById("status").textContent = error.message;
+      }
+    }
+
+    function useLatestAssets() {
+      const year = latestActualYear();
+      const privateValue = rowValue(assetRows.find((r) => r.id === "retirementStock"), year);
+      const irpTaxable = rowValue(assetRows.find((r) => r.id === "hynixStock"), year);
+      simInputs.private_balance.value = won(privateValue);
+      simInputs.irp_taxable_balance.value = won(irpTaxable);
+      runPension();
+    }
+
+    function exportPensionCsv() {
+      const lines = pensionRows.map((row) => SIM_COLUMNS.map((c) => SIM_MONEY.has(c) ? Math.round(row[c]) : row[c]).join(","));
+      const csv = "\ufeff" + [SIM_COLUMNS.join(","), ...lines].join("\n");
+      const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "pension_simulation_results.csv";
+      link.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function resetPension() {
+      Object.entries(simDefaults).forEach(([key, value]) => { simInputs[key].value = value; });
+      runPension();
+    }
+
+    function bindEvents() {
+      document.querySelectorAll(".tab").forEach((tab) => tab.addEventListener("click", () => {
+        document.querySelectorAll(".tab").forEach((item) => item.classList.remove("active"));
+        document.querySelectorAll(".panel").forEach((item) => item.classList.remove("active"));
+        tab.classList.add("active");
+        document.getElementById(`${tab.dataset.tab}Panel`).classList.add("active");
+        if (tab.dataset.tab === "pension") renderCharts();
+      }));
+      document.getElementById("rebuildAssetYears").addEventListener("click", rebuildAssetYears);
+      document.getElementById("checkProxy").addEventListener("click", checkLocalProxy);
+      document.getElementById("updatePrices").addEventListener("click", updatePrices);
+      document.getElementById("exportAssetCsv").addEventListener("click", exportAssetCsv);
+      document.getElementById("saveAssetData").addEventListener("click", saveAssetData);
+      document.getElementById("loadAssetData").addEventListener("click", loadAssetData);
+      document.getElementById("searchHolding").addEventListener("click", searchHoldingSymbol);
+      document.getElementById("addHolding").addEventListener("click", addHolding);
+      document.getElementById("updateGoldPrice").addEventListener("click", updateGoldPrice);
+      document.getElementById("applyGoldManual").addEventListener("click", applyGoldToAssetRow);
+      document.getElementById("goldGrams").addEventListener("change", applyGoldToAssetRow);
+      document.getElementById("goldPrice").addEventListener("change", applyGoldToAssetRow);
+      document.getElementById("clearHoldings").addEventListener("click", () => {
+        holdings = [];
+        for (const row of assetRows.filter((item) => item.type === "stock")) row.values[latestActualYear()] = 0;
+        renderHoldings();
+        renderAssetTable();
+      });
+      document.getElementById("runBtn").addEventListener("click", runPension);
+      document.getElementById("csvBtn").addEventListener("click", exportPensionCsv);
+      document.getElementById("resetBtn").addEventListener("click", resetPension);
+      document.getElementById("useLatestAssets").addEventListener("click", useLatestAssets);
+    }
+
+    renderSimInputs();
+    bindEvents();
+    renderHoldings();
+    renderAssetTable();
+    runPension();
+  </script>
+</body>
+</html>
