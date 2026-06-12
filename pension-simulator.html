@@ -408,29 +408,31 @@
     td.investment-cell {
       cursor: pointer;
       position: relative;
-      background: #fffdf7;
-      padding-right: 20px;
+      background: #fff;
+      padding-right: 8px;
     }
 
     td.investment-cell::after {
-      content: "편집";
+      content: "✎";
       position: absolute;
-      top: 50%;
-      right: 4px;
-      transform: translateY(-50%);
-      padding: 1px 4px;
-      border-radius: 4px;
-      background: #fff3cd;
-      color: #8a5a00;
+      top: 4px;
+      right: 5px;
+      color: var(--accent);
       font-size: 10px;
-      font-weight: 800;
-      opacity: .82;
+      font-weight: 900;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .12s ease;
     }
 
     td.investment-cell:hover {
-      outline: 2px solid var(--amber);
+      outline: 2px solid rgba(245, 158, 11, .45);
       outline-offset: -2px;
-      background: #fff8e1;
+      background: #fffbeb;
+    }
+
+    td.investment-cell:hover::after {
+      opacity: .8;
     }
 
     td.investment-cell.selected-investment {
@@ -441,16 +443,8 @@
     }
 
     td.investment-cell.selected-investment::after {
-      content: "선택";
-      top: 50%;
-      right: 4px;
-      transform: translateY(-50%);
-      padding: 1px 5px;
-      border-radius: 999px;
-      background: var(--accent);
-      color: #fff;
-      font-size: 10px;
-      font-weight: 800;
+      content: "✎";
+      opacity: .9;
     }
 
     td.investment-cell.has-investment::before {
@@ -985,6 +979,7 @@
   <div class="tooltip" id="tooltip"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.9/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
   <script>
     const ASSET_ROWS = [
       { id: "apartment", category: "부동산", label: "아파트 (실거래가 기준)", type: "manual", values: { 2024: 440000000, 2025: 445000000, 2026: 460000000, 2027: 460000000, 2028: 460000000, 2029: 460000000, 2030: 460000000 } },
@@ -1348,8 +1343,8 @@
       }
     }
 
-    function refreshAssetView() {
-      renderAssetTable();
+    function refreshAssetView({ charts = true } = {}) {
+      renderAssetTable({ charts });
       renderInvestmentPanel();
       persistAssetData();
     }
@@ -1360,7 +1355,7 @@
       return spans;
     }
 
-    function renderAssetTable() {
+    function renderAssetTable({ charts = true } = {}) {
       updateStockRowsFromHoldings();
       const cols = document.getElementById("assetCols");
       const head = document.getElementById("assetHead");
@@ -1403,7 +1398,7 @@
       body.querySelectorAll("input[data-row]").forEach((input) => input.addEventListener("change", onAssetCellChange));
       body.querySelectorAll("td.investment-cell").forEach((cell) => cell.addEventListener("click", onInvestmentCellClick));
       renderAssetSummary();
-      renderAssetCharts();
+      if (charts) renderAssetCharts();
     }
 
     function onAssetCellChange(event) {
@@ -1412,7 +1407,7 @@
       if (!row) return;
       row.values[input.dataset.year] = toNumber(input.value);
       input.value = won(row.values[input.dataset.year]);
-      renderAssetTable();
+      renderAssetTable({ charts: true });
       persistAssetData();
     }
 
@@ -1422,7 +1417,7 @@
       // 칸 선택은 "조회/편집 준비" 동작만 한다.
       // 기존 표 금액을 0으로 덮어쓰지 않도록, 상세 투자 정보는 사용자가 실제로 추가/반영할 때만 만든다.
       resetInvestmentDrafts();
-      renderAssetTable();
+      renderAssetTable({ charts: false });
       renderInvestmentPanel();
     }
 
@@ -1473,6 +1468,16 @@
       return totals;
     }
 
+    function ensureChartDataLabels() {
+      if (!window.Chart || !window.ChartDataLabels || ensureChartDataLabels.registered) return;
+      window.Chart.register(window.ChartDataLabels);
+      ensureChartDataLabels.registered = true;
+    }
+
+    function hasDataLabels() {
+      return !!(window.Chart && window.ChartDataLabels);
+    }
+
     function assetChartOptions({ stacked = false } = {}) {
       return {
         responsive: true,
@@ -1480,7 +1485,8 @@
         resizeDelay: 120,
         plugins: {
           legend: { position: "bottom", labels: { boxWidth: 10, boxHeight: 10, usePointStyle: true } },
-          tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label || ctx.label}: ${compactWon(ctx.raw)}` } }
+          tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label || ctx.label}: ${compactWon(ctx.raw)}` } },
+          datalabels: { display: false }
         },
         scales: {
           x: { stacked, grid: { display: false }, ticks: { color: "#667085", maxRotation: 0 } },
@@ -1497,8 +1503,10 @@
     function drawAssetNetChart() {
       const canvas = document.getElementById("assetNetChart");
       if (!canvas || !window.Chart) return;
+      ensureChartDataLabels();
       const totals = assetYears.map((year) => assetCategoryTotals(year));
       const netValues = totals.map((total) => Object.values(total).reduce((sum, value) => sum + value, 0));
+      const assetTotals = totals.map((total) => ["부동산", "연금", "주식", "금/비트", "현금"].reduce((sum, key) => sum + Math.max(0, total[key] || 0), 0));
       const labels = assetYears.map((year) => `${year}${year > new Date().getFullYear() ? "(E)" : ""}`);
       const managedIndex = Math.max(0, assetYears.indexOf(latestManagedYear()));
       const latestNet = netValues[managedIndex] ?? netValues.at(-1) ?? 0;
@@ -1537,7 +1545,22 @@
               borderColor: "#ffffff",
               borderWidth: 1,
               borderRadius: 6,
-              stack: "assets"
+              stack: "assets",
+              datalabels: {
+                display: hasDataLabels(),
+                color: "#ffffff",
+                font: { size: 10, weight: "800" },
+                anchor: "center",
+                align: "center",
+                clamp: true,
+                clip: true,
+                formatter: (value, ctx) => {
+                  const yearTotal = assetTotals[ctx.dataIndex] || 0;
+                  if (!value || !yearTotal) return "";
+                  if (value / yearTotal < 0.15 && value < 100000000) return "";
+                  return `${ctx.dataset.label} ${compactWon(value)}`;
+                }
+              }
             })),
             {
               type: "line",
@@ -1550,7 +1573,21 @@
               pointHoverRadius: 5,
               tension: .35,
               stack: "net",
-              order: 0
+              order: 0,
+              datalabels: {
+                display: hasDataLabels(),
+                color: "#111827",
+                backgroundColor: "rgba(255,255,255,.9)",
+                borderColor: "#d1d5db",
+                borderWidth: 1,
+                borderRadius: 6,
+                padding: { top: 3, right: 5, bottom: 3, left: 5 },
+                font: { size: 11, weight: "900" },
+                anchor: "end",
+                align: "top",
+                clamp: true,
+                formatter: (value, ctx) => ctx.dataIndex === managedIndex ? `순자산 ${compactWon(value)}` : ""
+              }
             }
           ]
         },
