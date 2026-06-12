@@ -751,7 +751,17 @@
     let selectedInvestment = null;
     let currentSearchResults = [];
     let selectedHoldingCandidate = null;
-    const PRICE_API_BASES = [location.protocol.startsWith("http") ? "" : null, "http://127.0.0.1:8765"].filter(Boolean);
+    const DEPLOYED_PRICE_API_BASES = [
+      "https://pension-simulator-sangyoonkim-s-projects.vercel.app",
+      "https://pension-simulator-jl0j2ennk-sangyoonkim-s-projects.vercel.app"
+    ];
+    const currentOrigin = location.protocol.startsWith("http") ? location.origin : "";
+    const PRICE_API_BASES = [
+      currentOrigin,
+      ...DEPLOYED_PRICE_API_BASES.filter((base) => base !== currentOrigin),
+      "http://127.0.0.1:8765"
+    ].filter(Boolean);
+    let activePriceApiBase = null;
 
     const FIELD_GROUPS = [
       ["나이 입력", [
@@ -1350,11 +1360,16 @@
 
     async function fetchPriceApi(path) {
       const errors = [];
-      for (const base of PRICE_API_BASES) {
+      const bases = activePriceApiBase
+        ? [activePriceApiBase, ...PRICE_API_BASES.filter((base) => base !== activePriceApiBase)]
+        : PRICE_API_BASES;
+      for (const base of bases) {
         try {
           const response = await fetch(`${base}${path}`, { cache: "no-store" });
           if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
-          return await response.json();
+          const data = await response.json();
+          activePriceApiBase = base;
+          return data;
         } catch (error) {
           errors.push(`${base || "same-origin"}: ${error.message}`);
         }
@@ -1368,9 +1383,21 @@
         await fetchPriceApi("/api/health");
         status.textContent = "가격 API 연결됨. 종가 자동 업데이트를 안정적으로 사용할 수 있습니다.";
         return true;
-      } catch (_error) {
-        status.textContent = "가격 API에 연결할 수 없습니다. 웹 배포 API 또는 로컬 프록시가 필요합니다.";
+      } catch (error) {
+        status.textContent = `가격 API에 연결할 수 없습니다. 운영 API 주소/권한 또는 로컬 프록시를 확인해주세요. ${error.message}`;
         return false;
+      }
+    }
+
+    async function autoConnectPriceApi() {
+      const status = document.getElementById("priceStatus");
+      if (!status) return;
+      status.textContent = "가격 API 연결 확인 중...";
+      try {
+        await fetchPriceApi("/api/health");
+        status.textContent = `가격 API 연결됨 (${activePriceApiBase || "same-origin"}). 종가 자동 업데이트를 사용할 수 있습니다.`;
+      } catch (error) {
+        status.textContent = `가격 API에 연결할 수 없습니다. 운영 API 주소/권한 또는 로컬 프록시를 확인해주세요. ${error.message}`;
       }
     }
 
@@ -1969,6 +1996,7 @@
     renderAssetTable();
     renderInvestmentPanel();
     runPension();
+    autoConnectPriceApi();
   </script>
 </body>
 </html>
