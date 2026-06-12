@@ -147,6 +147,7 @@
       min-height: 280px;
       max-height: 280px;
       width: 100%;
+      overflow: hidden;
     }
 
     .asset-chart-box canvas {
@@ -229,6 +230,20 @@
       min-width: 88px;
       color: var(--teal);
       font-weight: 800;
+    }
+
+    .managed-year-badge {
+      display: inline-flex;
+      align-items: center;
+      min-height: 34px;
+      padding: 0 10px;
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      background: #eff6ff;
+      color: #1d4ed8;
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
     }
 
     .asset-table-wrap {
@@ -501,17 +516,50 @@
       width: 100%;
       font-size: 11px;
       margin-top: 6px;
+      table-layout: auto;
     }
 
     .holdings-table th, .holdings-table td {
       border-color: var(--border);
-      padding: 4px;
+      padding: 6px 4px;
       text-align: right;
+      vertical-align: middle;
     }
 
     .holdings-table th:first-child,
     .holdings-table td:first-child {
       text-align: left;
+      min-width: 116px;
+    }
+
+    .holding-name {
+      max-width: 150px;
+      line-height: 1.35;
+      white-space: normal;
+      word-break: keep-all;
+      overflow-wrap: anywhere;
+    }
+
+    .holding-symbol {
+      display: block;
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+    .money-cell {
+      white-space: nowrap;
+      font-weight: 800;
+      color: var(--text);
+    }
+
+    .holdings-table input.num {
+      width: 86px;
+      min-width: 72px;
+      padding: 5px 6px;
+      font-size: 11px;
+      text-align: right;
     }
 
     .holdings-table button {
@@ -722,11 +770,13 @@
           <div class="card toolbar">
             <label>시작연도 <input id="assetStartYear" class="num" value="2024"></label>
             <label>종료연도 <input id="assetEndYear" class="num" value="2030"></label>
+            <span class="managed-year-badge" id="managedYearBadge">관리 연도 -</span>
             <div class="primary-actions">
               <button type="button" id="rebuildAssetYears">연도 적용</button>
-              <button type="button" class="primary" id="updatePrices">선택 자산 가격 업데이트</button>
+              <button type="button" class="primary" id="updateLatestPrices">최신 연도 가격 업데이트</button>
             </div>
             <div class="secondary-actions">
+              <button type="button" id="updateSelectedYearPrices">선택 연도 가격 업데이트</button>
               <button type="button" id="checkProxy">가격 연결 확인</button>
               <button type="button" id="exportAssetCsv">자산 CSV 저장</button>
             </div>
@@ -771,7 +821,7 @@
         <aside class="card holdings-card waiting" id="investmentCard">
           <h2 id="investmentTitle">투자 자산 정보</h2>
           <div class="investment-empty" id="investmentEmpty">
-            주식 또는 금/비트 행의 연도 칸을 선택하면 상세 정보를 입력할 수 있습니다.
+            최신 연도 자산을 관리하려면 주식 또는 금/비트 칸을 선택하세요. 과거 연도는 기록 조회용으로 유지됩니다.
           </div>
           <div class="investment-body" id="investmentBody">
             <p class="status" id="selectedInvestmentLabel">선택된 칸 없음</p>
@@ -1027,7 +1077,17 @@
     }
 
     function latestActualYear() {
-      return Math.max(...assetYears.filter((year) => year <= new Date().getFullYear()));
+      const currentYear = new Date().getFullYear();
+      const years = assetYears.filter((year) => year <= currentYear);
+      return years.length ? Math.max(...years) : Math.max(...assetYears);
+    }
+
+    function latestManagedYear() {
+      return latestActualYear();
+    }
+
+    function isPastManagedYear(year) {
+      return Number(year) < latestManagedYear();
     }
 
     function rowValue(row, year) {
@@ -1051,7 +1111,7 @@
     }
 
     function selectedYear() {
-      return selectedInvestment ? Number(selectedInvestment.year) : latestActualYear();
+      return selectedInvestment ? Number(selectedInvestment.year) : latestManagedYear();
     }
 
     function selectedInvestmentData() {
@@ -1059,7 +1119,7 @@
       return getInvestment(selectedInvestment.rowId, selectedInvestment.year);
     }
 
-    function stockValue(rowId, year = latestActualYear()) {
+    function stockValue(rowId, year = latestManagedYear()) {
       const data = getInvestment(rowId, year);
       if (!data || !Array.isArray(data.holdings)) return 0;
       return data.holdings.reduce((sum, h) => sum + toNumber(h.shares) * toNumber(h.price), 0);
@@ -1314,7 +1374,7 @@
     }
 
     function renderAssetSummary() {
-      const year = latestActualYear();
+      const year = latestManagedYear();
       const prevYear = assetYears[assetYears.indexOf(year) - 1];
       const net = assetRows.reduce((sum, row) => sum + rowValue(row, year), 0);
       const prevNet = prevYear ? assetRows.reduce((sum, row) => sum + rowValue(row, prevYear), 0) : 0;
@@ -1328,28 +1388,44 @@
       if (growthEl) growthEl.textContent = prevNet ? pct((net - prevNet) / Math.abs(prevNet)) : "-";
       if (stockEl) stockEl.textContent = compactWon(stock);
       if (debtEl) debtEl.textContent = compactWon(debt);
+      renderManagedYearUi(year);
+    }
+
+    function renderManagedYearUi(year = latestManagedYear()) {
+      const badge = document.getElementById("managedYearBadge");
+      const latestButton = document.getElementById("updateLatestPrices");
+      const selectedButton = document.getElementById("updateSelectedYearPrices");
+      if (badge) badge.textContent = `관리 연도 ${year}`;
+      if (latestButton) latestButton.textContent = `${year}년 현재 자산 가격 업데이트`;
+      if (selectedButton) selectedButton.textContent = selectedInvestment
+        ? `${selectedInvestment.year}년 가격 업데이트`
+        : "선택 연도 가격 업데이트";
     }
 
     function assetCategoryTotals(year) {
-      const totals = { "부동산": 0, "주식": 0, "금/비트": 0, "현금": 0, "대출": 0 };
+      const totals = { "부동산": 0, "연금": 0, "주식": 0, "금/비트": 0, "현금": 0, "대출": 0 };
       for (const row of assetRows) {
-        if (totals[row.category] === undefined) totals[row.category] = 0;
-        totals[row.category] += rowValue(row, year);
+        const key = row.category === "주식" && /연금|퇴직|IRP/i.test(row.label || "") ? "연금" : row.category;
+        if (totals[key] === undefined) totals[key] = 0;
+        totals[key] += rowValue(row, year);
       }
       return totals;
     }
 
-    function assetChartOptions() {
+    function assetChartOptions({ stacked = false } = {}) {
       return {
         responsive: true,
         maintainAspectRatio: false,
+        resizeDelay: 120,
         plugins: {
           legend: { position: "bottom", labels: { boxWidth: 10, boxHeight: 10, usePointStyle: true } },
           tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label || ctx.label}: ${compactWon(ctx.raw)}` } }
         },
         scales: {
-          x: { grid: { display: false }, ticks: { color: "#667085" } },
+          x: { stacked, grid: { display: false }, ticks: { color: "#667085", maxRotation: 0 } },
           y: {
+            stacked,
+            beginAtZero: true,
             grid: { color: "#eef2f7" },
             ticks: { color: "#667085", callback: (value) => compactWon(value) }
           }
@@ -1362,33 +1438,59 @@
       if (!canvas || !window.Chart) return;
       const totals = assetYears.map((year) => assetCategoryTotals(year));
       const netValues = totals.map((total) => Object.values(total).reduce((sum, value) => sum + value, 0));
-      const assetValues = totals.map((total) => ["부동산", "주식", "금/비트", "현금"].reduce((sum, key) => sum + Math.max(0, total[key] || 0), 0));
-      const debtValues = totals.map((total) => total["대출"] || 0);
       const labels = assetYears.map((year) => `${year}${year > new Date().getFullYear() ? "(E)" : ""}`);
-      const latestNet = netValues.at(-1) || 0;
+      const managedIndex = Math.max(0, assetYears.indexOf(latestManagedYear()));
+      const latestNet = netValues[managedIndex] ?? netValues.at(-1) ?? 0;
       const stat = document.getElementById("assetNetChartValue");
       if (stat) stat.textContent = compactWon(latestNet);
       if (assetNetChartInstance) assetNetChartInstance.destroy();
+      const stackedCategories = [
+        { key: "부동산", color: "#2563eb" },
+        { key: "연금", color: "#7c3aed" },
+        { key: "주식", color: "#0f766e" },
+        { key: "금/비트", color: "#f59e0b" },
+        { key: "현금", color: "#64748b" }
+      ];
       assetNetChartInstance = new Chart(canvas, {
         data: {
           labels,
           datasets: [
-            { type: "bar", label: "자산", data: assetValues, backgroundColor: "rgba(37, 99, 235, .18)", borderColor: "#2563eb", borderWidth: 1, borderRadius: 7 },
-            { type: "bar", label: "부채", data: debtValues, backgroundColor: "rgba(239, 68, 68, .16)", borderColor: "#ef4444", borderWidth: 1, borderRadius: 7 },
-            { type: "line", label: "순자산", data: netValues, borderColor: "#0f766e", backgroundColor: "#0f766e", borderWidth: 3, pointRadius: 4, tension: .35 }
+            ...stackedCategories.map((item) => ({
+              type: "bar",
+              label: item.key,
+              data: totals.map((total) => Math.max(0, total[item.key] || 0)),
+              backgroundColor: item.color,
+              borderColor: "#ffffff",
+              borderWidth: 1,
+              borderRadius: 6,
+              stack: "assets"
+            })),
+            {
+              type: "line",
+              label: "순자산",
+              data: netValues,
+              borderColor: "#111827",
+              backgroundColor: "#111827",
+              borderWidth: 3,
+              pointRadius: 3,
+              pointHoverRadius: 5,
+              tension: .35,
+              stack: "net",
+              order: 0
+            }
           ]
         },
-        options: assetChartOptions()
+        options: assetChartOptions({ stacked: true })
       });
     }
 
     function drawAssetMixChart() {
       const canvas = document.getElementById("assetMixChart");
       if (!canvas || !window.Chart) return;
-      const year = latestActualYear();
+      const year = latestManagedYear();
       const totals = assetCategoryTotals(year);
-      const keys = ["부동산", "주식", "금/비트", "현금"];
-      const labels = ["부동산", "주식", "금/비트", "현금"];
+      const keys = ["부동산", "연금", "주식", "금/비트", "현금"];
+      const labels = ["부동산", "연금", "주식", "금/비트", "현금"];
       const values = keys.map((key) => Math.max(0, totals[key] || 0));
       const total = values.reduce((sum, value) => sum + value, 0) || 1;
       const stockRatio = Math.max(0, totals["주식"] || 0) / total;
@@ -1401,7 +1503,7 @@
           labels,
           datasets: [{
             data: values,
-            backgroundColor: ["#2563eb", "#0f766e", "#f59e0b", "#7c3aed"],
+            backgroundColor: ["#2563eb", "#7c3aed", "#0f766e", "#f59e0b", "#64748b"],
             borderColor: "#fff",
             borderWidth: 3,
             hoverOffset: 6
@@ -1485,10 +1587,10 @@
       const list = activeHoldings();
       body.innerHTML = list.map((h, index) => `
         <tr>
-          <td>${h.name}<br><span class="status">${h.updatedAt || ""}</span></td>
+          <td class="holding-name">${h.name}<span class="holding-symbol">${h.symbol || ""}${h.updatedAt ? ` · ${h.updatedAt}` : ""}</span></td>
           <td><input class="num holding-edit" data-index="${index}" data-field="shares" value="${h.shares}"></td>
           <td><input class="num holding-edit" data-index="${index}" data-field="price" value="${h.price}"></td>
-          <td>${won(toNumber(h.shares) * toNumber(h.price))}</td>
+          <td class="money-cell">${compactWon(toNumber(h.shares) * toNumber(h.price))}</td>
           <td><button type="button" data-delete="${index}">삭제</button></td>
         </tr>
       `).join("");
@@ -1527,10 +1629,10 @@
       const items = goldItems(data);
       body.innerHTML = items.map((item, index) => `
         <tr>
-          <td>${item.kind || "금"}<br><span class="status">${item.updatedAt || ""}</span></td>
+          <td class="holding-name">${item.kind || "금"}<span class="holding-symbol">${item.updatedAt || ""}</span></td>
           <td><input class="num gold-edit" data-index="${index}" data-field="quantity" value="${item.quantity}"></td>
           <td><input class="num gold-edit" data-index="${index}" data-field="price" value="${item.price}"></td>
-          <td>${won(toNumber(item.quantity) * toNumber(item.price))}</td>
+          <td class="money-cell">${compactWon(toNumber(item.quantity) * toNumber(item.price))}</td>
           <td><button type="button" data-delete-gold="${index}">삭제</button></td>
         </tr>
       `).join("");
@@ -1732,12 +1834,118 @@
       }
     }
 
+    async function updateInvestmentRecordPrices(data) {
+      let ok = 0;
+      const errors = [];
+      const sources = new Set();
+      if (!data) return { ok, errors, sources };
+      if (data.type === "stock") {
+        const holdings = Array.isArray(data.holdings) ? data.holdings : [];
+        for (const holding of holdings) {
+          if (!holding.symbol) {
+            errors.push(`${holding.name || "이름 없는 종목"} 심볼 없음`);
+            continue;
+          }
+          try {
+            const quote = await fetchYahooClose(holding.symbol);
+            holding.price = Math.round(quote.price);
+            holding.updatedAt = quote.date;
+            sources.add(quote.source);
+            ok += 1;
+          } catch (error) {
+            errors.push(error.message);
+          }
+        }
+      }
+      if (data.type === "gold") {
+        const items = goldItems(data);
+        let goldQuote = null;
+        for (const item of items) {
+          if (item.kind !== "금") continue;
+          try {
+            if (!goldQuote) goldQuote = await fetchKrxGoldClose();
+            item.price = Math.round(goldQuote.price);
+            item.updatedAt = goldQuote.date;
+            item.source = goldQuote.source;
+            sources.add(goldQuote.source);
+            ok += 1;
+          } catch (error) {
+            errors.push(error.message);
+          }
+        }
+        data.items = items;
+      }
+      if (ok > 0) {
+        data.locked = true;
+        data.updatedAt = new Date().toISOString().slice(0, 10);
+      }
+      return { ok, errors, sources };
+    }
+
+    async function updateInvestmentYearPrices(year, { rowId = null } = {}) {
+      let ok = 0;
+      const errors = [];
+      const sources = new Set();
+      const targets = Object.entries(investmentData).filter(([key, data]) => {
+        const [keyRowId, keyYear] = key.split(":");
+        if (Number(keyYear) !== Number(year)) return false;
+        if (rowId && keyRowId !== rowId) return false;
+        return data && (data.type === "stock" || data.type === "gold");
+      });
+      for (const [key, data] of targets) {
+        const [keyRowId, keyYear] = key.split(":");
+        const result = await updateInvestmentRecordPrices(data);
+        ok += result.ok;
+        result.errors.forEach((error) => errors.push(error));
+        result.sources.forEach((source) => sources.add(source));
+        setInvestment(keyRowId, Number(keyYear), data);
+        syncInvestmentValue(keyRowId, Number(keyYear));
+      }
+      refreshAssetView();
+      return { ok, errors, sources };
+    }
+
+    function confirmPastYearUpdate(year) {
+      if (!isPastManagedYear(year)) return true;
+      return window.confirm("과거 연도 기록을 현재가로 업데이트할 수 있습니다. 기록 보존을 위해 신중히 진행하세요. 계속할까요?");
+    }
+
+    async function updateLatestYearPrices() {
+      const status = document.getElementById("priceStatus");
+      const year = latestManagedYear();
+      if (status) status.textContent = `${year}년 투자 자산 가격 업데이트 중...`;
+      const result = await updateInvestmentYearPrices(year);
+      if (status) {
+        status.textContent = result.ok
+          ? `${year}년 현재 자산 ${result.ok}개 가격 업데이트 및 자동 저장됨${result.errors.length ? `, 실패 ${result.errors.length}개` : ""}`
+          : `${year}년에 업데이트할 투자 자산이 없거나 가격 조회에 실패했습니다.`;
+      }
+    }
+
+    async function updateSelectedYearPrices() {
+      const status = document.getElementById("priceStatus");
+      if (!selectedInvestment) {
+        if (status) status.textContent = "먼저 주식 또는 금/비트 연도 칸을 선택해주세요.";
+        return;
+      }
+      const year = Number(selectedInvestment.year);
+      if (!confirmPastYearUpdate(year)) return;
+      if (status) status.textContent = `${year}년 투자 자산 가격 업데이트 중...`;
+      const result = await updateInvestmentYearPrices(year);
+      if (status) {
+        status.textContent = result.ok
+          ? `${year}년 투자 자산 ${result.ok}개 가격 업데이트 및 자동 저장됨${result.errors.length ? `, 실패 ${result.errors.length}개` : ""}`
+          : `${year}년에 업데이트할 투자 자산이 없거나 가격 조회에 실패했습니다.`;
+      }
+    }
+
     async function updatePrices() {
       const status = document.getElementById("priceStatus");
       if (!selectedInvestment || !selectedRow()) {
         if (status) status.textContent = "먼저 업데이트할 주식 또는 금/비트 연도 칸을 선택해주세요.";
         return;
       }
+      if (!confirmPastYearUpdate(selectedInvestment.year)) return;
       const row = selectedRow();
       if (row.category === "금/비트") {
         await updateGoldPrice();
@@ -1749,33 +1957,14 @@
         return;
       }
       if (status) status.textContent = `${selectedInvestment.year}년 ${row.label} 종가 업데이트 중...`;
-      let ok = 0;
-      const errors = [];
-      const sources = new Set();
-      for (const holding of data.holdings) {
-        if (!holding.symbol) {
-          errors.push(`${holding.name || "이름 없는 종목"} 심볼 없음`);
-          continue;
-        }
-        try {
-          const quote = await fetchYahooClose(holding.symbol);
-          holding.price = Math.round(quote.price);
-          holding.updatedAt = quote.date;
-          sources.add(quote.source);
-          ok += 1;
-        } catch (error) {
-          errors.push(error.message);
-        }
-      }
-      data.locked = true;
-      data.updatedAt = new Date().toISOString().slice(0, 10);
+      const { ok, errors, sources } = await updateInvestmentRecordPrices(data);
       setInvestment(selectedInvestment.rowId, selectedInvestment.year, data);
       syncInvestmentValue(selectedInvestment.rowId, selectedInvestment.year);
       refreshAssetView();
       if (status) {
         status.textContent = ok
           ? `${selectedInvestment.year}년 ${ok}개 종목 가격 업데이트 및 자동 저장 완료 (${[...sources].join(", ")})${errors.length ? `, 실패 ${errors.length}개` : ""}`
-          : `자동 업데이트 실패. 웹 배포 API 또는 로컬 프록시가 필요합니다. ${errors[0] || ""}`;
+          : `가격 업데이트 실패. 가격 연결 상태를 확인하거나 현재가를 직접 입력해주세요. ${errors[0] || ""}`;
       }
     }
 
@@ -1874,13 +2063,6 @@
       } else if (event.key === "Escape") {
         renderSearchResults([]);
       }
-    }
-
-    async function searchHoldingSymbol() {
-      const status = document.getElementById("priceStatus");
-      const nameInput = document.getElementById("holdingName");
-      if (!status || !nameInput) return;
-      await updateHoldingAutocomplete();
     }
 
     function rebuildAssetYears() {
@@ -2245,7 +2427,8 @@
       }));
       bind("rebuildAssetYears", "click", rebuildAssetYears);
       bind("checkProxy", "click", checkLocalProxy);
-      bind("updatePrices", "click", updatePrices);
+      bind("updateLatestPrices", "click", updateLatestYearPrices);
+      bind("updateSelectedYearPrices", "click", updateSelectedYearPrices);
       bind("exportAssetCsv", "click", exportAssetCsv);
       bind("holdingName", "input", updateHoldingAutocomplete);
       bind("holdingName", "keydown", onHoldingNameKeydown);
