@@ -21,6 +21,9 @@
       --amber: #f59e0b;
       --red: #ef4444;
       --navy: #1e3a8a;
+      --teal: #0f766e;
+      --violet: #7c3aed;
+      --cyan: #0891b2;
       --shadow: 0 14px 34px rgba(23, 32, 51, .08);
       font-family: "Malgun Gothic", "Apple SD Gothic Neo", "Segoe UI", system-ui, sans-serif;
     }
@@ -121,8 +124,8 @@
 
     .asset-grid {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 340px;
-      gap: 10px;
+      grid-template-columns: minmax(0, 1fr) 380px;
+      gap: 12px;
       align-items: start;
     }
 
@@ -134,11 +137,40 @@
     }
 
     .asset-chart-card {
-      padding: 10px;
+      padding: 14px;
+      min-width: 0;
     }
 
     .asset-chart-card canvas {
-      height: 330px;
+      height: 300px;
+    }
+
+    .asset-chart-head {
+      display: flex;
+      align-items: start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .chart-copy {
+      min-width: 0;
+    }
+
+    .asset-chart-stat {
+      text-align: right;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .asset-chart-stat strong {
+      display: block;
+      margin-top: 3px;
+      color: var(--text);
+      font-size: 18px;
+      line-height: 1.1;
     }
 
     .toolbar {
@@ -148,6 +180,20 @@
       flex-wrap: wrap;
       padding: 8px;
       margin-bottom: 8px;
+    }
+
+    .toolbar .primary-actions,
+    .toolbar .secondary-actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .toolbar .secondary-actions button {
+      background: #eef4ff;
+      color: #25406f;
+      font-weight: 700;
     }
 
     .toolbar label {
@@ -167,6 +213,12 @@
       color: var(--muted);
       font-size: 12px;
       line-height: 1.45;
+    }
+
+    .save-status {
+      min-width: 88px;
+      color: var(--teal);
+      font-weight: 800;
     }
 
     .asset-table-wrap {
@@ -348,14 +400,60 @@
     .search-results {
       grid-column: span 2;
       display: none;
-      gap: 4px;
+      position: relative;
       color: var(--muted);
       font-size: 12px;
       font-weight: 700;
     }
 
     .search-results.active {
-      display: grid;
+      display: block;
+    }
+
+    .autocomplete {
+      position: absolute;
+      z-index: 20;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      max-height: 210px;
+      overflow: auto;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #fff;
+      box-shadow: 0 16px 32px rgba(15, 23, 42, .14);
+      padding: 4px;
+    }
+
+    .autocomplete-option {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      width: 100%;
+      min-height: 34px;
+      padding: 7px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .autocomplete-option:hover,
+    .autocomplete-option.active {
+      background: #eef6ff;
+    }
+
+    .autocomplete-option .symbol {
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .autocomplete-empty {
+      padding: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
     }
 
 
@@ -376,6 +474,10 @@
 
     .holding-form .wide {
       grid-column: span 2;
+    }
+
+    .search-field {
+      position: relative;
     }
 
     .holding-actions {
@@ -518,6 +620,12 @@
       margin-bottom: 6px;
     }
 
+    .chart-desc {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
     canvas {
       display: block;
       width: 100%;
@@ -604,13 +712,16 @@
           <div class="card toolbar">
             <label>시작연도 <input id="assetStartYear" class="num" value="2024"></label>
             <label>종료연도 <input id="assetEndYear" class="num" value="2030"></label>
-            <button type="button" id="rebuildAssetYears">연도 적용</button>
-            <button type="button" id="checkProxy">프록시 확인</button>
-            <button type="button" class="primary" id="updatePrices">종가 업데이트</button>
-            <button type="button" id="exportAssetCsv">자산 CSV 저장</button>
-            <button type="button" id="saveAssetData">브라우저 저장</button>
-            <button type="button" id="loadAssetData">불러오기</button>
-            <span class="status" id="priceStatus">월별 자동 기록용 종가 업데이트는 start_price_proxy.cmd 실행 후 사용하는 것이 가장 안정적입니다.</span>
+            <div class="primary-actions">
+              <button type="button" id="rebuildAssetYears">연도 적용</button>
+              <button type="button" class="primary" id="updatePrices">선택 자산 가격 업데이트</button>
+            </div>
+            <div class="secondary-actions">
+              <button type="button" id="checkProxy">가격 연결 확인</button>
+              <button type="button" id="exportAssetCsv">자산 CSV 저장</button>
+            </div>
+            <span class="status save-status" id="saveStatus"></span>
+            <span class="status" id="priceStatus">가격 API 연결 상태를 확인 중입니다.</span>
           </div>
           <div class="card asset-table-wrap">
             <table class="asset-table">
@@ -621,11 +732,23 @@
           </div>
           <div class="asset-charts">
             <div class="card asset-chart-card">
-              <div class="chart-title">연도별 순자산</div>
+              <div class="asset-chart-head">
+                <div class="chart-copy">
+                  <div class="chart-title">연도별 순자산</div>
+                  <div class="chart-desc">자산과 부채를 반영한 연도별 순자산 흐름입니다.</div>
+                </div>
+                <div class="asset-chart-stat">최근 순자산<strong id="assetNetChartValue">-</strong></div>
+              </div>
               <canvas id="assetNetChart" width="650" height="330"></canvas>
             </div>
             <div class="card asset-chart-card">
-              <div class="chart-title">연도별 자산 비중</div>
+              <div class="asset-chart-head">
+                <div class="chart-copy">
+                  <div class="chart-title">최근 자산 비중</div>
+                  <div class="chart-desc">최근 연도의 주요 자산군 구성을 보여줍니다.</div>
+                </div>
+                <div class="asset-chart-stat">주식 비중<strong id="assetMixChartValue">-</strong></div>
+              </div>
               <canvas id="assetMixChart" width="650" height="330"></canvas>
             </div>
           </div>
@@ -640,16 +763,15 @@
             <p class="status" id="selectedInvestmentLabel">선택된 칸 없음</p>
             <div id="stockInvestmentPanel">
               <div class="holding-form">
-                <label class="wide">종목명 검색
-                  <input id="holdingName" value="" placeholder="예: SK하이닉스, TIGER 미국S&P500">
-                </label>
-                <label class="search-results" id="searchResultsWrap">검색 결과
-                  <select id="holdingSearchResults"></select>
+                <label class="wide search-field">종목명 검색
+                  <input id="holdingName" value="" placeholder="예: 하이닉스, 삼성, tiger, 미국채혼합" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="holdingSearchResults">
+                  <div class="search-results" id="searchResultsWrap">
+                    <div id="holdingSearchResults" class="autocomplete" role="listbox"></div>
+                  </div>
                 </label>
                 <label>주식 수 <input id="holdingShares" class="num" value="0"></label>
                 <label>현재가 <input id="holdingManualPrice" class="num" value="0"></label>
                 <div class="holding-actions">
-                  <button type="button" id="searchHolding">종목 검색</button>
                   <button type="button" class="primary" id="addHolding">종목 추가/고정</button>
                   <button type="button" id="updateSelectedStockPrices">해당 연도 가격 업데이트</button>
                 </div>
@@ -745,6 +867,7 @@
   </main>
   <div class="tooltip" id="tooltip"></div>
 
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.9/dist/chart.umd.min.js"></script>
   <script>
     const ASSET_ROWS = [
       { id: "apartment", category: "부동산", label: "아파트 (실거래가 기준)", type: "manual", values: { 2024: 440000000, 2025: 445000000, 2026: 460000000, 2027: 460000000, 2028: 460000000, 2029: 460000000, 2030: 460000000 } },
@@ -781,6 +904,29 @@
       "미국sp500": { name: "TIGER 미국S&P500", symbol: "360750.KS" }
     };
 
+    const LOCAL_SEARCH_LIST = [
+      {
+        name: "SK하이닉스",
+        symbol: "000660.KS",
+        aliases: ["하이닉스", "sk하이닉스", "sk hynix", "hynix", "000660", "에스케이하이닉스"]
+      },
+      {
+        name: "삼성전자",
+        symbol: "005930.KS",
+        aliases: ["삼성", "삼성전자", "삼전", "samsung electronics", "samsung", "005930"]
+      },
+      {
+        name: "TIGER 미국S&P500",
+        symbol: "360750.KS",
+        aliases: ["tiger", "tiger미국s&p500", "tiger s&p500", "tiger sp500", "미국s&p500", "미국sp500", "s&p500", "sp500", "360750"]
+      },
+      {
+        name: "SOL 미국S&P500미국채혼합50",
+        symbol: "0080X0.KS",
+        aliases: ["sol", "sol미국s&p500미국채혼합50", "sol 미국s&p500 미국채혼합50", "미국채혼합", "미국채혼합50", "미국s&p500미국채혼합50", "0080x0"]
+      }
+    ];
+
     let assetRows = structuredClone(ASSET_ROWS);
     let assetYears = [2024, 2025, 2026, 2027, 2028, 2029, 2030];
     let pensionRows = [];
@@ -788,17 +934,10 @@
     let selectedInvestment = null;
     let currentSearchResults = [];
     let selectedHoldingCandidate = null;
-    const DEPLOYED_PRICE_API_BASES = [
-      "https://pension-simulator-sangyoonkim-s-projects.vercel.app",
-      "https://pension-simulator-jl0j2ennk-sangyoonkim-s-projects.vercel.app"
-    ];
-    const currentOrigin = location.protocol.startsWith("http") ? location.origin : "";
-    const PRICE_API_BASES = [
-      currentOrigin,
-      ...DEPLOYED_PRICE_API_BASES.filter((base) => base !== currentOrigin),
-      "http://127.0.0.1:8765"
-    ].filter(Boolean);
-    let activePriceApiBase = null;
+    let activeSearchIndex = -1;
+    let searchRequestId = 0;
+    let assetNetChartInstance = null;
+    let assetMixChartInstance = null;
 
     const FIELD_GROUPS = [
       ["나이 입력", [
@@ -959,17 +1098,15 @@
     function localHoldingCandidates(query) {
       const raw = String(query || "").trim();
       const normalized = normalizeQuery(raw);
-      const results = [];
-      if (!raw) return results;
-      if (/^\d{6}$/.test(raw)) results.push({ name: raw, symbol: `${raw}.KS`, source: "직접 코드" });
-      if (/^[A-Za-z0-9.^=-]+(\.[A-Za-z]{1,3})?$/.test(raw) && !/[가-힣]/.test(raw)) {
-        results.push({ name: raw.toUpperCase(), symbol: raw.toUpperCase(), source: "직접 심볼" });
-      }
-      for (const [alias, candidate] of Object.entries(SYMBOL_ALIASES)) {
-        const aliasKey = normalizeQuery(alias);
-        const nameKey = normalizeQuery(candidate.name);
-        if (aliasKey.includes(normalized) || nameKey.includes(normalized)) {
-          results.push({ ...candidate, source: "내장 검색" });
+      if (!raw) return [];
+      const results = LOCAL_SEARCH_LIST.filter((item) => {
+        const keys = [item.name, item.symbol, ...(item.aliases || [])].map(normalizeQuery);
+        return keys.some((key) => key.includes(normalized) || normalized.includes(key));
+      }).map((item) => ({ name: item.name, symbol: item.symbol, source: "내장 검색" }));
+      for (const item of Object.values(SYMBOL_ALIASES)) {
+        const keys = [item.name, item.symbol].map(normalizeQuery);
+        if (keys.some((key) => key.includes(normalized) || normalized.includes(key))) {
+          results.push({ ...item, source: "내장 검색" });
         }
       }
       return uniqueHoldingCandidates(results);
@@ -1072,9 +1209,11 @@
         localStorage.setItem("pensionAssetYears", JSON.stringify(assetYears));
         localStorage.removeItem("pensionHoldings");
         localStorage.removeItem("pensionGoldState");
-        if (!silent) {
-          const status = document.getElementById("priceStatus");
-          if (status) status.textContent = "브라우저 저장 완료";
+        const status = document.getElementById("saveStatus");
+        if (status) {
+          status.textContent = silent ? "자동 저장됨" : "저장됨";
+          window.clearTimeout(status._timer);
+          status._timer = window.setTimeout(() => { status.textContent = ""; }, 1800);
         }
       } catch (error) {
         const status = document.getElementById("priceStatus");
@@ -1186,173 +1325,87 @@
       return totals;
     }
 
+    function assetChartOptions() {
+      return {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: "bottom", labels: { boxWidth: 10, boxHeight: 10, usePointStyle: true } },
+          tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label || ctx.label}: ${compactWon(ctx.raw)}` } }
+        },
+        scales: {
+          x: { grid: { display: false }, ticks: { color: "#667085" } },
+          y: {
+            grid: { color: "#eef2f7" },
+            ticks: { color: "#667085", callback: (value) => compactWon(value) }
+          }
+        }
+      };
+    }
+
     function drawAssetNetChart() {
       const canvas = document.getElementById("assetNetChart");
-      if (!canvas) return;
-      const ctx = canvas.getContext("2d");
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const area = { left: 96, top: 34, right: canvas.width - 86, bottom: canvas.height - 44 };
-      area.width = area.right - area.left;
-      area.height = area.bottom - area.top;
-      const series = [
-        { key: "부동산", color: "#5b9bd5" },
-        { key: "주식", color: "#ed7d31" },
-        { key: "금/비트", color: "#a5a5a5" },
-        { key: "현금", color: "#ffc000" },
-        { key: "대출", color: "#a9d18e" }
-      ];
+      if (!canvas || !window.Chart) return;
       const totals = assetYears.map((year) => assetCategoryTotals(year));
       const netValues = totals.map((total) => Object.values(total).reduce((sum, value) => sum + value, 0));
-      const positiveMax = Math.max(...totals.map((total) => series.filter((s) => s.key !== "대출").reduce((sum, s) => sum + Math.max(0, total[s.key] || 0), 0)), 1);
-      const negativeMin = Math.min(...totals.map((total) => Math.min(0, total["대출"] || 0)), 0);
-      const maxY = positiveMax * 1.12;
-      const minY = negativeMin * 1.35;
-      const yFor = (value) => area.top + (maxY - value) / (maxY - minY) * area.height;
-      const gap = 14;
-      const barW = Math.max(20, (area.width - gap * (assetYears.length - 1)) / assetYears.length * .72);
-      const zeroY = yFor(0);
-
-      ctx.fillStyle = "#111";
-      ctx.font = "bold 24px Malgun Gothic, sans-serif";
-      ctx.textAlign = "center";
-      ctx.fillText("연도별 순자산", canvas.width / 2, 24);
-      ctx.textAlign = "left";
-      ctx.strokeStyle = "#e5e7eb";
-      ctx.lineWidth = 1;
-      ctx.font = "12px Malgun Gothic, sans-serif";
-      ctx.fillStyle = "#111";
-      for (let i = 0; i <= 6; i += 1) {
-        const value = minY + (maxY - minY) * i / 6;
-        const y = yFor(value);
-        ctx.beginPath();
-        ctx.moveTo(area.left, y);
-        ctx.lineTo(area.right, y);
-        ctx.stroke();
-        ctx.fillText(won(value), 8, y + 4);
-      }
-      ctx.strokeStyle = "#8b8b8b";
-      ctx.beginPath();
-      ctx.moveTo(area.left, zeroY);
-      ctx.lineTo(area.right, zeroY);
-      ctx.stroke();
-
-      totals.forEach((total, index) => {
-        const x = area.left + index * (area.width / Math.max(assetYears.length - 1, 1)) - barW / 2;
-        let top = zeroY;
-        for (const item of series.filter((s) => s.key !== "대출")) {
-          const value = Math.max(0, total[item.key] || 0);
-          const h = zeroY - yFor(value);
-          ctx.fillStyle = item.color;
-          ctx.fillRect(x, top - h, barW, h);
-          top -= h;
-        }
-        const debt = total["대출"] || 0;
-        if (debt < 0) {
-          ctx.fillStyle = "#a9d18e";
-          ctx.fillRect(x, zeroY, barW, yFor(debt) - zeroY);
-        }
-        ctx.fillStyle = "#111";
-        ctx.font = "bold 12px Malgun Gothic, sans-serif";
-        ctx.textAlign = "center";
-        ctx.fillText(`${assetYears[index]}${assetYears[index] > new Date().getFullYear() ? "(E)" : ""}`, x + barW / 2, canvas.height - 12);
-      });
-
-      ctx.strokeStyle = "#1f40ff";
-      ctx.fillStyle = "#1f40ff";
-      ctx.lineWidth = 2.4;
-      ctx.beginPath();
-      netValues.forEach((value, index) => {
-        const x = area.left + index * (area.width / Math.max(assetYears.length - 1, 1));
-        const y = yFor(value);
-        if (index === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-      });
-      ctx.stroke();
-      netValues.forEach((value, index) => {
-        const x = area.left + index * (area.width / Math.max(assetYears.length - 1, 1));
-        const y = yFor(value);
-        ctx.beginPath();
-        ctx.arc(x, y, 3, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.font = "12px Malgun Gothic, sans-serif";
-        ctx.fillText(won(value), x, y - 8);
-      });
-
-      const legend = [{ name: "순자산", color: "#1f40ff", line: true }, ...series.map((s) => ({ name: s.key === "금/비트" ? "금" : s.key, color: s.color }))];
-      legend.forEach((item, index) => {
-        const x = area.right + 14;
-        const y = area.top + index * 24;
-        ctx.fillStyle = item.color;
-        ctx.fillRect(x, y - 10, 12, 12);
-        ctx.fillStyle = "#111";
-        ctx.textAlign = "left";
-        ctx.fillText(item.name, x + 20, y);
+      const assetValues = totals.map((total) => ["부동산", "주식", "금/비트", "현금"].reduce((sum, key) => sum + Math.max(0, total[key] || 0), 0));
+      const debtValues = totals.map((total) => total["대출"] || 0);
+      const labels = assetYears.map((year) => `${year}${year > new Date().getFullYear() ? "(E)" : ""}`);
+      const latestNet = netValues.at(-1) || 0;
+      const stat = document.getElementById("assetNetChartValue");
+      if (stat) stat.textContent = compactWon(latestNet);
+      if (assetNetChartInstance) assetNetChartInstance.destroy();
+      assetNetChartInstance = new Chart(canvas, {
+        data: {
+          labels,
+          datasets: [
+            { type: "bar", label: "자산", data: assetValues, backgroundColor: "rgba(37, 99, 235, .18)", borderColor: "#2563eb", borderWidth: 1, borderRadius: 7 },
+            { type: "bar", label: "부채", data: debtValues, backgroundColor: "rgba(239, 68, 68, .16)", borderColor: "#ef4444", borderWidth: 1, borderRadius: 7 },
+            { type: "line", label: "순자산", data: netValues, borderColor: "#0f766e", backgroundColor: "#0f766e", borderWidth: 3, pointRadius: 4, tension: .35 }
+          ]
+        },
+        options: assetChartOptions()
       });
     }
 
     function drawAssetMixChart() {
       const canvas = document.getElementById("assetMixChart");
-      if (!canvas) return;
-      const ctx = canvas.getContext("2d");
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const area = { left: 58, top: 42, right: canvas.width - 22, bottom: canvas.height - 62 };
-      area.width = area.right - area.left;
-      area.height = area.bottom - area.top;
-      const series = [
-        { key: "부동산", color: "#5b9bd5" },
-        { key: "주식", color: "#ed7d31" },
-        { key: "금/비트", label: "금", color: "#a5a5a5" },
-        { key: "현금", label: "보유 현금", color: "#ffc000" }
-      ];
-      ctx.fillStyle = "#111";
-      ctx.font = "bold 24px Malgun Gothic, sans-serif";
-      ctx.textAlign = "center";
-      ctx.fillText("연도별 자산 비중", canvas.width / 2, 28);
-      ctx.strokeStyle = "#d0d7de";
-      ctx.font = "12px Malgun Gothic, sans-serif";
-      ctx.fillStyle = "#111";
-      for (let i = 0; i <= 4; i += 1) {
-        const y = area.bottom - area.height * i / 4;
-        ctx.beginPath();
-        ctx.moveTo(area.left, y);
-        ctx.lineTo(area.right, y);
-        ctx.stroke();
-        ctx.textAlign = "right";
-        ctx.fillText(`${(i * 25).toFixed(2)}%`, area.left - 8, y + 4);
-      }
-      const gap = 22;
-      const barW = Math.max(24, (area.width - gap * (assetYears.length - 1)) / assetYears.length * .64);
-      assetYears.forEach((year, index) => {
-        const totals = assetCategoryTotals(year);
-        const positive = series.reduce((sum, item) => sum + Math.max(0, totals[item.key] || 0), 0) || 1;
-        const x = area.left + index * (area.width / Math.max(assetYears.length - 1, 1)) - barW / 2;
-        let bottom = area.bottom;
-        for (const item of series) {
-          const ratio = Math.max(0, totals[item.key] || 0) / positive;
-          const h = ratio * area.height;
-          ctx.fillStyle = item.color;
-          ctx.fillRect(x, bottom - h, barW, h);
-          if (ratio >= .045) {
-            ctx.fillStyle = "#111";
-            ctx.textAlign = "center";
-            ctx.font = "12px Malgun Gothic, sans-serif";
-            ctx.fillText(`${(ratio * 100).toFixed(1)}%`, x + barW / 2, bottom - h / 2 + 4);
+      if (!canvas || !window.Chart) return;
+      const year = latestActualYear();
+      const totals = assetCategoryTotals(year);
+      const keys = ["부동산", "주식", "금/비트", "현금"];
+      const labels = ["부동산", "주식", "금/비트", "현금"];
+      const values = keys.map((key) => Math.max(0, totals[key] || 0));
+      const total = values.reduce((sum, value) => sum + value, 0) || 1;
+      const stockRatio = Math.max(0, totals["주식"] || 0) / total;
+      const stat = document.getElementById("assetMixChartValue");
+      if (stat) stat.textContent = pct(stockRatio);
+      if (assetMixChartInstance) assetMixChartInstance.destroy();
+      assetMixChartInstance = new Chart(canvas, {
+        type: "doughnut",
+        data: {
+          labels,
+          datasets: [{
+            data: values,
+            backgroundColor: ["#2563eb", "#0f766e", "#f59e0b", "#7c3aed"],
+            borderColor: "#fff",
+            borderWidth: 3,
+            hoverOffset: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: "62%",
+          plugins: {
+            legend: { position: "bottom", labels: { boxWidth: 10, boxHeight: 10, usePointStyle: true } },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => `${ctx.label}: ${compactWon(ctx.raw)} (${pct(ctx.raw / total)})`
+              }
+            }
           }
-          bottom -= h;
         }
-        ctx.fillStyle = "#111";
-        ctx.font = "12px Malgun Gothic, sans-serif";
-        ctx.fillText(`${year}${year > new Date().getFullYear() ? "(E)" : ""}`, x + barW / 2, canvas.height - 34);
-      });
-      const legendY = canvas.height - 16;
-      const legend = series.slice().reverse();
-      let startX = canvas.width / 2 - 130;
-      legend.forEach((item) => {
-        ctx.fillStyle = item.color;
-        ctx.fillRect(startX, legendY - 10, 12, 12);
-        ctx.fillStyle = "#111";
-        ctx.textAlign = "left";
-        ctx.fillText(item.label || item.key, startX + 18, legendY);
-        startX += 78;
       });
     }
 
@@ -1523,32 +1576,19 @@
     }
 
     async function fetchPriceApi(path) {
-      const errors = [];
-      const bases = activePriceApiBase
-        ? [activePriceApiBase, ...PRICE_API_BASES.filter((base) => base !== activePriceApiBase)]
-        : PRICE_API_BASES;
-      for (const base of bases) {
-        try {
-          const response = await fetch(`${base}${path}`, { cache: "no-store" });
-          if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
-          const data = await response.json();
-          activePriceApiBase = base;
-          return data;
-        } catch (error) {
-          errors.push(`${base || "same-origin"}: ${error.message}`);
-        }
-      }
-      throw new Error(errors.join(" / "));
+      const response = await fetch(path, { cache: "no-store" });
+      if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+      return await response.json();
     }
 
     async function checkLocalProxy() {
       const status = document.getElementById("priceStatus");
       try {
         await fetchPriceApi("/api/health");
-        status.textContent = "가격 API 연결됨. 종가 자동 업데이트를 안정적으로 사용할 수 있습니다.";
+        status.textContent = "가격 연결 정상";
         return true;
       } catch (error) {
-        status.textContent = `가격 API에 연결할 수 없습니다. 운영 API 주소/권한 또는 로컬 프록시를 확인해주세요. ${error.message}`;
+        status.textContent = `가격 연결 실패: ${error.message}`;
         return false;
       }
     }
@@ -1556,12 +1596,12 @@
     async function autoConnectPriceApi() {
       const status = document.getElementById("priceStatus");
       if (!status) return;
-      status.textContent = "가격 API 연결 확인 중...";
+      status.textContent = "가격 연결 확인 중...";
       try {
         await fetchPriceApi("/api/health");
-        status.textContent = `가격 API 연결됨 (${activePriceApiBase || "same-origin"}). 종가 자동 업데이트를 사용할 수 있습니다.`;
+        status.textContent = "가격 연결 정상";
       } catch (error) {
-        status.textContent = `가격 API에 연결할 수 없습니다. 운영 API 주소/권한 또는 로컬 프록시를 확인해주세요. ${error.message}`;
+        status.textContent = `가격 연결 실패: ${error.message}`;
       }
     }
 
@@ -1725,50 +1765,108 @@
       }
     }
 
-    function setSearchResults(results) {
+    function renderSearchResults(results, message = "") {
       const wrap = document.getElementById("searchResultsWrap");
-      const select = document.getElementById("holdingSearchResults");
-      if (!wrap || !select) return;
+      const list = document.getElementById("holdingSearchResults");
+      const input = document.getElementById("holdingName");
+      if (!wrap || !list) return;
       currentSearchResults = results;
-      selectedHoldingCandidate = results[0] ? { name: results[0].name, symbol: results[0].symbol } : null;
-      select.innerHTML = results.map((item, index) => `<option value="${index}">${item.name}</option>`).join("");
-      if (results.length) select.value = "0";
-      wrap.classList.toggle("active", results.length > 0);
+      if (!results.length) activeSearchIndex = -1;
+      else if (activeSearchIndex < 0 || activeSearchIndex >= results.length) activeSearchIndex = 0;
+      if (input) input.setAttribute("aria-expanded", results.length || message ? "true" : "false");
+      if (results.length) {
+        list.innerHTML = results.map((item, index) => `
+          <div class="autocomplete-option${index === activeSearchIndex ? " active" : ""}" role="option" aria-selected="${index === activeSearchIndex}" data-index="${index}">
+            <span>${item.name}</span><span class="symbol">${item.symbol}</span>
+          </div>
+        `).join("");
+      } else if (message) {
+        list.innerHTML = `<div class="autocomplete-empty">${message}</div>`;
+      } else {
+        list.innerHTML = "";
+      }
+      wrap.classList.toggle("active", results.length > 0 || !!message);
+      list.querySelectorAll(".autocomplete-option").forEach((option) => {
+        option.addEventListener("mousedown", (event) => {
+          event.preventDefault();
+          selectHoldingCandidate(Number(option.dataset.index));
+        });
+      });
     }
 
     function clearSearchResults() {
-      setSearchResults([]);
+      currentSearchResults = [];
+      activeSearchIndex = -1;
+      selectedHoldingCandidate = null;
+      renderSearchResults([]);
     }
 
-    function updateSelectedHoldingCandidate() {
-      const select = document.getElementById("holdingSearchResults");
-      if (!select) {
-        selectedHoldingCandidate = null;
+    function selectHoldingCandidate(index) {
+      const input = document.getElementById("holdingName");
+      const picked = currentSearchResults[index] || null;
+      selectedHoldingCandidate = picked ? { name: picked.name, symbol: picked.symbol } : null;
+      if (input && picked) input.value = picked.name;
+      renderSearchResults([]);
+    }
+
+    function moveSearchSelection(delta) {
+      if (!currentSearchResults.length) return;
+      activeSearchIndex = (activeSearchIndex + delta + currentSearchResults.length) % currentSearchResults.length;
+      renderSearchResults(currentSearchResults);
+    }
+
+    async function updateHoldingAutocomplete() {
+      const input = document.getElementById("holdingName");
+      if (!input) return;
+      const query = input.value.trim();
+      selectedHoldingCandidate = null;
+      if (!query) {
+        renderSearchResults([], "종목명을 더 입력해 주세요");
         return;
       }
-      const picked = currentSearchResults[Number(select.value)] || null;
-      selectedHoldingCandidate = picked ? { name: picked.name, symbol: picked.symbol } : null;
+      const requestId = ++searchRequestId;
+      const localResults = localHoldingCandidates(query);
+      if (localResults.length) {
+        renderSearchResults(localResults);
+        return;
+      }
+      if (query.length < 2) {
+        renderSearchResults([], "종목명을 더 입력해 주세요");
+        return;
+      }
+      renderSearchResults([], "검색 중...");
+      try {
+        const data = await fetchPriceApi(`/api/search?q=${encodeURIComponent(query)}`);
+        if (requestId !== searchRequestId) return;
+        const apiResults = normalizeSearchApiResults(data, query);
+        renderSearchResults(apiResults, apiResults.length ? "" : "검색 결과 없음");
+      } catch (_error) {
+        if (requestId === searchRequestId) renderSearchResults([], "검색 결과 없음");
+      }
+    }
+
+    function onHoldingNameKeydown(event) {
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        moveSearchSelection(1);
+      } else if (event.key === "ArrowUp") {
+        event.preventDefault();
+        moveSearchSelection(-1);
+      } else if (event.key === "Enter") {
+        if (currentSearchResults.length && activeSearchIndex >= 0) {
+          event.preventDefault();
+          selectHoldingCandidate(activeSearchIndex);
+        }
+      } else if (event.key === "Escape") {
+        renderSearchResults([]);
+      }
     }
 
     async function searchHoldingSymbol() {
       const status = document.getElementById("priceStatus");
       const nameInput = document.getElementById("holdingName");
       if (!status || !nameInput) return;
-      const query = nameInput.value.trim();
-      if (!query) {
-        status.textContent = "종목명을 입력해주세요.";
-        return;
-      }
-      status.textContent = `${query} 검색 중...`;
-      let results = [];
-      try {
-        const data = await fetchPriceApi(`/api/search?q=${encodeURIComponent(query)}`);
-        results = normalizeSearchApiResults(data, query);
-      } catch (_error) {
-        results = localHoldingCandidates(query);
-      }
-      setSearchResults(results);
-      status.textContent = results.length ? `${results.length}개 검색 결과가 있습니다. 목록에서 선택 후 추가하세요.` : "검색 결과 없음 또는 직접 코드 필요";
+      await updateHoldingAutocomplete();
     }
 
     function rebuildAssetYears() {
@@ -1779,6 +1877,7 @@
       if (selectedInvestment && !assetYears.includes(Number(selectedInvestment.year))) selectedInvestment = null;
       renderAssetTable();
       renderInvestmentPanel();
+      persistAssetData();
     }
 
     async function addHolding() {
@@ -1791,16 +1890,11 @@
       const sharesInput = document.getElementById("holdingShares");
       const priceInput = document.getElementById("holdingManualPrice");
       if (!nameInput || !sharesInput || !priceInput) return;
-      updateSelectedHoldingCandidate();
       let picked = selectedHoldingCandidate;
       if (!picked) {
-        try {
-          picked = await resolveSymbol(nameInput.value.trim());
-          selectedHoldingCandidate = { name: picked.name, symbol: picked.symbol };
-        } catch (_error) {
-          if (status) status.textContent = "종목 검색 후 목록에서 선택해주세요.";
-          return;
-        }
+        if (status) status.textContent = "검색 결과에서 종목을 먼저 선택해 주세요.";
+        await updateHoldingAutocomplete();
+        return;
       }
       picked = { name: picked.name, symbol: picked.symbol };
       const shares = toNumber(sharesInput.value);
@@ -1859,10 +1953,6 @@
       URL.revokeObjectURL(url);
     }
 
-    function saveAssetData() {
-      persistAssetData({ silent: false });
-    }
-
     function loadStoredAssetData() {
       try {
         const savedRows = localStorage.getItem("pensionAssetRows");
@@ -1877,16 +1967,8 @@
         if (endInput) endInput.value = assetYears.at(-1);
       } catch (error) {
         const status = document.getElementById("priceStatus");
-        if (status) status.textContent = `저장 데이터 불러오기 실패: ${error.message}`;
+        if (status) status.textContent = `자동 복원 실패: ${error.message}`;
       }
-    }
-
-    function loadAssetData() {
-      loadStoredAssetData();
-      renderAssetTable();
-      renderInvestmentPanel();
-      const status = document.getElementById("priceStatus");
-      if (status) status.textContent = "브라우저 저장 데이터 불러오기 완료";
     }
 
     function renderSimInputs() {
@@ -2151,10 +2233,10 @@
       bind("checkProxy", "click", checkLocalProxy);
       bind("updatePrices", "click", updatePrices);
       bind("exportAssetCsv", "click", exportAssetCsv);
-      bind("saveAssetData", "click", saveAssetData);
-      bind("loadAssetData", "click", loadAssetData);
-      bind("searchHolding", "click", searchHoldingSymbol);
-      bind("holdingSearchResults", "change", updateSelectedHoldingCandidate);
+      bind("holdingName", "input", updateHoldingAutocomplete);
+      bind("holdingName", "keydown", onHoldingNameKeydown);
+      bind("holdingName", "focus", updateHoldingAutocomplete);
+      bind("holdingName", "blur", () => window.setTimeout(() => renderSearchResults([]), 150));
       bind("addHolding", "click", addHolding);
       bind("updateSelectedStockPrices", "click", updatePrices);
       bind("updateGoldPrice", "click", updateGoldPrice);
