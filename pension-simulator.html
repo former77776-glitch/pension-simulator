@@ -1484,8 +1484,8 @@
         maintainAspectRatio: false,
         resizeDelay: 120,
         plugins: {
-          legend: { position: "bottom", labels: { boxWidth: 10, boxHeight: 10, usePointStyle: true } },
-          tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label || ctx.label}: ${compactWon(ctx.raw)}` } },
+          legend: { position: "bottom", labels: { boxWidth: 10, boxHeight: 10, usePointStyle: true, filter: (item) => item.text !== "총자산 라벨" } },
+          tooltip: { filter: (ctx) => ctx.dataset.label !== "총자산 라벨", callbacks: { label: (ctx) => `${ctx.dataset.label || ctx.label}: ${compactWon(ctx.raw)}` } },
           datalabels: { display: false }
         },
         scales: {
@@ -1546,34 +1546,19 @@
               borderWidth: 1,
               borderRadius: 6,
               stack: "assets",
-              datalabels: {
-                display: hasDataLabels(),
-                color: "#ffffff",
-                font: { size: 10, weight: "800" },
-                anchor: "center",
-                align: "center",
-                clamp: true,
-                clip: true,
-                formatter: (value, ctx) => {
-                  const yearTotal = assetTotals[ctx.dataIndex] || 0;
-                  if (!value || !yearTotal) return "";
-                  if (value / yearTotal < 0.15 && value < 100000000) return "";
-                  return `${ctx.dataset.label} ${compactWon(value)}`;
-                }
-              }
+              order: 2,
+              datalabels: { display: false }
             })),
             {
               type: "line",
-              label: "순자산",
-              data: netValues,
-              borderColor: "#111827",
-              backgroundColor: "#111827",
-              borderWidth: 3,
-              pointRadius: 3,
-              pointHoverRadius: 5,
-              tension: .35,
-              stack: "net",
-              order: 0,
+              label: "총자산 라벨",
+              data: assetTotals,
+              borderColor: "rgba(0,0,0,0)",
+              backgroundColor: "rgba(0,0,0,0)",
+              pointRadius: 0,
+              pointHoverRadius: 0,
+              tension: 0,
+              order: -9,
               datalabels: {
                 display: hasDataLabels(),
                 color: "#111827",
@@ -1586,8 +1571,22 @@
                 anchor: "end",
                 align: "top",
                 clamp: true,
-                formatter: (value, ctx) => ctx.dataIndex === managedIndex ? `순자산 ${compactWon(value)}` : ""
+                formatter: (value) => value ? compactWon(value) : ""
               }
+            },
+            {
+              type: "line",
+              label: "순자산",
+              data: netValues,
+              borderColor: "#111827",
+              backgroundColor: "#111827",
+              borderWidth: 3,
+              pointRadius: 3,
+              pointHoverRadius: 5,
+              tension: .35,
+              stack: "net",
+              order: -10,
+              datalabels: { display: false }
             }
           ]
         },
@@ -1666,7 +1665,7 @@
               formatter: (value, ctx) => {
                 const ratio = total ? value / total : 0;
                 if (ratio < 0.08) return "";
-                return `${ctx.chart.data.labels[ctx.dataIndex]} ${Math.round(ratio * 100)}%`;
+                return `${Math.round(ratio * 100)}%`;
               }
             },
             tooltip: {
