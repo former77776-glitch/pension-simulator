@@ -141,8 +141,18 @@
       min-width: 0;
     }
 
-    .asset-chart-card canvas {
-      height: 300px;
+    .asset-chart-box {
+      position: relative;
+      height: 280px;
+      min-height: 280px;
+      max-height: 280px;
+      width: 100%;
+    }
+
+    .asset-chart-box canvas {
+      width: 100% !important;
+      height: 100% !important;
+      max-height: 280px;
     }
 
     .asset-chart-head {
@@ -739,7 +749,9 @@
                 </div>
                 <div class="asset-chart-stat">최근 순자산<strong id="assetNetChartValue">-</strong></div>
               </div>
-              <canvas id="assetNetChart" width="650" height="330"></canvas>
+              <div class="asset-chart-box">
+                <canvas id="assetNetChart"></canvas>
+              </div>
             </div>
             <div class="card asset-chart-card">
               <div class="asset-chart-head">
@@ -749,7 +761,9 @@
                 </div>
                 <div class="asset-chart-stat">주식 비중<strong id="assetMixChartValue">-</strong></div>
               </div>
-              <canvas id="assetMixChart" width="650" height="330"></canvas>
+              <div class="asset-chart-box">
+                <canvas id="assetMixChart"></canvas>
+              </div>
             </div>
           </div>
         </section>
