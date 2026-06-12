@@ -277,6 +277,11 @@
       line-height: 1.5;
     }
 
+    .investment-body {
+      display: grid;
+      gap: 10px;
+    }
+
     .holdings-card.waiting .investment-body {
       display: none;
     }
@@ -289,11 +294,28 @@
       cursor: pointer;
       position: relative;
       background: #fffdf7;
+      padding-right: 20px;
+    }
+
+    td.investment-cell::after {
+      content: "편집";
+      position: absolute;
+      top: 50%;
+      right: 4px;
+      transform: translateY(-50%);
+      padding: 1px 4px;
+      border-radius: 4px;
+      background: #fff3cd;
+      color: #8a5a00;
+      font-size: 10px;
+      font-weight: 800;
+      opacity: .82;
     }
 
     td.investment-cell:hover {
       outline: 2px solid var(--amber);
       outline-offset: -2px;
+      background: #fff8e1;
     }
 
     td.investment-cell.selected-investment {
@@ -305,9 +327,9 @@
 
     td.investment-cell.selected-investment::after {
       content: "선택";
-      position: absolute;
-      top: 2px;
+      top: 50%;
       right: 4px;
+      transform: translateY(-50%);
       padding: 1px 5px;
       border-radius: 999px;
       background: var(--accent);
@@ -360,6 +382,7 @@
       display: flex;
       gap: 8px;
       grid-column: span 2;
+      flex-wrap: wrap;
     }
 
     .holdings-table {
@@ -609,9 +632,9 @@
         </section>
 
         <aside class="card holdings-card waiting" id="investmentCard">
-          <h2>투자 자산 정보</h2>
+          <h2 id="investmentTitle">투자 자산 정보</h2>
           <div class="investment-empty" id="investmentEmpty">
-            자산 기록표에서 <b>주식</b> 또는 <b>금/비트</b>의 특정 연도 칸을 클릭하면 해당 연도의 투자 자산 정보를 입력할 수 있습니다.
+            주식 또는 금/비트 행의 연도 칸을 선택하면 상세 정보를 입력할 수 있습니다.
           </div>
           <div class="investment-body" id="investmentBody">
             <p class="status" id="selectedInvestmentLabel">선택된 칸 없음</p>
@@ -628,10 +651,10 @@
                 <div class="holding-actions">
                   <button type="button" id="searchHolding">종목 검색</button>
                   <button type="button" class="primary" id="addHolding">종목 추가/고정</button>
-                  <button type="button" id="clearHoldings">해당 연도 종목 초기화</button>
+                  <button type="button" id="updateSelectedStockPrices">해당 연도 가격 업데이트</button>
                 </div>
               </div>
-              <div class="mini-title">보유 종목</div>
+              <div class="mini-title">해당 연도 보유 종목</div>
               <table class="holdings-table">
                 <thead>
                   <tr><th>종목</th><th>수량</th><th>가격</th><th>평가액</th><th></th></tr>
@@ -642,16 +665,30 @@
             <div id="goldInvestmentPanel">
               <div class="mini-title">금/비트 정보</div>
               <div class="holding-form gold-form">
-                <label>보유 g/수량 <input id="goldGrams" class="num" value="0"></label>
-                <label>1g/1개 가격 <input id="goldPrice" class="num" value="0"></label>
+                <label>자산 종류
+                  <select id="goldAssetKind">
+                    <option value="금">금</option>
+                    <option value="비트코인">비트코인</option>
+                    <option value="기타">기타</option>
+                  </select>
+                </label>
+                <label>보유 수량 <input id="goldGrams" class="num" value="0"></label>
+                <label>단가 <input id="goldPrice" class="num" value="0"></label>
                 <div class="holding-actions">
                   <button type="button" class="primary" id="updateGoldPrice">KRX 금 가격 업데이트</button>
                   <button type="button" id="applyGoldManual">금/비트 반영 및 고정</button>
                 </div>
               </div>
+              <div class="mini-title">해당 연도 금/비트 목록</div>
+              <table class="holdings-table">
+                <thead>
+                  <tr><th>자산</th><th>수량</th><th>단가</th><th>평가액</th><th></th></tr>
+                </thead>
+                <tbody id="goldItemsBody"></tbody>
+              </table>
             </div>
             <p class="status">
-              선택한 연도의 투자 자산 정보는 저장된 수량과 가격으로 고정됩니다. 종가 업데이트는 현재 선택된 연도 칸에만 반영됩니다.
+              선택한 연도의 상세 정보는 추가/고정 또는 반영/고정 후 자동 저장됩니다. 칸을 선택하는 것만으로 기존 표 금액은 바뀌지 않습니다.
             </p>
           </div>
         </aside>
@@ -875,10 +912,25 @@
       return data.holdings.reduce((sum, h) => sum + toNumber(h.shares) * toNumber(h.price), 0);
     }
 
+    function goldItems(data) {
+      if (!data) return [];
+      if (Array.isArray(data.items)) return data.items;
+      if (data.type === "gold" && (toNumber(data.grams) > 0 || toNumber(data.price) > 0)) {
+        return [{
+          kind: data.kind || "금",
+          quantity: toNumber(data.grams),
+          price: toNumber(data.price),
+          updatedAt: data.updatedAt || "",
+          source: data.source || "manual"
+        }];
+      }
+      return [];
+    }
+
     function investmentTotal(rowId, year) {
       const data = getInvestment(rowId, year);
       if (!data) return 0;
-      if (data.type === "gold") return toNumber(data.grams) * toNumber(data.price);
+      if (data.type === "gold") return goldItems(data).reduce((sum, item) => sum + toNumber(item.quantity) * toNumber(item.price), 0);
       if (data.type === "stock") return (data.holdings || []).reduce((sum, h) => sum + toNumber(h.shares) * toNumber(h.price), 0);
       return 0;
     }
@@ -953,22 +1005,42 @@
 
     function applyGoldToAssetRow() {
       if (!selectedInvestment || selectedRow()?.category !== "금/비트") {
-        document.getElementById("priceStatus").textContent = "먼저 자산 기록표에서 금/비트 연도 칸을 선택해주세요.";
+        const status = document.getElementById("priceStatus");
+        if (status) status.textContent = "먼저 자산 기록표에서 금/비트 연도 칸을 선택해주세요.";
         return;
       }
+      const kindInput = document.getElementById("goldAssetKind");
+      const gramsInput = document.getElementById("goldGrams");
+      const priceInput = document.getElementById("goldPrice");
+      const status = document.getElementById("priceStatus");
+      if (!kindInput || !gramsInput || !priceInput) return;
+      const quantity = toNumber(gramsInput.value);
+      const price = toNumber(priceInput.value);
+      if (quantity <= 0 || price <= 0) {
+        if (status) status.textContent = "보유 수량과 단가를 입력해주세요. 기존 표 금액은 유지됩니다.";
+        return;
+      }
+      const current = selectedInvestmentData();
+      const items = goldItems(current);
+      items.push({
+        kind: kindInput.value || "금",
+        quantity,
+        price,
+        updatedAt: new Date().toISOString().slice(0, 10),
+        source: "manual"
+      });
       const data = {
         type: "gold",
-        grams: toNumber(document.getElementById("goldGrams").value),
-        price: toNumber(document.getElementById("goldPrice").value),
+        items,
         updatedAt: new Date().toISOString().slice(0, 10),
-        source: "manual",
         locked: true
       };
       setInvestment(selectedInvestment.rowId, selectedInvestment.year, data);
       syncInvestmentValue(selectedInvestment.rowId, selectedInvestment.year);
-      renderAssetTable();
-      renderInvestmentPanel();
-      document.getElementById("priceStatus").textContent = `${selectedInvestment.year}년 금/비트 정보 고정 완료`;
+      gramsInput.value = "";
+      priceInput.value = "";
+      refreshAssetView();
+      if (status) status.textContent = `${selectedInvestment.year}년 ${kindInput.value} 항목 반영 및 자동 저장 완료`;
     }
 
     async function resolveSymbol(query) {
@@ -993,6 +1065,29 @@
       }
     }
 
+    function persistAssetData({ silent = true } = {}) {
+      try {
+        localStorage.setItem("pensionAssetRows", JSON.stringify(assetRows));
+        localStorage.setItem("pensionInvestmentData", JSON.stringify(investmentData));
+        localStorage.setItem("pensionAssetYears", JSON.stringify(assetYears));
+        localStorage.removeItem("pensionHoldings");
+        localStorage.removeItem("pensionGoldState");
+        if (!silent) {
+          const status = document.getElementById("priceStatus");
+          if (status) status.textContent = "브라우저 저장 완료";
+        }
+      } catch (error) {
+        const status = document.getElementById("priceStatus");
+        if (status) status.textContent = `자동 저장 실패: ${error.message}`;
+      }
+    }
+
+    function refreshAssetView() {
+      renderAssetTable();
+      renderInvestmentPanel();
+      persistAssetData();
+    }
+
     function categorySpans() {
       const spans = {};
       for (const row of assetRows) spans[row.category] = (spans[row.category] || 0) + 1;
@@ -1004,6 +1099,7 @@
       const cols = document.getElementById("assetCols");
       const head = document.getElementById("assetHead");
       const body = document.getElementById("assetBody");
+      if (!cols || !head || !body) return;
       cols.innerHTML = `<col style="width:70px"><col style="width:178px">${assetYears.map(() => "<col>").join("")}`;
       head.innerHTML = `<tr><th>대분류</th><th>소분류</th>${assetYears.map((year) => `<th class="${year > new Date().getFullYear() ? "estimate" : ""}">${year}${year > new Date().getFullYear() ? "(E)" : ""}</th>`).join("")}</tr>`;
       const spans = categorySpans();
@@ -1022,7 +1118,7 @@
           if (isInvestmentRow(row)) {
             const selected = selectedInvestment && selectedInvestment.rowId === row.id && Number(selectedInvestment.year) === Number(year);
             const hasData = !!getInvestment(row.id, year);
-            cells.push(`<td class="value investment-cell${neg}${selected ? " selected-investment" : ""}${hasData ? " has-investment" : ""}" data-row="${row.id}" data-year="${year}">${won(value)}</td>`);
+            cells.push(`<td class="value investment-cell${neg}${selected ? " selected-investment" : ""}${hasData ? " has-investment" : ""}" data-row="${row.id}" data-year="${year}" title="${year}년 ${row.category} 상세 정보 편집">${won(value)}</td>`);
           } else {
             cells.push(`<td class="value manual${neg}"><input class="money" data-row="${row.id}" data-year="${year}" value="${won(value)}"></td>`);
           }
@@ -1047,9 +1143,11 @@
     function onAssetCellChange(event) {
       const input = event.target;
       const row = assetRows.find((item) => item.id === input.dataset.row);
+      if (!row) return;
       row.values[input.dataset.year] = toNumber(input.value);
       input.value = won(row.values[input.dataset.year]);
       renderAssetTable();
+      persistAssetData();
     }
 
     function onInvestmentCellClick(event) {
@@ -1057,6 +1155,7 @@
       selectedInvestment = { rowId: cell.dataset.row, year: Number(cell.dataset.year) };
       // 칸 선택은 "조회/편집 준비" 동작만 한다.
       // 기존 표 금액을 0으로 덮어쓰지 않도록, 상세 투자 정보는 사용자가 실제로 추가/반영할 때만 만든다.
+      resetInvestmentDrafts();
       renderAssetTable();
       renderInvestmentPanel();
     }
@@ -1068,10 +1167,14 @@
       const prevNet = prevYear ? assetRows.reduce((sum, row) => sum + rowValue(row, prevYear), 0) : 0;
       const stock = assetRows.filter((row) => row.category === "주식").reduce((sum, row) => sum + rowValue(row, year), 0);
       const debt = assetRows.filter((row) => row.category === "대출").reduce((sum, row) => sum + rowValue(row, year), 0);
-      document.getElementById("latestNetWorth").textContent = compactWon(net);
-      document.getElementById("latestGrowth").textContent = prevNet ? pct((net - prevNet) / Math.abs(prevNet)) : "-";
-      document.getElementById("latestStockValue").textContent = compactWon(stock);
-      document.getElementById("latestDebt").textContent = compactWon(debt);
+      const netEl = document.getElementById("latestNetWorth");
+      const growthEl = document.getElementById("latestGrowth");
+      const stockEl = document.getElementById("latestStockValue");
+      const debtEl = document.getElementById("latestDebt");
+      if (netEl) netEl.textContent = compactWon(net);
+      if (growthEl) growthEl.textContent = prevNet ? pct((net - prevNet) / Math.abs(prevNet)) : "-";
+      if (stockEl) stockEl.textContent = compactWon(stock);
+      if (debtEl) debtEl.textContent = compactWon(debt);
     }
 
     function assetCategoryTotals(year) {
@@ -1263,14 +1366,32 @@
       return data && Array.isArray(data.holdings) ? data.holdings : [];
     }
 
+    function resetInvestmentDrafts() {
+      const holdingName = document.getElementById("holdingName");
+      const holdingShares = document.getElementById("holdingShares");
+      const holdingManualPrice = document.getElementById("holdingManualPrice");
+      const goldAssetKind = document.getElementById("goldAssetKind");
+      const goldGrams = document.getElementById("goldGrams");
+      const goldPrice = document.getElementById("goldPrice");
+      if (holdingName) holdingName.value = "";
+      if (holdingShares) holdingShares.value = "";
+      if (holdingManualPrice) holdingManualPrice.value = "";
+      if (goldAssetKind) goldAssetKind.value = "금";
+      if (goldGrams) goldGrams.value = "";
+      if (goldPrice) goldPrice.value = "";
+      clearSearchResults();
+    }
+
     function renderInvestmentPanel() {
       const card = document.getElementById("investmentCard");
+      const title = document.getElementById("investmentTitle");
       const stockPanel = document.getElementById("stockInvestmentPanel");
       const goldPanel = document.getElementById("goldInvestmentPanel");
       const label = document.getElementById("selectedInvestmentLabel");
-      if (!card || !stockPanel || !goldPanel || !label) return;
+      if (!card || !title || !stockPanel || !goldPanel || !label) return;
       if (!selectedInvestment || !selectedRow()) {
         card.classList.add("waiting");
+        title.textContent = "투자 자산 정보";
         return;
       }
       card.classList.remove("waiting");
@@ -1278,23 +1399,12 @@
       const currentValue = rowValue(row, selectedInvestment.year);
       const data = selectedInvestmentData();
       const detailText = data ? "상세정보 있음" : "상세정보 없음, 기존 표 금액 유지";
-      label.textContent = `${selectedInvestment.year}년 ${row.category} · ${row.label} / 현재 표 금액 ${won(currentValue)} / ${detailText}`;
+      title.textContent = `${selectedInvestment.year}년 ${row.category} 자산 편집`;
+      label.textContent = `${row.label} / 현재 표 금액 ${won(currentValue)} / ${detailText}`;
       stockPanel.style.display = row.category === "주식" ? "block" : "none";
       goldPanel.style.display = row.category === "금/비트" ? "block" : "none";
-      if (row.category === "금/비트") {
-        document.getElementById("goldGrams").value = data?.grams ?? "";
-        document.getElementById("goldPrice").value = data?.price ?? "";
-      }
-      if (row.category === "주식") {
-        const holdingName = document.getElementById("holdingName");
-        const holdingShares = document.getElementById("holdingShares");
-        const holdingManualPrice = document.getElementById("holdingManualPrice");
-        if (holdingName) holdingName.value = "";
-        if (holdingShares) holdingShares.value = "";
-        if (holdingManualPrice) holdingManualPrice.value = "";
-        clearSearchResults();
-      }
       renderHoldings();
+      renderGoldItems();
     }
 
     function renderHoldings() {
@@ -1308,7 +1418,7 @@
       const list = activeHoldings();
       body.innerHTML = list.map((h, index) => `
         <tr>
-          <td>${h.name}<br><span class="status">${h.symbol}</span></td>
+          <td>${h.name}<br><span class="status">${h.updatedAt || ""}</span></td>
           <td><input class="num holding-edit" data-index="${index}" data-field="shares" value="${h.shares}"></td>
           <td><input class="num holding-edit" data-index="${index}" data-field="price" value="${h.price}"></td>
           <td>${won(toNumber(h.shares) * toNumber(h.price))}</td>
@@ -1321,9 +1431,9 @@
         if (!data || !Array.isArray(data.holdings)) return;
         data.holdings.splice(Number(button.dataset.delete), 1);
         data.locked = true;
+        data.updatedAt = new Date().toISOString().slice(0, 10);
         syncInvestmentValue(selectedInvestment.rowId, selectedInvestment.year);
-        renderHoldings();
-        renderAssetTable();
+        refreshAssetView();
       }));
     }
 
@@ -1333,9 +1443,63 @@
       if (!data || !Array.isArray(data.holdings)) return;
       data.holdings[Number(input.dataset.index)][input.dataset.field] = toNumber(input.value);
       data.locked = true;
+      data.updatedAt = new Date().toISOString().slice(0, 10);
       syncInvestmentValue(selectedInvestment.rowId, selectedInvestment.year);
-      renderHoldings();
-      renderAssetTable();
+      refreshAssetView();
+    }
+
+    function renderGoldItems() {
+      const body = document.getElementById("goldItemsBody");
+      if (!body) return;
+      const row = selectedRow();
+      if (!row || row.category !== "금/비트") {
+        body.innerHTML = "";
+        return;
+      }
+      const data = selectedInvestmentData();
+      const items = goldItems(data);
+      body.innerHTML = items.map((item, index) => `
+        <tr>
+          <td>${item.kind || "금"}<br><span class="status">${item.updatedAt || ""}</span></td>
+          <td><input class="num gold-edit" data-index="${index}" data-field="quantity" value="${item.quantity}"></td>
+          <td><input class="num gold-edit" data-index="${index}" data-field="price" value="${item.price}"></td>
+          <td>${won(toNumber(item.quantity) * toNumber(item.price))}</td>
+          <td><button type="button" data-delete-gold="${index}">삭제</button></td>
+        </tr>
+      `).join("");
+      body.querySelectorAll(".gold-edit").forEach((input) => input.addEventListener("change", onGoldItemEdit));
+      body.querySelectorAll("button[data-delete-gold]").forEach((button) => button.addEventListener("click", () => {
+        const data = selectedInvestmentData();
+        if (!data) return;
+        const items = goldItems(data);
+        items.splice(Number(button.dataset.deleteGold), 1);
+        setInvestment(selectedInvestment.rowId, selectedInvestment.year, {
+          type: "gold",
+          items,
+          updatedAt: new Date().toISOString().slice(0, 10),
+          locked: true
+        });
+        syncInvestmentValue(selectedInvestment.rowId, selectedInvestment.year);
+        refreshAssetView();
+      }));
+    }
+
+    function onGoldItemEdit(event) {
+      const input = event.target;
+      const data = selectedInvestmentData();
+      if (!data) return;
+      const items = goldItems(data);
+      const item = items[Number(input.dataset.index)];
+      if (!item) return;
+      item[input.dataset.field] = toNumber(input.value);
+      setInvestment(selectedInvestment.rowId, selectedInvestment.year, {
+        type: "gold",
+        items,
+        updatedAt: new Date().toISOString().slice(0, 10),
+        locked: true
+      });
+      syncInvestmentValue(selectedInvestment.rowId, selectedInvestment.year);
+      refreshAssetView();
     }
 
     async function fetchJsonWithFallback(url) {
@@ -1497,24 +1661,27 @@
     async function updateGoldPrice() {
       const status = document.getElementById("priceStatus");
       if (!selectedInvestment || selectedRow()?.category !== "금/비트") {
-        status.textContent = "먼저 자산 기록표에서 금/비트 연도 칸을 선택해주세요.";
+        if (status) status.textContent = "먼저 자산 기록표에서 금/비트 연도 칸을 선택해주세요.";
         return;
       }
-      status.textContent = "KRX 금 가격 업데이트 중...";
+      if (status) status.textContent = "KRX 금 가격 업데이트 중...";
       try {
         const quote = await fetchKrxGoldClose();
-        document.getElementById("goldPrice").value = Math.round(quote.price);
+        const kindInput = document.getElementById("goldAssetKind");
+        const priceInput = document.getElementById("goldPrice");
+        if (kindInput) kindInput.value = "금";
+        if (priceInput) priceInput.value = Math.round(quote.price);
         // 가격 조회는 입력칸만 채운다. 사용자가 '반영 및 고정'을 누르기 전까지 표 금액은 건드리지 않는다.
-        status.textContent = `KRX 금 1g 가격 조회 완료: ${won(Math.round(quote.price))} (${quote.date}, ${quote.source}). 보유 수량 확인 후 반영 및 고정을 눌러주세요.`;
+        if (status) status.textContent = `KRX 금 1g 가격 조회 완료: ${won(Math.round(quote.price))} (${quote.date}, ${quote.source}). 보유 수량 확인 후 반영 및 고정을 눌러주세요.`;
       } catch (error) {
-        status.textContent = `KRX 금 자동 업데이트 실패. 수동 1g 가격을 입력해주세요. ${error.message}`;
+        if (status) status.textContent = `KRX 금 자동 업데이트 실패. 수동 1g 가격을 입력해주세요. ${error.message}`;
       }
     }
 
     async function updatePrices() {
       const status = document.getElementById("priceStatus");
       if (!selectedInvestment || !selectedRow()) {
-        status.textContent = "먼저 업데이트할 주식 또는 금/비트 연도 칸을 선택해주세요.";
+        if (status) status.textContent = "먼저 업데이트할 주식 또는 금/비트 연도 칸을 선택해주세요.";
         return;
       }
       const row = selectedRow();
@@ -1524,10 +1691,10 @@
       }
       const data = selectedInvestmentData();
       if (!data || !Array.isArray(data.holdings) || data.holdings.length === 0) {
-        status.textContent = "선택한 연도에 등록된 종목이 없습니다.";
+        if (status) status.textContent = "선택한 연도에 등록된 종목이 없습니다.";
         return;
       }
-      status.textContent = `${selectedInvestment.year}년 ${row.label} 종가 업데이트 중...`;
+      if (status) status.textContent = `${selectedInvestment.year}년 ${row.label} 종가 업데이트 중...`;
       let ok = 0;
       const errors = [];
       const sources = new Set();
@@ -1550,11 +1717,12 @@
       data.updatedAt = new Date().toISOString().slice(0, 10);
       setInvestment(selectedInvestment.rowId, selectedInvestment.year, data);
       syncInvestmentValue(selectedInvestment.rowId, selectedInvestment.year);
-      renderHoldings();
-      renderAssetTable();
-      status.textContent = ok
-        ? `${selectedInvestment.year}년 ${ok}개 종목 가격 업데이트 및 고정 완료 (${[...sources].join(", ")})${errors.length ? `, 실패 ${errors.length}개` : ""}`
-        : `자동 업데이트 실패. 웹 배포 API 또는 로컬 프록시가 필요합니다. ${errors[0] || ""}`;
+      refreshAssetView();
+      if (status) {
+        status.textContent = ok
+          ? `${selectedInvestment.year}년 ${ok}개 종목 가격 업데이트 및 자동 저장 완료 (${[...sources].join(", ")})${errors.length ? `, 실패 ${errors.length}개` : ""}`
+          : `자동 업데이트 실패. 웹 배포 API 또는 로컬 프록시가 필요합니다. ${errors[0] || ""}`;
+      }
     }
 
     function setSearchResults(results) {
@@ -1563,7 +1731,7 @@
       if (!wrap || !select) return;
       currentSearchResults = results;
       selectedHoldingCandidate = results[0] ? { name: results[0].name, symbol: results[0].symbol } : null;
-      select.innerHTML = results.map((item, index) => `<option value="${index}">${item.name} / ${item.symbol}</option>`).join("");
+      select.innerHTML = results.map((item, index) => `<option value="${index}">${item.name}</option>`).join("");
       if (results.length) select.value = "0";
       wrap.classList.toggle("active", results.length > 0);
     }
@@ -1616,38 +1784,42 @@
     async function addHolding() {
       const status = document.getElementById("priceStatus");
       if (!selectedInvestment || selectedRow()?.category !== "주식") {
-        status.textContent = "먼저 자산 기록표에서 주식 연도 칸을 선택해주세요.";
+        if (status) status.textContent = "먼저 자산 기록표에서 주식 연도 칸을 선택해주세요.";
         return;
       }
+      const nameInput = document.getElementById("holdingName");
+      const sharesInput = document.getElementById("holdingShares");
+      const priceInput = document.getElementById("holdingManualPrice");
+      if (!nameInput || !sharesInput || !priceInput) return;
       updateSelectedHoldingCandidate();
       let picked = selectedHoldingCandidate;
       if (!picked) {
         try {
-          picked = await resolveSymbol(document.getElementById("holdingName").value.trim());
+          picked = await resolveSymbol(nameInput.value.trim());
           selectedHoldingCandidate = { name: picked.name, symbol: picked.symbol };
         } catch (_error) {
-          status.textContent = "종목 검색 후 목록에서 선택해주세요.";
+          if (status) status.textContent = "종목 검색 후 목록에서 선택해주세요.";
           return;
         }
       }
       picked = { name: picked.name, symbol: picked.symbol };
-      const shares = toNumber(document.getElementById("holdingShares").value);
+      const shares = toNumber(sharesInput.value);
       if (shares <= 0) {
-        status.textContent = "주식 수를 입력해주세요. 기존 표 금액은 유지됩니다.";
+        if (status) status.textContent = "주식 수를 입력해주세요. 기존 표 금액은 유지됩니다.";
         return;
       }
-      let price = toNumber(document.getElementById("holdingManualPrice").value);
+      let price = toNumber(priceInput.value);
       let updatedAt = "";
       let source = "manual";
       if (price <= 0) {
         try {
-          status.textContent = `${picked.name} 현재가 조회 중...`;
+          if (status) status.textContent = `${picked.name} 현재가 조회 중...`;
           const quote = await fetchYahooClose(picked.symbol);
           price = Math.round(quote.price);
           updatedAt = quote.date;
           source = quote.source;
         } catch (error) {
-          status.textContent = `현재가 조회 실패. 현재가를 직접 입력해주세요. ${error.message}`;
+          if (status) status.textContent = `현재가 조회 실패. 현재가를 직접 입력해주세요. ${error.message}`;
           return;
         }
       }
@@ -1666,9 +1838,12 @@
       });
       setInvestment(selectedInvestment.rowId, selectedInvestment.year, data);
       syncInvestmentValue(selectedInvestment.rowId, selectedInvestment.year);
-      renderHoldings();
-      renderAssetTable();
-      status.textContent = `${selectedInvestment.year}년 ${picked.name} ${shares.toLocaleString("ko-KR")}주 추가 및 고정 완료`;
+      nameInput.value = "";
+      sharesInput.value = "";
+      priceInput.value = "";
+      clearSearchResults();
+      refreshAssetView();
+      if (status) status.textContent = `${selectedInvestment.year}년 ${picked.name} ${shares.toLocaleString("ko-KR")}주 추가 및 자동 저장 완료`;
     }
 
     function exportAssetCsv() {
@@ -1685,25 +1860,33 @@
     }
 
     function saveAssetData() {
-      localStorage.setItem("pensionAssetRows", JSON.stringify(assetRows));
-      localStorage.setItem("pensionInvestmentData", JSON.stringify(investmentData));
-      localStorage.setItem("pensionAssetYears", JSON.stringify(assetYears));
-      localStorage.removeItem("pensionHoldings");
-      localStorage.removeItem("pensionGoldState");
-      document.getElementById("priceStatus").textContent = "브라우저 저장 완료";
+      persistAssetData({ silent: false });
+    }
+
+    function loadStoredAssetData() {
+      try {
+        const savedRows = localStorage.getItem("pensionAssetRows");
+        const savedInvestment = localStorage.getItem("pensionInvestmentData");
+        const savedYears = localStorage.getItem("pensionAssetYears");
+        if (savedRows) assetRows = JSON.parse(savedRows);
+        if (savedYears) assetYears = JSON.parse(savedYears);
+        if (savedInvestment) investmentData = JSON.parse(savedInvestment);
+        const startInput = document.getElementById("assetStartYear");
+        const endInput = document.getElementById("assetEndYear");
+        if (startInput) startInput.value = assetYears[0];
+        if (endInput) endInput.value = assetYears.at(-1);
+      } catch (error) {
+        const status = document.getElementById("priceStatus");
+        if (status) status.textContent = `저장 데이터 불러오기 실패: ${error.message}`;
+      }
     }
 
     function loadAssetData() {
-      const savedRows = localStorage.getItem("pensionAssetRows");
-      const savedInvestment = localStorage.getItem("pensionInvestmentData");
-      const savedYears = localStorage.getItem("pensionAssetYears");
-      if (savedRows) assetRows = JSON.parse(savedRows);
-      if (savedYears) assetYears = JSON.parse(savedYears);
-      if (savedInvestment) investmentData = JSON.parse(savedInvestment);
-      document.getElementById("assetStartYear").value = assetYears[0];
-      document.getElementById("assetEndYear").value = assetYears.at(-1);
+      loadStoredAssetData();
       renderAssetTable();
       renderInvestmentPanel();
+      const status = document.getElementById("priceStatus");
+      if (status) status.textContent = "브라우저 저장 데이터 불러오기 완료";
     }
 
     function renderSimInputs() {
@@ -1973,17 +2156,15 @@
       bind("searchHolding", "click", searchHoldingSymbol);
       bind("holdingSearchResults", "change", updateSelectedHoldingCandidate);
       bind("addHolding", "click", addHolding);
+      bind("updateSelectedStockPrices", "click", updatePrices);
       bind("updateGoldPrice", "click", updateGoldPrice);
       bind("applyGoldManual", "click", applyGoldToAssetRow);
-      bind("goldGrams", "change", applyGoldToAssetRow);
-      bind("goldPrice", "change", applyGoldToAssetRow);
       bind("clearHoldings", "click", () => {
         if (!selectedInvestment || selectedRow()?.category !== "주식") return;
         setInvestment(selectedInvestment.rowId, selectedInvestment.year, { type: "stock", holdings: [], updatedAt: "", locked: true });
         syncInvestmentValue(selectedInvestment.rowId, selectedInvestment.year);
         clearSearchResults();
-        renderHoldings();
-        renderAssetTable();
+        refreshAssetView();
       });
       bind("runBtn", "click", runPension);
       bind("csvBtn", "click", exportPensionCsv);
@@ -1993,6 +2174,7 @@
 
     renderSimInputs();
     bindEvents();
+    loadStoredAssetData();
     renderAssetTable();
     renderInvestmentPanel();
     runPension();
