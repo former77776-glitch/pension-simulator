@@ -913,6 +913,25 @@
       return uniqueHoldingCandidates(results);
     }
 
+    function normalizeSearchApiResults(data, fallbackName) {
+      const sourceItems = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.results)
+          ? data.results
+          : Array.isArray(data?.quotes)
+            ? data.quotes
+            : Array.isArray(data?.items)
+              ? data.items
+              : data?.symbol
+                ? [data]
+                : [];
+      return uniqueHoldingCandidates(sourceItems.map((item) => ({
+        name: item.name || item.shortname || item.longname || item.symbol || fallbackName,
+        symbol: item.symbol,
+        source: `가격 API/${item.source || data?.source || "search"}`
+      })));
+    }
+
     function isInvestmentRow(row) {
       return row && (row.category === "주식" || row.category === "금/비트");
     }
@@ -945,15 +964,15 @@
     async function resolveSymbol(query) {
       const raw = String(query || "").trim();
       if (!raw) throw new Error("종목명을 입력해주세요.");
-      const localResults = localHoldingCandidates(raw);
-      if (localResults.length) return localResults[0];
-
       try {
         const data = await fetchPriceApi(`/api/search?q=${encodeURIComponent(raw)}`);
-        if (data.symbol) return { ...data, source: `가격 API/${data.source || "search"}` };
+        const apiResults = normalizeSearchApiResults(data, raw);
+        if (apiResults.length) return apiResults[0];
       } catch (_error) {
-        // 검색 API 실패 시 호출자에서 안내 문구를 표시한다.
+        // API 검색 실패 시 내장 후보를 마지막으로 확인한다.
       }
+      const localResults = localHoldingCandidates(raw);
+      if (localResults.length) return localResults[0];
       throw new Error("검색 결과 없음 또는 직접 코드 필요");
     }
 
@@ -1239,6 +1258,7 @@
       const stockPanel = document.getElementById("stockInvestmentPanel");
       const goldPanel = document.getElementById("goldInvestmentPanel");
       const label = document.getElementById("selectedInvestmentLabel");
+      if (!card || !stockPanel || !goldPanel || !label) return;
       if (!selectedInvestment || !selectedRow()) {
         card.classList.add("waiting");
         return;
@@ -1256,10 +1276,13 @@
         document.getElementById("goldPrice").value = data?.price ?? "";
       }
       if (row.category === "주식") {
-        document.getElementById("holdingName").value = "";
-        document.getElementById("holdingShares").value = "";
-        document.getElementById("holdingManualPrice").value = "";
-        setSearchResults([]);
+        const holdingName = document.getElementById("holdingName");
+        const holdingShares = document.getElementById("holdingShares");
+        const holdingManualPrice = document.getElementById("holdingManualPrice");
+        if (holdingName) holdingName.value = "";
+        if (holdingShares) holdingShares.value = "";
+        if (holdingManualPrice) holdingManualPrice.value = "";
+        clearSearchResults();
       }
       renderHoldings();
     }
@@ -1482,7 +1505,10 @@
       const errors = [];
       const sources = new Set();
       for (const holding of data.holdings) {
-        if (!holding.symbol) continue;
+        if (!holding.symbol) {
+          errors.push(`${holding.name || "이름 없는 종목"} 심볼 없음`);
+          continue;
+        }
         try {
           const quote = await fetchYahooClose(holding.symbol);
           holding.price = Math.round(quote.price);
@@ -1495,6 +1521,7 @@
       }
       data.locked = true;
       data.updatedAt = new Date().toISOString().slice(0, 10);
+      setInvestment(selectedInvestment.rowId, selectedInvestment.year, data);
       syncInvestmentValue(selectedInvestment.rowId, selectedInvestment.year);
       renderHoldings();
       renderAssetTable();
@@ -1506,37 +1533,44 @@
     function setSearchResults(results) {
       const wrap = document.getElementById("searchResultsWrap");
       const select = document.getElementById("holdingSearchResults");
+      if (!wrap || !select) return;
       currentSearchResults = results;
-      selectedHoldingCandidate = results[0] || null;
+      selectedHoldingCandidate = results[0] ? { name: results[0].name, symbol: results[0].symbol } : null;
       select.innerHTML = results.map((item, index) => `<option value="${index}">${item.name} / ${item.symbol}</option>`).join("");
       if (results.length) select.value = "0";
       wrap.classList.toggle("active", results.length > 0);
     }
 
+    function clearSearchResults() {
+      setSearchResults([]);
+    }
+
     function updateSelectedHoldingCandidate() {
       const select = document.getElementById("holdingSearchResults");
-      selectedHoldingCandidate = currentSearchResults[Number(select.value)] || null;
+      if (!select) {
+        selectedHoldingCandidate = null;
+        return;
+      }
+      const picked = currentSearchResults[Number(select.value)] || null;
+      selectedHoldingCandidate = picked ? { name: picked.name, symbol: picked.symbol } : null;
     }
 
     async function searchHoldingSymbol() {
       const status = document.getElementById("priceStatus");
       const nameInput = document.getElementById("holdingName");
+      if (!status || !nameInput) return;
       const query = nameInput.value.trim();
       if (!query) {
         status.textContent = "종목명을 입력해주세요.";
         return;
       }
       status.textContent = `${query} 검색 중...`;
-      let results = localHoldingCandidates(query);
-      if (!results.length) {
-        try {
-          const data = await fetchPriceApi(`/api/search?q=${encodeURIComponent(query)}`);
-          if (data.symbol) {
-            results = [{ name: data.name || query, symbol: data.symbol, source: `가격 API/${data.source || "search"}` }];
-          }
-        } catch (_error) {
-          results = [];
-        }
+      let results = [];
+      try {
+        const data = await fetchPriceApi(`/api/search?q=${encodeURIComponent(query)}`);
+        results = normalizeSearchApiResults(data, query);
+      } catch (_error) {
+        results = localHoldingCandidates(query);
       }
       setSearchResults(results);
       status.textContent = results.length ? `${results.length}개 검색 결과가 있습니다. 목록에서 선택 후 추가하세요.` : "검색 결과 없음 또는 직접 코드 필요";
@@ -1563,11 +1597,13 @@
       if (!picked) {
         try {
           picked = await resolveSymbol(document.getElementById("holdingName").value.trim());
+          selectedHoldingCandidate = { name: picked.name, symbol: picked.symbol };
         } catch (_error) {
           status.textContent = "종목 검색 후 목록에서 선택해주세요.";
           return;
         }
       }
+      picked = { name: picked.name, symbol: picked.symbol };
       const shares = toNumber(document.getElementById("holdingShares").value);
       if (shares <= 0) {
         status.textContent = "주식 수를 입력해주세요. 기존 표 금액은 유지됩니다.";
@@ -1890,37 +1926,42 @@
     }
 
     function bindEvents() {
+      const bind = (id, eventName, handler) => {
+        const element = document.getElementById(id);
+        if (element) element.addEventListener(eventName, handler);
+      };
       document.querySelectorAll(".tab").forEach((tab) => tab.addEventListener("click", () => {
         document.querySelectorAll(".tab").forEach((item) => item.classList.remove("active"));
         document.querySelectorAll(".panel").forEach((item) => item.classList.remove("active"));
         tab.classList.add("active");
-        document.getElementById(`${tab.dataset.tab}Panel`).classList.add("active");
+        document.getElementById(`${tab.dataset.tab}Panel`)?.classList.add("active");
         if (tab.dataset.tab === "pension") renderCharts();
       }));
-      document.getElementById("rebuildAssetYears").addEventListener("click", rebuildAssetYears);
-      document.getElementById("checkProxy").addEventListener("click", checkLocalProxy);
-      document.getElementById("updatePrices").addEventListener("click", updatePrices);
-      document.getElementById("exportAssetCsv").addEventListener("click", exportAssetCsv);
-      document.getElementById("saveAssetData").addEventListener("click", saveAssetData);
-      document.getElementById("loadAssetData").addEventListener("click", loadAssetData);
-      document.getElementById("searchHolding").addEventListener("click", searchHoldingSymbol);
-      document.getElementById("holdingSearchResults").addEventListener("change", updateSelectedHoldingCandidate);
-      document.getElementById("addHolding").addEventListener("click", addHolding);
-      document.getElementById("updateGoldPrice").addEventListener("click", updateGoldPrice);
-      document.getElementById("applyGoldManual").addEventListener("click", applyGoldToAssetRow);
-      document.getElementById("goldGrams").addEventListener("change", applyGoldToAssetRow);
-      document.getElementById("goldPrice").addEventListener("change", applyGoldToAssetRow);
-      document.getElementById("clearHoldings").addEventListener("click", () => {
+      bind("rebuildAssetYears", "click", rebuildAssetYears);
+      bind("checkProxy", "click", checkLocalProxy);
+      bind("updatePrices", "click", updatePrices);
+      bind("exportAssetCsv", "click", exportAssetCsv);
+      bind("saveAssetData", "click", saveAssetData);
+      bind("loadAssetData", "click", loadAssetData);
+      bind("searchHolding", "click", searchHoldingSymbol);
+      bind("holdingSearchResults", "change", updateSelectedHoldingCandidate);
+      bind("addHolding", "click", addHolding);
+      bind("updateGoldPrice", "click", updateGoldPrice);
+      bind("applyGoldManual", "click", applyGoldToAssetRow);
+      bind("goldGrams", "change", applyGoldToAssetRow);
+      bind("goldPrice", "change", applyGoldToAssetRow);
+      bind("clearHoldings", "click", () => {
         if (!selectedInvestment || selectedRow()?.category !== "주식") return;
         setInvestment(selectedInvestment.rowId, selectedInvestment.year, { type: "stock", holdings: [], updatedAt: "", locked: true });
         syncInvestmentValue(selectedInvestment.rowId, selectedInvestment.year);
+        clearSearchResults();
         renderHoldings();
         renderAssetTable();
       });
-      document.getElementById("runBtn").addEventListener("click", runPension);
-      document.getElementById("csvBtn").addEventListener("click", exportPensionCsv);
-      document.getElementById("resetBtn").addEventListener("click", resetPension);
-      document.getElementById("useLatestAssets").addEventListener("click", useLatestAssets);
+      bind("runBtn", "click", runPension);
+      bind("csvBtn", "click", exportPensionCsv);
+      bind("resetBtn", "click", resetPension);
+      bind("useLatestAssets", "click", useLatestAssets);
     }
 
     renderSimInputs();
