@@ -164,6 +164,40 @@
       margin-bottom: 10px;
     }
 
+    .chart-kpis {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 6px;
+      margin: 0 0 10px;
+    }
+
+    .chart-kpi {
+      padding: 7px 8px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #f8fafc;
+      min-width: 0;
+    }
+
+    .chart-kpi span {
+      display: block;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+
+    .chart-kpi strong {
+      display: block;
+      margin-top: 3px;
+      color: var(--text);
+      font-size: 13px;
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
     .chart-copy {
       min-width: 0;
     }
@@ -359,8 +393,12 @@
       gap: 10px;
     }
 
+    .investment-body[hidden] {
+      display: none !important;
+    }
+
     .holdings-card.waiting .investment-body {
-      display: none;
+      display: none !important;
     }
 
     .holdings-card.waiting .investment-empty {
@@ -592,6 +630,15 @@
       line-height: 1.1;
     }
 
+    .metric.empty strong {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+      word-break: keep-all;
+    }
+
     .sim-grid {
       display: grid;
       grid-template-columns: 380px minmax(0, 1fr);
@@ -738,7 +785,7 @@
     }
 
     @media (max-width: 1100px) {
-      .asset-grid, .sim-grid, .charts, .summary, .analysis-strip {
+      .asset-grid, .sim-grid, .charts, .summary, .analysis-strip, .chart-kpis {
         grid-template-columns: 1fr;
       }
       .sidebar {
@@ -759,10 +806,10 @@
 
     <section id="assetsPanel" class="panel active">
       <div class="analysis-strip">
-        <div class="card metric"><span>최근 순자산</span><strong id="latestNetWorth">-</strong></div>
-        <div class="card metric"><span>최근 증가율</span><strong id="latestGrowth">-</strong></div>
-        <div class="card metric"><span>주식 평가액</span><strong id="latestStockValue">-</strong></div>
-        <div class="card metric"><span>대출 잔액</span><strong id="latestDebt">-</strong></div>
+        <div class="card metric empty"><span>최근 순자산</span><strong id="latestNetWorth">아직 입력된 데이터 없음</strong></div>
+        <div class="card metric empty"><span>최근 증가율</span><strong id="latestGrowth">데이터 입력 후 표시됩니다</strong></div>
+        <div class="card metric empty"><span>주식 평가액</span><strong id="latestStockValue">데이터 입력 후 표시됩니다</strong></div>
+        <div class="card metric empty"><span>대출 잔액</span><strong id="latestDebt">데이터 입력 후 표시됩니다</strong></div>
       </div>
 
       <div class="asset-grid">
@@ -773,7 +820,7 @@
             <span class="managed-year-badge" id="managedYearBadge">관리 연도 -</span>
             <div class="primary-actions">
               <button type="button" id="rebuildAssetYears">연도 적용</button>
-              <button type="button" class="primary" id="updateLatestPrices">최신 연도 가격 업데이트</button>
+              <button type="button" class="primary" id="updateLatestPrices">최신 연도 전체 가격 업데이트</button>
             </div>
             <div class="secondary-actions">
               <button type="button" id="updateSelectedYearPrices">선택 연도 가격 업데이트</button>
@@ -799,6 +846,12 @@
                 </div>
                 <div class="asset-chart-stat">최근 순자산<strong id="assetNetChartValue">-</strong></div>
               </div>
+              <div class="chart-kpis">
+                <div class="chart-kpi"><span>최신 순자산</span><strong id="chartKpiNet">-</strong></div>
+                <div class="chart-kpi"><span>전년 대비 증감</span><strong id="chartKpiDelta">-</strong></div>
+                <div class="chart-kpi"><span>주식 비중</span><strong id="chartKpiStockShare">-</strong></div>
+                <div class="chart-kpi"><span>부동산 비중</span><strong id="chartKpiRealEstateShare">-</strong></div>
+              </div>
               <div class="asset-chart-box">
                 <canvas id="assetNetChart"></canvas>
               </div>
@@ -821,9 +874,9 @@
         <aside class="card holdings-card waiting" id="investmentCard">
           <h2 id="investmentTitle">투자 자산 정보</h2>
           <div class="investment-empty" id="investmentEmpty">
-            최신 연도 자산을 관리하려면 주식 또는 금/비트 칸을 선택하세요. 과거 연도는 기록 조회용으로 유지됩니다.
+            주식 또는 금/비트 행의 연도 칸을 선택하면 상세 정보를 입력할 수 있습니다.
           </div>
-          <div class="investment-body" id="investmentBody">
+          <div class="investment-body" id="investmentBody" hidden>
             <p class="status" id="selectedInvestmentLabel">선택된 칸 없음</p>
             <div id="stockInvestmentPanel">
               <div class="holding-form">
@@ -1384,10 +1437,20 @@
       const growthEl = document.getElementById("latestGrowth");
       const stockEl = document.getElementById("latestStockValue");
       const debtEl = document.getElementById("latestDebt");
-      if (netEl) netEl.textContent = compactWon(net);
-      if (growthEl) growthEl.textContent = prevNet ? pct((net - prevNet) / Math.abs(prevNet)) : "-";
-      if (stockEl) stockEl.textContent = compactWon(stock);
-      if (debtEl) debtEl.textContent = compactWon(debt);
+      const metricEls = [netEl, growthEl, stockEl, debtEl].filter(Boolean).map((el) => el.closest(".metric")).filter(Boolean);
+      const hasData = assetRows.some((row) => row.category !== "순자산" && row.category !== "증가율" && rowValue(row, year) !== 0);
+      metricEls.forEach((el) => el.classList.toggle("empty", !hasData));
+      if (!hasData) {
+        if (netEl) netEl.textContent = "아직 입력된 데이터 없음";
+        if (growthEl) growthEl.textContent = "데이터 입력 후 표시됩니다";
+        if (stockEl) stockEl.textContent = "데이터 입력 후 표시됩니다";
+        if (debtEl) debtEl.textContent = "데이터 입력 후 표시됩니다";
+      } else {
+        if (netEl) netEl.textContent = compactWon(net);
+        if (growthEl) growthEl.textContent = prevNet ? pct((net - prevNet) / Math.abs(prevNet)) : "전년 데이터 없음";
+        if (stockEl) stockEl.textContent = compactWon(stock);
+        if (debtEl) debtEl.textContent = compactWon(debt);
+      }
       renderManagedYearUi(year);
     }
 
@@ -1396,10 +1459,8 @@
       const latestButton = document.getElementById("updateLatestPrices");
       const selectedButton = document.getElementById("updateSelectedYearPrices");
       if (badge) badge.textContent = `관리 연도 ${year}`;
-      if (latestButton) latestButton.textContent = `${year}년 현재 자산 가격 업데이트`;
-      if (selectedButton) selectedButton.textContent = selectedInvestment
-        ? `${selectedInvestment.year}년 가격 업데이트`
-        : "선택 연도 가격 업데이트";
+      if (latestButton) latestButton.textContent = "최신 연도 전체 가격 업데이트";
+      if (selectedButton) selectedButton.textContent = "선택 연도 가격 업데이트";
     }
 
     function assetCategoryTotals(year) {
@@ -1441,15 +1502,28 @@
       const labels = assetYears.map((year) => `${year}${year > new Date().getFullYear() ? "(E)" : ""}`);
       const managedIndex = Math.max(0, assetYears.indexOf(latestManagedYear()));
       const latestNet = netValues[managedIndex] ?? netValues.at(-1) ?? 0;
+      const latestTotals = totals[managedIndex] || {};
+      const prevNet = managedIndex > 0 ? netValues[managedIndex - 1] : 0;
+      const positiveTotal = ["부동산", "연금", "주식", "금/비트", "현금"].reduce((sum, key) => sum + Math.max(0, latestTotals[key] || 0), 0);
+      const stockShare = positiveTotal ? Math.max(0, latestTotals["주식"] || 0) / positiveTotal : null;
+      const realEstateShare = positiveTotal ? Math.max(0, latestTotals["부동산"] || 0) / positiveTotal : null;
       const stat = document.getElementById("assetNetChartValue");
       if (stat) stat.textContent = compactWon(latestNet);
+      const kpiNet = document.getElementById("chartKpiNet");
+      const kpiDelta = document.getElementById("chartKpiDelta");
+      const kpiStockShare = document.getElementById("chartKpiStockShare");
+      const kpiRealEstateShare = document.getElementById("chartKpiRealEstateShare");
+      if (kpiNet) kpiNet.textContent = positiveTotal ? compactWon(latestNet) : "데이터 입력 후 표시";
+      if (kpiDelta) kpiDelta.textContent = prevNet ? compactWon(latestNet - prevNet) : "전년 데이터 없음";
+      if (kpiStockShare) kpiStockShare.textContent = stockShare === null ? "데이터 입력 후 표시" : pct(stockShare);
+      if (kpiRealEstateShare) kpiRealEstateShare.textContent = realEstateShare === null ? "데이터 입력 후 표시" : pct(realEstateShare);
       if (assetNetChartInstance) assetNetChartInstance.destroy();
       const stackedCategories = [
         { key: "부동산", color: "#2563eb" },
-        { key: "연금", color: "#7c3aed" },
         { key: "주식", color: "#0f766e" },
         { key: "금/비트", color: "#f59e0b" },
-        { key: "현금", color: "#64748b" }
+        { key: "현금", color: "#64748b" },
+        { key: "연금", color: "#7c3aed" }
       ];
       assetNetChartInstance = new Chart(canvas, {
         data: {
@@ -1554,21 +1628,33 @@
     function renderInvestmentPanel() {
       const card = document.getElementById("investmentCard");
       const title = document.getElementById("investmentTitle");
+      const empty = document.getElementById("investmentEmpty");
+      const body = document.getElementById("investmentBody");
       const stockPanel = document.getElementById("stockInvestmentPanel");
       const goldPanel = document.getElementById("goldInvestmentPanel");
       const label = document.getElementById("selectedInvestmentLabel");
-      if (!card || !title || !stockPanel || !goldPanel || !label) return;
+      if (!card || !title || !empty || !body || !stockPanel || !goldPanel || !label) return;
       if (!selectedInvestment || !selectedRow()) {
         card.classList.add("waiting");
         title.textContent = "투자 자산 정보";
+        empty.hidden = false;
+        body.hidden = true;
+        body.style.display = "none";
+        stockPanel.style.display = "none";
+        goldPanel.style.display = "none";
+        label.textContent = "선택된 칸 없음";
+        renderSearchResults([]);
         return;
       }
       card.classList.remove("waiting");
+      empty.hidden = true;
+      body.hidden = false;
+      body.style.display = "";
       const row = selectedRow();
       const currentValue = rowValue(row, selectedInvestment.year);
       const data = selectedInvestmentData();
       const detailText = data ? "상세정보 있음" : "상세정보 없음, 기존 표 금액 유지";
-      title.textContent = `${selectedInvestment.year}년 ${row.category} 자산 편집`;
+      title.textContent = `${selectedInvestment.year}년 ${row.category} 자산 편집${isPastManagedYear(selectedInvestment.year) ? " · 과거 기록" : ""}`;
       label.textContent = `${row.label} / 현재 표 금액 ${won(currentValue)} / ${detailText}`;
       stockPanel.style.display = row.category === "주식" ? "block" : "none";
       goldPanel.style.display = row.category === "금/비트" ? "block" : "none";
