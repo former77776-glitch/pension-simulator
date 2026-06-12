@@ -750,6 +750,7 @@
     let investmentData = {};
     let selectedInvestment = null;
     let currentSearchResults = [];
+    let selectedHoldingCandidate = null;
     const PRICE_API_BASES = [location.protocol.startsWith("http") ? "" : null, "http://127.0.0.1:8765"].filter(Boolean);
 
     const FIELD_GROUPS = [
@@ -884,6 +885,34 @@
       return String(text || "").toLowerCase().replace(/\s+/g, "").replace(/㈜|\(주\)/g, "");
     }
 
+    function uniqueHoldingCandidates(items) {
+      const seen = new Set();
+      return items.filter((item) => {
+        if (!item || !item.symbol || seen.has(item.symbol)) return false;
+        seen.add(item.symbol);
+        return true;
+      });
+    }
+
+    function localHoldingCandidates(query) {
+      const raw = String(query || "").trim();
+      const normalized = normalizeQuery(raw);
+      const results = [];
+      if (!raw) return results;
+      if (/^\d{6}$/.test(raw)) results.push({ name: raw, symbol: `${raw}.KS`, source: "직접 코드" });
+      if (/^[A-Za-z0-9.^=-]+(\.[A-Za-z]{1,3})?$/.test(raw) && !/[가-힣]/.test(raw)) {
+        results.push({ name: raw.toUpperCase(), symbol: raw.toUpperCase(), source: "직접 심볼" });
+      }
+      for (const [alias, candidate] of Object.entries(SYMBOL_ALIASES)) {
+        const aliasKey = normalizeQuery(alias);
+        const nameKey = normalizeQuery(candidate.name);
+        if (aliasKey.includes(normalized) || nameKey.includes(normalized)) {
+          results.push({ ...candidate, source: "내장 검색" });
+        }
+      }
+      return uniqueHoldingCandidates(results);
+    }
+
     function isInvestmentRow(row) {
       return row && (row.category === "주식" || row.category === "금/비트");
     }
@@ -915,32 +944,17 @@
 
     async function resolveSymbol(query) {
       const raw = String(query || "").trim();
-      const normalized = normalizeQuery(raw);
       if (!raw) throw new Error("종목명을 입력해주세요.");
-      if (/^\d{6}$/.test(raw)) return { name: raw, symbol: `${raw}.KS`, source: "직접 코드" };
-      if (/^[A-Za-z0-9.^=-]+(\.[A-Za-z]{1,3})?$/.test(raw) && !/[가-힣]/.test(raw)) {
-        return { name: raw.toUpperCase(), symbol: raw.toUpperCase(), source: "직접 심볼" };
-      }
-      if (SYMBOL_ALIASES[normalized]) return { ...SYMBOL_ALIASES[normalized], source: "내장 검색" };
+      const localResults = localHoldingCandidates(raw);
+      if (localResults.length) return localResults[0];
 
       try {
         const data = await fetchPriceApi(`/api/search?q=${encodeURIComponent(raw)}`);
         if (data.symbol) return { ...data, source: `가격 API/${data.source || "search"}` };
       } catch (_error) {
-        // 가격 API가 없으면 브라우저 직접 호출 경로로 이어간다.
+        // 검색 API 실패 시 호출자에서 안내 문구를 표시한다.
       }
-
-      const url = `https://query2.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(raw)}&quotesCount=8&newsCount=0&lang=ko-KR&region=KR`;
-      const { data, source } = await fetchJsonWithFallback(url);
-      const quotes = Array.isArray(data.quotes) ? data.quotes : [];
-      const preferred = quotes.find((q) => q.symbol && (q.symbol.endsWith(".KS") || q.symbol.endsWith(".KQ")))
-        || quotes.find((q) => q.symbol);
-      if (!preferred) throw new Error(`${raw} 검색 결과가 없습니다.`);
-      return {
-        name: preferred.shortname || preferred.longname || raw,
-        symbol: preferred.symbol,
-        source: `Yahoo 검색/${source}`
-      };
+      throw new Error("검색 결과 없음 또는 직접 코드 필요");
     }
 
     function updateStockRowsFromHoldings() {
@@ -1493,8 +1507,15 @@
       const wrap = document.getElementById("searchResultsWrap");
       const select = document.getElementById("holdingSearchResults");
       currentSearchResults = results;
-      select.innerHTML = results.map((item, index) => `<option value="${index}">${item.name} · ${item.symbol}</option>`).join("");
+      selectedHoldingCandidate = results[0] || null;
+      select.innerHTML = results.map((item, index) => `<option value="${index}">${item.name} / ${item.symbol}</option>`).join("");
+      if (results.length) select.value = "0";
       wrap.classList.toggle("active", results.length > 0);
+    }
+
+    function updateSelectedHoldingCandidate() {
+      const select = document.getElementById("holdingSearchResults");
+      selectedHoldingCandidate = currentSearchResults[Number(select.value)] || null;
     }
 
     async function searchHoldingSymbol() {
@@ -1506,30 +1527,19 @@
         return;
       }
       status.textContent = `${query} 검색 중...`;
-      const results = [];
-      const normalized = normalizeQuery(query);
-      if (SYMBOL_ALIASES[normalized]) results.push({ ...SYMBOL_ALIASES[normalized], source: "내장 검색" });
-      try {
-        const data = await fetchPriceApi(`/api/search?q=${encodeURIComponent(query)}`);
-        if (data.symbol && !results.some((item) => item.symbol === data.symbol)) {
-          results.push({ name: data.name || query, symbol: data.symbol, source: `가격 API/${data.source || "search"}` });
+      let results = localHoldingCandidates(query);
+      if (!results.length) {
+        try {
+          const data = await fetchPriceApi(`/api/search?q=${encodeURIComponent(query)}`);
+          if (data.symbol) {
+            results = [{ name: data.name || query, symbol: data.symbol, source: `가격 API/${data.source || "search"}` }];
+          }
+        } catch (_error) {
+          results = [];
         }
-      } catch (_error) {
-        // 이어서 Yahoo 직접 검색을 시도한다.
-      }
-      try {
-        const url = `https://query2.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query)}&quotesCount=8&newsCount=0&lang=ko-KR&region=KR`;
-        const { data, source } = await fetchJsonWithFallback(url);
-        const quotes = Array.isArray(data.quotes) ? data.quotes : [];
-        for (const q of quotes) {
-          if (!q.symbol || results.some((item) => item.symbol === q.symbol)) continue;
-          results.push({ name: q.shortname || q.longname || query, symbol: q.symbol, source: `Yahoo 검색/${source}` });
-        }
-      } catch (_error) {
-        // 검색 결과가 없으면 아래에서 처리한다.
       }
       setSearchResults(results);
-      status.textContent = results.length ? `${results.length}개 검색 결과가 있습니다. 목록에서 선택 후 추가하세요.` : "검색 결과가 없습니다.";
+      status.textContent = results.length ? `${results.length}개 검색 결과가 있습니다. 목록에서 선택 후 추가하세요.` : "검색 결과 없음 또는 직접 코드 필요";
     }
 
     function rebuildAssetYears() {
@@ -1548,8 +1558,8 @@
         status.textContent = "먼저 자산 기록표에서 주식 연도 칸을 선택해주세요.";
         return;
       }
-      const select = document.getElementById("holdingSearchResults");
-      let picked = currentSearchResults[Number(select.value)];
+      updateSelectedHoldingCandidate();
+      let picked = selectedHoldingCandidate;
       if (!picked) {
         try {
           picked = await resolveSymbol(document.getElementById("holdingName").value.trim());
@@ -1894,6 +1904,7 @@
       document.getElementById("saveAssetData").addEventListener("click", saveAssetData);
       document.getElementById("loadAssetData").addEventListener("click", loadAssetData);
       document.getElementById("searchHolding").addEventListener("click", searchHoldingSymbol);
+      document.getElementById("holdingSearchResults").addEventListener("change", updateSelectedHoldingCandidate);
       document.getElementById("addHolding").addEventListener("click", addHolding);
       document.getElementById("updateGoldPrice").addEventListener("click", updateGoldPrice);
       document.getElementById("applyGoldManual").addEventListener("click", applyGoldToAssetRow);
