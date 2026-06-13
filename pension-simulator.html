@@ -1029,6 +1029,11 @@
         <aside class="sidebar">
           <h1>연금 수령 설정</h1>
           <form id="inputForm"></form>
+          <div class="card guide" id="nationalPensionGuide">
+            <strong>1992년생 기준 법정 개시 65세, 현재 시나리오 68세 지연개시</strong>
+            <span id="nationalPensionDetail">법정 기본 개시연령 65세 · 시뮬레이션 선택 개시연령 68세 · 지연 가산율 21.6%</span>
+            <span id="incomeGapDetail">소득공백 구간 55~67세</span>
+          </div>
           <div class="sim-actions">
             <button type="button" class="primary" id="runBtn">시뮬레이션 실행</button>
             <button type="button" id="csvBtn">CSV 저장</button>
@@ -1182,6 +1187,10 @@
 
     const SIM_COLUMNS = ["나이", "연금 수령 연차", "실수령액", "총 잔액", "총 과세", "일시 지출", "국민연금", "IRP(퇴직재원)", "IRP(과세재원)", "개인연금", "총수령액", "세금", "건보료", "개인연금 잔액", "IRP(과세재원) 잔액", "IRP(퇴직재원) 잔액"];
     const SIM_MONEY = new Set(SIM_COLUMNS.slice(2));
+    const NATIONAL_PENSION_LEGAL_START_AGE = 65;
+    const NATIONAL_PENSION_GAP_START_AGE = 55;
+    const NATIONAL_PENSION_DELAY_BONUS_PER_YEAR = 0.072;
+    const NATIONAL_PENSION_DELAY_BONUS_MAX = 0.36;
     const simInputs = {};
     const simDefaults = {};
 
@@ -2783,6 +2792,30 @@
       return p;
     }
 
+    function nationalPensionDelayBonus(startAge) {
+      const delayedYears = Math.max(0, Math.round(startAge) - NATIONAL_PENSION_LEGAL_START_AGE);
+      return Math.min(NATIONAL_PENSION_DELAY_BONUS_MAX, delayedYears * NATIONAL_PENSION_DELAY_BONUS_PER_YEAR);
+    }
+
+    function selectedNationalPensionAnnual(p) {
+      return p.national_pension_annual * (1 + nationalPensionDelayBonus(p.national_pension_start_age));
+    }
+
+    function renderNationalPensionGuide(p = readSimInputs()) {
+      const guide = document.getElementById("nationalPensionGuide");
+      const detail = document.getElementById("nationalPensionDetail");
+      const gap = document.getElementById("incomeGapDetail");
+      if (!guide || !detail || !gap) return;
+      const selectedAge = Math.round(p.national_pension_start_age);
+      const bonus = nationalPensionDelayBonus(selectedAge);
+      const gapEnd = selectedAge - 1;
+      guide.querySelector("strong").textContent = `1992년생 기준 법정 개시 ${NATIONAL_PENSION_LEGAL_START_AGE}세, 현재 시나리오 ${selectedAge}세${bonus > 0 ? " 지연개시" : " 개시"}`;
+      detail.textContent = `법정 기본 개시연령 ${NATIONAL_PENSION_LEGAL_START_AGE}세 · 시뮬레이션 선택 개시연령 ${selectedAge}세 · 지연 가산율 ${(bonus * 100).toFixed(1)}% · 적용 연간액 ${won(selectedNationalPensionAnnual(p))}`;
+      gap.textContent = gapEnd >= NATIONAL_PENSION_GAP_START_AGE
+        ? `소득공백 구간 ${NATIONAL_PENSION_GAP_START_AGE}~${gapEnd}세`
+        : "소득공백 구간 없음";
+    }
+
     function taxRateByAge(age) {
       if (age < 70) return 0.055;
       if (age < 80) return 0.044;
@@ -2856,6 +2889,7 @@
       let irpTaxBal = p.irp_taxable_balance;
       let receiptYear = 0;
       const out = [];
+      const nationalAnnualWithDelay = selectedNationalPensionAnnual(p);
       for (let i = 0, age = p.start_age; age <= p.end_age; i += 1, age += 1) {
         privateBal += privateBal * p.private_return;
         const retireGrowth = irpRetBal * p.irp_retire_return;
@@ -2864,7 +2898,7 @@
         const targetBase = p.target_net_cash * ((1 + p.target_growth_rate) ** i);
         const oneTime = age === p.one_time_expense_age ? p.one_time_expense_amount : 0;
         const target = targetBase + oneTime;
-        const national = age >= p.national_pension_start_age ? p.national_pension_annual * ((1 + p.national_pension_growth) ** (age - p.national_pension_start_age)) : 0;
+        const national = age >= p.national_pension_start_age ? nationalAnnualWithDelay * ((1 + p.national_pension_growth) ** (age - p.national_pension_start_age)) : 0;
         const chosen = nextWithdrawal(age, { private: privateBal, irp_retire: irpRetBal, irp_taxable: irpTaxBal }, receiptYear, national, target, p);
         const privateW = Math.min(chosen.private_withdraw, privateBal);
         const irpTaxW = Math.min(chosen.irp_taxable_withdraw, irpTaxBal);
@@ -2879,6 +2913,7 @@
     }
 
     function renderPension() {
+      renderNationalPensionGuide();
       const final = pensionRows.at(-1);
       const depletion = pensionRows.find((r) => r["총 잔액"] <= 0.5);
       const totalNet = pensionRows.reduce((s, r) => s + r["실수령액"], 0);
