@@ -790,6 +790,36 @@
       line-height: 1.55;
     }
 
+    .guide strong,
+    .guide span {
+      display: block;
+    }
+
+    .asset-link-preview {
+      display: grid;
+      gap: 6px;
+      max-height: none;
+    }
+
+    .asset-link-preview dl {
+      display: grid;
+      grid-template-columns: 92px minmax(0, 1fr);
+      gap: 4px 8px;
+      margin: 0;
+    }
+
+    .asset-link-preview dt {
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .asset-link-preview dd {
+      min-width: 0;
+      margin: 0;
+      color: var(--text);
+      overflow-wrap: anywhere;
+    }
+
     .content {
       display: grid;
       gap: 10px;
@@ -800,6 +830,19 @@
       display: grid;
       grid-template-columns: repeat(5, minmax(0, 1fr));
       gap: 10px;
+    }
+
+    .diagnostics {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .diagnostics .metric strong {
+      display: block;
+      font-size: 14px;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
     }
 
     .charts {
@@ -1031,14 +1074,25 @@
           <form id="inputForm"></form>
           <div class="card guide" id="nationalPensionGuide">
             <strong>1992년생 기준 법정 개시 65세, 현재 시나리오 68세 지연개시</strong>
-            <span id="nationalPensionDetail">법정 기본 개시연령 65세 · 시뮬레이션 선택 개시연령 68세 · 지연 가산율 21.6%</span>
+            <span id="nationalPensionDetail">법정 기본 개시연령: 65세 · 시뮬레이션 선택 개시연령: 68세 · 지연 가산율 21.6%</span>
             <span id="incomeGapDetail">소득공백 구간 55~67세</span>
           </div>
           <div class="sim-actions">
             <button type="button" class="primary" id="runBtn">시뮬레이션 실행</button>
             <button type="button" id="csvBtn">CSV 저장</button>
             <button type="button" id="resetBtn">기본값 복원</button>
-            <button type="button" id="useLatestAssets">최근 자산을 초기값에 반영</button>
+            <button type="button" id="useLatestAssets">자산기록 최신 월 연금 재원 반영</button>
+          </div>
+          <div class="card guide asset-link-preview" id="assetPensionLinkPreview">
+            <strong>자산기록 연금 재원 연동 미리보기</strong>
+            <dl>
+              <dt>기준 월</dt><dd id="assetLinkPeriod">-</dd>
+              <dt>개인연금</dt><dd id="assetLinkPrivate">-</dd>
+              <dt>IRP 과세</dt><dd id="assetLinkIrpTaxable">-</dd>
+              <dt>IRP 퇴직</dt><dd id="assetLinkIrpRetire">-</dd>
+              <dt>자동 제외</dt><dd id="assetLinkExcluded">-</dd>
+              <dt>매핑 필요</dt><dd id="assetLinkNeedsMapping">-</dd>
+            </dl>
           </div>
           <div id="status" class="status">입력값을 바꾸면 자동으로 다시 계산합니다.</div>
           <div class="card guide">
@@ -1054,6 +1108,12 @@
             <div class="card metric"><span>총 실수령액</span><strong id="totalNet">-</strong></div>
             <div class="card metric"><span>총 과세</span><strong id="totalTaxation">-</strong></div>
             <div class="card metric"><span>목표 미달 연도</span><strong id="shortfallYears">-</strong></div>
+          </section>
+          <section class="diagnostics">
+            <div class="card metric"><span>국민연금 전 소득공백</span><strong id="diagnosticGap">-</strong></div>
+            <div class="card metric"><span>국민연금 선택/가산</span><strong id="diagnosticNational">-</strong></div>
+            <div class="card metric"><span>사적연금 1,500만 초과</span><strong id="diagnosticPrivateWarning">-</strong></div>
+            <div class="card metric"><span>재원별 고갈</span><strong id="diagnosticDepletion">-</strong></div>
           </section>
 
           <section class="charts">
@@ -1084,7 +1144,7 @@
   <script>
     const ASSET_ROWS = [
       { id: "apartment", category: "부동산", label: "아파트 (실거래가 기준)", type: "manual", values: { 2024: 440000000, 2025: 445000000, 2026: 460000000, 2027: 460000000, 2028: 460000000, 2029: 460000000, 2030: 460000000 } },
-      { id: "retirementStock", category: "주식", label: "(상윤+혜진) 연금 계좌", type: "stock", values: { 2024: 75500000, 2025: 100000000, 2026: 151000000 } },
+      { id: "retirementStock", category: "주식", label: "(상윤+혜진) 연금 계좌", type: "stock", pensionType: "private_pension", values: { 2024: 75500000, 2025: 100000000, 2026: 151000000 } },
       { id: "hynixStock", category: "주식", label: "(상윤+혜진)하이닉스", type: "stock", values: { 2024: 44710000, 2025: 193800000, 2026: 852440000 } },
       { id: "gold", category: "금/비트", label: "금", type: "manual", values: { 2024: 0, 2025: 11715000, 2026: 22300000 } },
       { id: "cash", category: "현금", label: "보유 현금", type: "manual", values: { 2024: 39000000, 2025: 117000000, 2026: 42000000 } },
@@ -1185,8 +1245,8 @@
       ]]
     ];
 
-    const SIM_COLUMNS = ["나이", "연금 수령 연차", "실수령액", "총 잔액", "총 과세", "일시 지출", "국민연금", "IRP(퇴직재원)", "IRP(과세재원)", "개인연금", "총수령액", "세금", "건보료", "개인연금 잔액", "IRP(과세재원) 잔액", "IRP(퇴직재원) 잔액"];
-    const SIM_MONEY = new Set(SIM_COLUMNS.slice(2));
+    const SIM_COLUMNS = ["나이", "연금 수령 연차", "실수령액", "총 잔액", "총 과세", "일시 지출", "국민연금", "IRP(퇴직재원)", "IRP(과세재원)", "개인연금", "총수령액", "세금", "건보료", "개인연금 잔액", "IRP(과세재원) 잔액", "IRP(퇴직재원) 잔액", "경고"];
+    const SIM_MONEY = new Set(SIM_COLUMNS.slice(2).filter((column) => column !== "경고"));
     const NATIONAL_PENSION_LEGAL_START_AGE = 65;
     const NATIONAL_PENSION_GAP_START_AGE = 55;
     const NATIONAL_PENSION_DELAY_BONUS_PER_YEAR = 0.072;
@@ -1667,6 +1727,7 @@
     function refreshAssetView({ charts = true } = {}) {
       renderAssetTable({ charts });
       renderInvestmentPanel();
+      renderAssetPensionLinkPreview();
       persistAssetData();
     }
 
@@ -2810,10 +2871,38 @@
       const bonus = nationalPensionDelayBonus(selectedAge);
       const gapEnd = selectedAge - 1;
       guide.querySelector("strong").textContent = `1992년생 기준 법정 개시 ${NATIONAL_PENSION_LEGAL_START_AGE}세, 현재 시나리오 ${selectedAge}세${bonus > 0 ? " 지연개시" : " 개시"}`;
-      detail.textContent = `법정 기본 개시연령 ${NATIONAL_PENSION_LEGAL_START_AGE}세 · 시뮬레이션 선택 개시연령 ${selectedAge}세 · 지연 가산율 ${(bonus * 100).toFixed(1)}% · 적용 연간액 ${won(selectedNationalPensionAnnual(p))}`;
+      detail.textContent = `법정 기본 개시연령: ${NATIONAL_PENSION_LEGAL_START_AGE}세 · 시뮬레이션 선택 개시연령: ${selectedAge}세 · 지연 가산율 ${(bonus * 100).toFixed(1)}% · 적용 연간액 ${won(selectedNationalPensionAnnual(p))}`;
       gap.textContent = gapEnd >= NATIONAL_PENSION_GAP_START_AGE
         ? `소득공백 구간 ${NATIONAL_PENSION_GAP_START_AGE}~${gapEnd}세`
         : "소득공백 구간 없음";
+    }
+
+    function pensionGapText(p) {
+      const gapEnd = Math.round(p.national_pension_start_age) - 1;
+      return gapEnd >= NATIONAL_PENSION_GAP_START_AGE
+        ? `${NATIONAL_PENSION_GAP_START_AGE}~${gapEnd}세`
+        : "없음";
+    }
+
+    function depletionAgeFor(column) {
+      const row = pensionRows.find((item) => item[column] <= 0.5);
+      return row ? `${row["나이"]}세` : "고갈 없음";
+    }
+
+    function renderPensionDiagnostics(p = readSimInputs()) {
+      const gapEl = document.getElementById("diagnosticGap");
+      const nationalEl = document.getElementById("diagnosticNational");
+      const warningEl = document.getElementById("diagnosticPrivateWarning");
+      const depletionEl = document.getElementById("diagnosticDepletion");
+      if (!gapEl || !nationalEl || !warningEl || !depletionEl) return;
+      const selectedAge = Math.round(p.national_pension_start_age);
+      const bonus = nationalPensionDelayBonus(selectedAge);
+      const warningYears = pensionRows.filter((row) => row["경고"]).length;
+      const overall = pensionRows.find((row) => row["총 잔액"] <= 0.5);
+      gapEl.textContent = pensionGapText(p);
+      nationalEl.textContent = `${selectedAge}세 / +${(bonus * 100).toFixed(1)}%`;
+      warningEl.textContent = `${warningYears}년`;
+      depletionEl.textContent = `개인 ${depletionAgeFor("개인연금 잔액")} · 과세 ${depletionAgeFor("IRP(과세재원) 잔액")} · 퇴직 ${depletionAgeFor("IRP(퇴직재원) 잔액")} · 전체 ${overall ? `${overall["나이"]}세` : "고갈 없음"}`;
     }
 
     function taxRateByAge(age) {
@@ -2907,13 +2996,18 @@
         privateBal -= privateW;
         irpTaxBal -= irpTaxW;
         irpRetBal -= irpRetW;
-        out.push({ "나이": age, "연금 수령 연차": receiptYear, "실수령액": chosen.net_cash, "총 잔액": privateBal + irpTaxBal + irpRetBal, "총 과세": chosen.total_tax + chosen.nhis_total, "일시 지출": oneTime, "국민연금": national, "IRP(퇴직재원)": irpRetW, "IRP(과세재원)": irpTaxW, "개인연금": privateW, "총수령액": chosen.gross_total, "세금": chosen.total_tax, "건보료": chosen.nhis_total, "그해 목표 실수령액": target, "개인연금 잔액": privateBal, "IRP(과세재원) 잔액": irpTaxBal, "IRP(퇴직재원) 잔액": irpRetBal });
+        const privatePensionTaxWarning = privateW + irpTaxW > 15000000
+          ? "사적연금 1,500만 원 초과: 종합과세 또는 15% 분리과세 선택 대상일 수 있습니다."
+          : "";
+        out.push({ "나이": age, "연금 수령 연차": receiptYear, "실수령액": chosen.net_cash, "총 잔액": privateBal + irpTaxBal + irpRetBal, "총 과세": chosen.total_tax + chosen.nhis_total, "일시 지출": oneTime, "국민연금": national, "IRP(퇴직재원)": irpRetW, "IRP(과세재원)": irpTaxW, "개인연금": privateW, "총수령액": chosen.gross_total, "세금": chosen.total_tax, "건보료": chosen.nhis_total, "그해 목표 실수령액": target, "개인연금 잔액": privateBal, "IRP(과세재원) 잔액": irpTaxBal, "IRP(퇴직재원) 잔액": irpRetBal, "경고": privatePensionTaxWarning });
       }
       return out;
     }
 
     function renderPension() {
-      renderNationalPensionGuide();
+      const p = readSimInputs();
+      renderNationalPensionGuide(p);
+      renderPensionDiagnostics(p);
       const final = pensionRows.at(-1);
       const depletion = pensionRows.find((r) => r["총 잔액"] <= 0.5);
       const totalNet = pensionRows.reduce((s, r) => s + r["실수령액"], 0);
@@ -2953,6 +3047,20 @@
       }
       const gap = 5;
       const barW = Math.max(6, (area.width - gap * (pensionRows.length - 1)) / pensionRows.length);
+      const p = readSimInputs();
+      const gapStartIndex = pensionRows.findIndex((row) => row["나이"] >= NATIONAL_PENSION_GAP_START_AGE);
+      const gapEndIndex = pensionRows.findIndex((row) => row["나이"] >= p.national_pension_start_age);
+      if (gapStartIndex >= 0 && gapEndIndex > gapStartIndex) {
+        const startX = area.left + gapStartIndex * (barW + gap);
+        const endX = area.left + gapEndIndex * (barW + gap);
+        ctx.fillStyle = "#fff7ed";
+        ctx.globalAlpha = .72;
+        ctx.fillRect(startX, area.top, Math.max(barW, endX - startX), area.height);
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = "#b45309";
+        ctx.font = "11px Malgun Gothic, sans-serif";
+        ctx.fillText("국민연금 전 소득공백", startX + 4, area.top + 14);
+      }
       pensionRows.forEach((row, index) => {
         const x = area.left + index * (barW + gap);
         let bottom = area.bottom;
@@ -3009,13 +3117,69 @@
       }
     }
 
-    function useLatestAssets() {
+    function inferPensionType(row) {
+      if (row?.pensionType) return row.pensionType;
+      if (row?.id === "retirementStock") return "private_pension";
+      const label = String(row?.label || "");
+      if (/개인연금|연금저축/.test(label)) return "private_pension";
+      if (/퇴직연금|DC/.test(label)) return "irp_retire";
+      if (/IRP/.test(label)) return "irp_taxable";
+      if (/연금/.test(label) && row?.category === "주식") return "needs_mapping";
+      return "";
+    }
+
+    function assetPensionLinkPreview() {
       const period = latestManagedPeriod();
-      const privateValue = rowValue(assetRows.find((r) => r.id === "retirementStock"), period);
-      const irpTaxable = rowValue(assetRows.find((r) => r.id === "hynixStock"), period);
-      simInputs.private_balance.value = won(privateValue);
-      simInputs.irp_taxable_balance.value = won(irpTaxable);
+      const result = {
+        period,
+        private_pension: { total: 0, rows: [] },
+        irp_taxable: { total: 0, rows: [] },
+        irp_retire: { total: 0, rows: [] },
+        excluded: [],
+        needsMapping: []
+      };
+      for (const row of assetRows) {
+        const value = rowValue(row, period);
+        const type = inferPensionType(row);
+        if (type === "private_pension" || type === "irp_taxable" || type === "irp_retire") {
+          result[type].total += value;
+          result[type].rows.push(`${row.label} ${compactWon(value)}`);
+        } else if (type === "needs_mapping") {
+          result.needsMapping.push(`${row.label} ${compactWon(value)}`);
+        } else if (row.category !== "대출") {
+          result.excluded.push(row.label);
+        }
+      }
+      return result;
+    }
+
+    function previewLine(group) {
+      return group.rows.length ? `${group.rows.join(", ")} → ${compactWon(group.total)}` : `0원`;
+    }
+
+    function renderAssetPensionLinkPreview() {
+      const preview = assetPensionLinkPreview();
+      const setText = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+      };
+      setText("assetLinkPeriod", periodLabel(preview.period));
+      setText("assetLinkPrivate", previewLine(preview.private_pension));
+      setText("assetLinkIrpTaxable", previewLine(preview.irp_taxable));
+      setText("assetLinkIrpRetire", previewLine(preview.irp_retire));
+      setText("assetLinkExcluded", preview.excluded.length ? preview.excluded.join(", ") : "-");
+      setText("assetLinkNeedsMapping", preview.needsMapping.length ? preview.needsMapping.join(", ") : "-");
+    }
+
+    function useLatestAssets() {
+      const preview = assetPensionLinkPreview();
+      simInputs.private_balance.value = won(preview.private_pension.total);
+      simInputs.irp_taxable_balance.value = won(preview.irp_taxable.total);
+      simInputs.irp_retire_balance.value = won(preview.irp_retire.total);
+      renderAssetPensionLinkPreview();
       runPension();
+      const status = document.getElementById("status");
+      if (status) status.textContent = `${periodLabel(preview.period)} 기준 자산기록을 연금 시뮬레이션 초기값에 반영했습니다.`;
     }
 
     function exportPensionCsv() {
@@ -3078,6 +3242,7 @@
     loadStoredAssetData();
     renderAssetTable();
     renderInvestmentPanel();
+    renderAssetPensionLinkPreview();
     runPension();
     autoConnectPriceApi();
   </script>
