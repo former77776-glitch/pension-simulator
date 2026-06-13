@@ -833,31 +833,6 @@
       display: block;
     }
 
-    .asset-link-preview {
-      display: grid;
-      gap: 6px;
-      max-height: none;
-    }
-
-    .asset-link-preview dl {
-      display: grid;
-      grid-template-columns: 92px minmax(0, 1fr);
-      gap: 4px 8px;
-      margin: 0;
-    }
-
-    .asset-link-preview dt {
-      color: var(--muted);
-      font-weight: 800;
-    }
-
-    .asset-link-preview dd {
-      min-width: 0;
-      margin: 0;
-      color: var(--text);
-      overflow-wrap: anywhere;
-    }
-
     .content {
       display: grid;
       gap: 10px;
@@ -1119,20 +1094,10 @@
             <button type="button" class="primary" id="runBtn">시뮬레이션 실행</button>
             <button type="button" id="csvBtn">CSV 저장</button>
             <button type="button" id="resetBtn">기본값 복원</button>
-            <button type="button" id="useLatestAssets">자산기록 최신 월 연금 재원 반영</button>
             <label class="auto-run-toggle"><input type="checkbox" id="autoRunPension" checked> 입력값 변경 시 자동 재계산</label>
           </div>
-          <div class="card guide asset-link-preview" id="assetPensionLinkPreview">
-            <strong>간편 계산: 연금성 자산 합계를 1:1:1로 나눠 반영합니다.</strong>
-            <span>자산기록 최신 월의 연금성 자산을 개인연금, IRP 과세재원, IRP 퇴직재원에 나눠 넣습니다. 일반 주식/현금/부동산 등은 제외합니다.</span>
-            <dl>
-              <dt>기준 월</dt><dd id="assetLinkPeriod">-</dd>
-              <dt>연금성 자산 합계</dt><dd id="assetLinkPensionTotal">-</dd>
-              <dt>개인연금 원액</dt><dd id="assetLinkPrivate">-</dd>
-              <dt>IRP 과세재원</dt><dd id="assetLinkIrpTaxable">-</dd>
-              <dt>IRP 퇴직재원</dt><dd id="assetLinkIrpRetire">-</dd>
-              <dt>제외</dt><dd id="assetLinkExcluded">일반 주식, 현금, 부동산, 금/비트, 대출</dd>
-            </dl>
+          <div class="card guide">
+            연금 시뮬레이션은 입력값 기반 가정 계산입니다. 성과급, DC 납입, 퇴직연금 구조는 변동성이 커서 자산기록과 자동 연동하지 않습니다.
           </div>
           <div id="status" class="status">입력값을 바꾸면 자동으로 다시 계산합니다.</div>
           <div class="card guide">
@@ -1767,7 +1732,6 @@
     function refreshAssetView({ charts = true } = {}) {
       renderAssetTable({ charts });
       renderInvestmentPanel();
-      renderAssetPensionLinkPreview();
       persistAssetData();
     }
 
@@ -3258,56 +3222,6 @@
       }
     }
 
-    function isPensionAssetRow(row) {
-      if (!row || ["부동산", "현금", "금/비트", "대출"].includes(row.category)) return false;
-      const text = `${row.label || ""} ${row.category || ""}`;
-      return /연금|개인연금|연금저축|IRP|퇴직연금|DC/i.test(text);
-    }
-
-    function assetPensionLinkPreview() {
-      const period = latestManagedPeriod();
-      const pensionRowsForLink = assetRows.filter(isPensionAssetRow);
-      const total = pensionRowsForLink.reduce((sum, row) => sum + rowValue(row, period), 0);
-      const base = Math.floor(total / 3);
-      const remainder = total - base * 3;
-      const result = {
-        period,
-        total,
-        privateBalance: base + remainder,
-        irpTaxableBalance: base,
-        irpRetireBalance: base,
-        included: pensionRowsForLink.map((row) => `${row.label} ${compactWon(rowValue(row, period))}`),
-        excluded: assetRows.filter((row) => !isPensionAssetRow(row) && row.category !== "대출").map((row) => row.label)
-      };
-      return result;
-    }
-
-    function renderAssetPensionLinkPreview() {
-      const preview = assetPensionLinkPreview();
-      const setText = (id, value) => {
-        const el = document.getElementById(id);
-        if (el) el.textContent = value;
-      };
-      setText("assetLinkPeriod", periodLabel(preview.period));
-      setText("assetLinkPensionTotal", `${compactWon(preview.total)}${preview.included.length ? ` (${preview.included.join(", ")})` : ""}`);
-      setText("assetLinkPrivate", compactWon(preview.privateBalance));
-      setText("assetLinkIrpTaxable", compactWon(preview.irpTaxableBalance));
-      setText("assetLinkIrpRetire", compactWon(preview.irpRetireBalance));
-      setText("assetLinkExcluded", preview.excluded.length ? preview.excluded.join(", ") : "일반 주식, 현금, 부동산, 금/비트, 대출");
-    }
-
-    function useLatestAssets() {
-      const preview = assetPensionLinkPreview();
-      simInputs.private_balance.value = won(preview.privateBalance);
-      simInputs.irp_taxable_balance.value = won(preview.irpTaxableBalance);
-      simInputs.irp_retire_balance.value = won(preview.irpRetireBalance);
-      renderAssetPensionLinkPreview();
-      updateSimCompactHints();
-      runPension();
-      const status = document.getElementById("status");
-      if (status) status.textContent = `${periodLabel(preview.period)} 기준 연금성 자산 ${compactWon(preview.total)}을 1:1:1로 반영했습니다.`;
-    }
-
     function exportPensionCsv() {
       const lines = pensionRows.map((row) => SIM_COLUMNS.map((c) => SIM_MONEY.has(c) ? Math.round(row[c]) : row[c]).join(","));
       const csv = "\ufeff" + [SIM_COLUMNS.join(","), ...lines].join("\n");
@@ -3361,7 +3275,6 @@
       bind("runBtn", "click", runPension);
       bind("csvBtn", "click", exportPensionCsv);
       bind("resetBtn", "click", resetPension);
-      bind("useLatestAssets", "click", useLatestAssets);
     }
 
     renderSimInputs();
@@ -3369,7 +3282,6 @@
     loadStoredAssetData();
     renderAssetTable();
     renderInvestmentPanel();
-    renderAssetPensionLinkPreview();
     runPension();
     autoConnectPriceApi();
   </script>
