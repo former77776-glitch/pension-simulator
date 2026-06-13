@@ -1138,6 +1138,7 @@
     let assetRows = structuredClone(ASSET_ROWS);
     let assetPeriods = [];
     let assetFutureBackup = {};
+    let assetArchivedPeriods = {};
     let pensionRows = [];
     let investmentData = {};
     let selectedInvestment = null;
@@ -1231,6 +1232,8 @@
       return `${(value * 100).toFixed(1)}%`;
     }
 
+    const MONTHLY_RECORD_START_PERIOD = "2026-06";
+
     function pad2(value) {
       return String(value).padStart(2, "0");
     }
@@ -1255,7 +1258,17 @@
     }
 
     function periodLabel(period) {
+      const year = periodYear(period);
+      const month = periodMonth(period);
+      if (month === 12 && year < new Date().getFullYear()) return String(year);
       return String(period).replace("-", ".");
+    }
+
+    function periodTitle(period) {
+      const year = periodYear(period);
+      const month = periodMonth(period);
+      if (month === 12 && year < new Date().getFullYear()) return `${year}년 말`;
+      return periodLabel(period);
     }
 
     function isValidPeriod(value) {
@@ -1284,9 +1297,15 @@
       const now = new Date();
       const currentYear = now.getFullYear();
       const currentMonth = now.getMonth() + 1;
+      const monthlyStartYear = periodYear(MONTHLY_RECORD_START_PERIOD);
+      const monthlyStartMonth = periodMonth(MONTHLY_RECORD_START_PERIOD);
       const periods = [];
       for (let year = startYear; year < currentYear; year += 1) periods.push(`${year}-12`);
-      for (let month = 1; month <= currentMonth; month += 1) periods.push(`${currentYear}-${pad2(month)}`);
+      const startMonth = currentYear === monthlyStartYear ? monthlyStartMonth : 1;
+      for (let month = startMonth; month <= currentMonth; month += 1) {
+        const period = `${currentYear}-${pad2(month)}`;
+        if (comparePeriods(period, MONTHLY_RECORD_START_PERIOD) >= 0) periods.push(period);
+      }
       return [...new Set(periods)].sort(comparePeriods);
     }
 
@@ -1492,6 +1511,30 @@
         .find((period) => assetRows.some((row) => Object.prototype.hasOwnProperty.call(row.values || {}, period)));
     }
 
+    function archiveHiddenPeriods() {
+      const visible = new Set(assetPeriods);
+      const archivedRows = {};
+      for (const row of assetRows) {
+        for (const [period, value] of Object.entries(row.values || {})) {
+          if (!isValidPeriod(period) || visible.has(period) || comparePeriods(period, currentPeriod()) > 0) continue;
+          archivedRows[row.id] = archivedRows[row.id] || {};
+          archivedRows[row.id][period] = value;
+        }
+      }
+      const archivedInvestments = {};
+      for (const [key, data] of Object.entries(investmentData || {})) {
+        const [rowId, period] = key.split(":");
+        if (!rowId || !isValidPeriod(period) || visible.has(period) || comparePeriods(period, currentPeriod()) > 0) continue;
+        archivedInvestments[rowId] = archivedInvestments[rowId] || {};
+        archivedInvestments[rowId][period] = data;
+      }
+      assetArchivedPeriods = {
+        ...(assetArchivedPeriods || {}),
+        rows: { ...((assetArchivedPeriods || {}).rows || {}), ...archivedRows },
+        investmentData: { ...((assetArchivedPeriods || {}).investmentData || {}), ...archivedInvestments }
+      };
+    }
+
     function snapshotPeriod(sourcePeriod, targetPeriod) {
       if (!sourcePeriod || !targetPeriod) return false;
       for (const row of assetRows) {
@@ -1596,6 +1639,7 @@
         localStorage.setItem("pensionInvestmentData", JSON.stringify(investmentData));
         localStorage.setItem("pensionAssetPeriods", JSON.stringify(assetPeriods));
         localStorage.setItem("pensionAssetFutureBackup", JSON.stringify(assetFutureBackup));
+        localStorage.setItem("pensionAssetArchivedPeriods", JSON.stringify(assetArchivedPeriods));
         localStorage.removeItem("pensionAssetYears");
         localStorage.removeItem("pensionHoldings");
         localStorage.removeItem("pensionGoldState");
@@ -1630,7 +1674,7 @@
       const body = document.getElementById("assetBody");
       if (!cols || !head || !body) return;
       cols.innerHTML = `<col style="width:70px"><col style="width:178px">${assetPeriods.map(() => "<col>").join("")}`;
-      head.innerHTML = `<tr><th>대분류</th><th>소분류</th>${assetPeriods.map((period) => `<th>${periodLabel(period)}</th>`).join("")}</tr>`;
+      head.innerHTML = `<tr><th>대분류</th><th>소분류</th>${assetPeriods.map((period) => `<th title="${periodTitle(period)}">${periodLabel(period)}</th>`).join("")}</tr>`;
       const spans = categorySpans();
       const used = new Set();
       const html = [];
@@ -1647,7 +1691,7 @@
           if (isInvestmentRow(row)) {
             const selected = selectedInvestment && selectedInvestment.rowId === row.id && selectedInvestment.period === period;
             const hasData = !!getInvestment(row.id, period);
-            cells.push(`<td class="value investment-cell${neg}${selected ? " selected-investment" : ""}${hasData ? " has-investment" : ""}" data-row="${row.id}" data-period="${period}" title="${periodLabel(period)} ${row.category} 상세 정보 편집">${won(value)}</td>`);
+            cells.push(`<td class="value investment-cell${neg}${selected ? " selected-investment" : ""}${hasData ? " has-investment" : ""}" data-row="${row.id}" data-period="${period}" title="${periodTitle(period)} ${row.category} 상세 정보 편집">${won(value)}</td>`);
           } else {
             cells.push(`<td class="value manual${neg}"><input class="money" data-row="${row.id}" data-period="${period}" value="${won(value)}"></td>`);
           }
@@ -2659,9 +2703,14 @@
         const savedPeriods = localStorage.getItem("pensionAssetPeriods");
         const savedYears = localStorage.getItem("pensionAssetYears");
         const savedFutureBackup = localStorage.getItem("pensionAssetFutureBackup");
+        const savedArchivedPeriods = localStorage.getItem("pensionAssetArchivedPeriods");
         if (savedFutureBackup) {
           const parsedBackup = JSON.parse(savedFutureBackup);
           if (parsedBackup && typeof parsedBackup === "object" && !Array.isArray(parsedBackup)) assetFutureBackup = parsedBackup;
+        }
+        if (savedArchivedPeriods) {
+          const parsedArchived = JSON.parse(savedArchivedPeriods);
+          if (parsedArchived && typeof parsedArchived === "object" && !Array.isArray(parsedArchived)) assetArchivedPeriods = parsedArchived;
         }
         if (savedRows) {
           const parsedRows = JSON.parse(savedRows);
@@ -2688,12 +2737,13 @@
             investmentData = normalizeInvestmentPeriods(parsedInvestment);
           }
         }
+        archiveHiddenPeriods();
         const changed = ensureMonthlySnapshots();
         const startInput = document.getElementById("assetStartYear");
         const endInput = document.getElementById("assetEndYear");
         if (startInput) startInput.value = periodYear(assetPeriods[0] || currentPeriod());
         if (endInput) endInput.value = periodLabel(latestManagedPeriod());
-        if (changed || savedYears) persistAssetData();
+        if (changed || savedYears || savedPeriods) persistAssetData();
       } catch (error) {
         const status = document.getElementById("priceStatus");
         if (status) status.textContent = `자동 복원 실패: ${error.message}`;
