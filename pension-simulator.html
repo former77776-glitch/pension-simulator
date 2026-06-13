@@ -1589,7 +1589,7 @@
         responsive: true,
         maintainAspectRatio: false,
         resizeDelay: 120,
-        layout: { padding: { top: 26, right: 8, bottom: 0, left: 0 } },
+        layout: { padding: { top: 14, right: 8, bottom: 0, left: 0 } },
         plugins: {
           legend: { position: "bottom", labels: { boxWidth: 10, boxHeight: 10, usePointStyle: true, filter: (item) => item.text !== "총자산 라벨" } },
           tooltip: { filter: (ctx) => ctx.dataset.label !== "총자산 라벨", callbacks: { label: (ctx) => `${ctx.dataset.label || ctx.label}: ${compactWon(ctx.raw)}` } },
@@ -1600,7 +1600,7 @@
           y: {
             stacked,
             beginAtZero: true,
-            grace: "25%",
+            grace: "12%",
             suggestedMax,
             grid: { color: "#eef2f7" },
             ticks: { color: "#667085", callback: (value) => compactWon(value) }
@@ -1713,7 +1713,7 @@
             }
           ]
         },
-        options: assetChartOptions({ stacked: true, suggestedMax: maxAssetTotal ? maxAssetTotal * 1.25 : undefined })
+        options: assetChartOptions({ stacked: true, suggestedMax: maxAssetTotal ? maxAssetTotal * 1.12 : undefined })
       });
     }
 
