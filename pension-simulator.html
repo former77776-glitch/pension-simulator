@@ -910,14 +910,15 @@
         <section>
           <div class="card toolbar">
             <label>시작연도 <input id="assetStartYear" class="num" value="2024"></label>
-            <label>종료연도 <input id="assetEndYear" class="num" value="2030"></label>
-            <span class="managed-year-badge" id="managedYearBadge">관리 연도 -</span>
+            <label>최신월 <input id="assetEndYear" class="num" value="" readonly></label>
+            <span class="managed-year-badge" id="managedYearBadge">관리 월 -</span>
             <div class="primary-actions">
-              <button type="button" id="rebuildAssetYears">연도 적용</button>
-              <button type="button" class="primary" id="updateLatestPrices">최신 연도 전체 가격 업데이트</button>
+              <button type="button" id="rebuildAssetYears">기간 새로고침</button>
+              <button type="button" class="primary" id="updateLatestPrices">최신 월 전체 가격 업데이트</button>
+              <button type="button" id="closeCurrentMonth">이번 달 마감 저장</button>
             </div>
             <div class="secondary-actions">
-              <button type="button" id="updateSelectedYearPrices">선택 연도 가격 업데이트</button>
+              <button type="button" id="updateSelectedYearPrices">선택 월 가격 업데이트</button>
               <button type="button" id="checkProxy">가격 연결 확인</button>
               <button type="button" id="exportAssetCsv">자산 CSV 저장</button>
             </div>
@@ -935,14 +936,14 @@
             <div class="card asset-chart-card">
               <div class="asset-chart-head">
                 <div class="chart-copy">
-                  <div class="chart-title">연도별 순자산</div>
-                  <div class="chart-desc">자산과 부채를 반영한 연도별 순자산 흐름입니다.</div>
+                  <div class="chart-title">월별 순자산</div>
+                  <div class="chart-desc">월간 기록과 연말 스냅샷 기준 자산 추이입니다.</div>
                 </div>
                 <div class="asset-chart-stat">최근 순자산<strong id="assetNetChartValue">-</strong></div>
               </div>
               <div class="chart-kpis">
                 <div class="chart-kpi"><span>최신 순자산</span><strong id="chartKpiNet">-</strong></div>
-                <div class="chart-kpi"><span>전년 대비 증감</span><strong id="chartKpiDelta">-</strong></div>
+                <div class="chart-kpi"><span>직전 기록 대비 증감</span><strong id="chartKpiDelta">-</strong></div>
                 <div class="chart-kpi"><span>주식 비중</span><strong id="chartKpiStockShare">-</strong></div>
                 <div class="chart-kpi"><span>부동산 비중</span><strong id="chartKpiRealEstateShare">-</strong></div>
               </div>
@@ -954,7 +955,7 @@
               <div class="asset-chart-head">
                 <div class="chart-copy">
                   <div class="chart-title">최근 자산 비중</div>
-                  <div class="chart-desc">최근 연도의 주요 자산군 구성을 보여줍니다.</div>
+                  <div class="chart-desc">최신 월의 주요 자산군 구성을 보여줍니다.</div>
                 </div>
                 <div class="asset-chart-stat">주식 비중<strong id="assetMixChartValue">-</strong></div>
               </div>
@@ -968,12 +969,12 @@
         <aside class="card holdings-card waiting" id="investmentCard">
           <h2 id="investmentTitle">투자 자산 정보</h2>
           <div class="investment-empty" id="investmentEmpty">
-            주식 또는 금/비트 행의 연도 칸을 선택하면 상세 정보를 입력할 수 있습니다.
+            주식 또는 금/비트 행의 월 칸을 선택하면 상세 정보를 입력할 수 있습니다.
           </div>
           <div class="investment-body" id="investmentBody" hidden>
             <div class="selection-badge" id="selectedInvestmentBadge">선택된 칸 없음</div>
             <div class="investment-summary" id="investmentSummary">
-              <div><span id="investmentSummaryLabel">해당 연도 합계</span><strong id="investmentSummaryTotal">-</strong></div>
+              <div><span id="investmentSummaryLabel">해당 월 합계</span><strong id="investmentSummaryTotal">-</strong></div>
               <div><span id="investmentSummaryCountLabel">보유 종목</span><strong id="investmentSummaryCount">-</strong></div>
             </div>
             <p class="status" id="selectedInvestmentLabel">선택된 칸 없음</p>
@@ -989,10 +990,10 @@
                 <label>현재가 <input id="holdingManualPrice" class="num" value="0"></label>
                 <div class="holding-actions">
                   <button type="button" class="primary" id="addHolding">종목 추가/고정</button>
-                  <button type="button" id="updateSelectedStockPrices">해당 연도 가격 업데이트</button>
+                  <button type="button" id="updateSelectedStockPrices">해당 월 가격 업데이트</button>
                 </div>
               </div>
-              <div class="mini-title">해당 연도 보유 종목</div>
+              <div class="mini-title">해당 월 보유 종목</div>
               <div class="holding-list" id="holdingsBody"></div>
             </div>
             <div id="goldInvestmentPanel">
@@ -1012,11 +1013,11 @@
                   <button type="button" id="applyGoldManual">금/비트 반영 및 고정</button>
                 </div>
               </div>
-              <div class="mini-title">해당 연도 금/비트 목록</div>
+              <div class="mini-title">해당 월 금/비트 목록</div>
               <div class="holding-list" id="goldItemsBody"></div>
             </div>
             <p class="status">
-              선택한 연도의 상세 정보는 추가/고정 또는 반영/고정 후 자동 저장됩니다. 칸을 선택하는 것만으로 기존 표 금액은 바뀌지 않습니다.
+              선택한 월의 상세 정보는 추가/고정 또는 반영/고정 후 자동 저장됩니다. 칸을 선택하는 것만으로 기존 표 금액은 바뀌지 않습니다.
             </p>
           </div>
         </aside>
@@ -1135,7 +1136,8 @@
     ];
 
     let assetRows = structuredClone(ASSET_ROWS);
-    let assetYears = [2024, 2025, 2026, 2027, 2028, 2029, 2030];
+    let assetPeriods = [];
+    let assetFutureBackup = {};
     let pensionRows = [];
     let investmentData = {};
     let selectedInvestment = null;
@@ -1229,51 +1231,105 @@
       return `${(value * 100).toFixed(1)}%`;
     }
 
-    function latestActualYear() {
+    function pad2(value) {
+      return String(value).padStart(2, "0");
+    }
+
+    function currentPeriod() {
+      const now = new Date();
+      return `${now.getFullYear()}-${pad2(now.getMonth() + 1)}`;
+    }
+
+    function previousMonthPeriod(period = currentPeriod()) {
+      const [year, month] = String(period).split("-").map(Number);
+      const date = new Date(year, month - 2, 1);
+      return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}`;
+    }
+
+    function periodYear(period) {
+      return Number(String(period).slice(0, 4));
+    }
+
+    function periodMonth(period) {
+      return Number(String(period).slice(5, 7));
+    }
+
+    function periodLabel(period) {
+      return String(period).replace("-", ".");
+    }
+
+    function isValidPeriod(value) {
+      return /^\d{4}-\d{2}$/.test(String(value || ""));
+    }
+
+    function comparePeriods(a, b) {
+      return String(a).localeCompare(String(b));
+    }
+
+    function isCurrentMonthEnd() {
+      const now = new Date();
+      return now.getDate() === new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    }
+
+    function periodForLegacyYear(year) {
       const currentYear = new Date().getFullYear();
-      const years = assetYears.filter((year) => year <= currentYear);
-      return years.length ? Math.max(...years) : Math.max(...assetYears);
+      const numericYear = Number(year);
+      if (!Number.isFinite(numericYear)) return null;
+      if (numericYear < currentYear) return `${numericYear}-12`;
+      if (numericYear === currentYear) return currentPeriod();
+      return null;
     }
 
-    function latestManagedYear() {
-      return latestActualYear();
+    function buildAssetPeriods(startYear = 2024) {
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth() + 1;
+      const periods = [];
+      for (let year = startYear; year < currentYear; year += 1) periods.push(`${year}-12`);
+      for (let month = 1; month <= currentMonth; month += 1) periods.push(`${currentYear}-${pad2(month)}`);
+      return [...new Set(periods)].sort(comparePeriods);
     }
 
-    function isPastManagedYear(year) {
-      return Number(year) < latestManagedYear();
+    function latestManagedPeriod() {
+      const period = currentPeriod();
+      return assetPeriods.includes(period) ? period : (assetPeriods.at(-1) || period);
     }
 
-    function rowValue(row, year) {
-      return Number(row.values[year] || 0);
+    function isPastManagedPeriod(period) {
+      return comparePeriods(period, latestManagedPeriod()) < 0;
     }
 
-    function investmentKey(rowId, year) {
-      return `${rowId}:${year}`;
+    function rowValue(row, period) {
+      return Number(row?.values?.[period] || 0);
     }
 
-    function getInvestment(rowId, year) {
-      return investmentData[investmentKey(rowId, year)] || null;
+    function investmentKey(rowId, period) {
+      return `${rowId}:${period}`;
     }
 
-    function setInvestment(rowId, year, data) {
-      investmentData[investmentKey(rowId, year)] = data;
+    function getInvestment(rowId, period) {
+      return investmentData[investmentKey(rowId, period)] || null;
+    }
+
+    function setInvestment(rowId, period, data) {
+      investmentData[investmentKey(rowId, period)] = data;
     }
 
     function selectedRow() {
       return selectedInvestment ? assetRows.find((item) => item.id === selectedInvestment.rowId) : null;
     }
 
-    function selectedYear() {
-      return selectedInvestment ? Number(selectedInvestment.year) : latestManagedYear();
+    function selectedPeriod() {
+      return selectedInvestment ? selectedInvestment.period : latestManagedPeriod();
     }
 
     function selectedInvestmentData() {
       if (!selectedInvestment) return null;
-      return getInvestment(selectedInvestment.rowId, selectedInvestment.year);
+      return getInvestment(selectedInvestment.rowId, selectedInvestment.period);
     }
 
-    function stockValue(rowId, year = latestManagedYear()) {
-      const data = getInvestment(rowId, year);
+    function stockValue(rowId, period = latestManagedPeriod()) {
+      const data = getInvestment(rowId, period);
       if (!data || !Array.isArray(data.holdings)) return 0;
       return data.holdings.reduce((sum, h) => sum + toNumber(h.shares) * toNumber(h.price), 0);
     }
@@ -1293,20 +1349,20 @@
       return [];
     }
 
-    function investmentTotal(rowId, year) {
-      const data = getInvestment(rowId, year);
+    function investmentTotal(rowId, period) {
+      const data = getInvestment(rowId, period);
       if (!data) return 0;
       if (data.type === "gold") return goldItems(data).reduce((sum, item) => sum + toNumber(item.quantity) * toNumber(item.price), 0);
       if (data.type === "stock") return (data.holdings || []).reduce((sum, h) => sum + toNumber(h.shares) * toNumber(h.price), 0);
       return 0;
     }
 
-    function syncInvestmentValue(rowId, year) {
+    function syncInvestmentValue(rowId, period) {
       const row = assetRows.find((item) => item.id === rowId);
       if (!row) return;
-      const data = getInvestment(rowId, year);
+      const data = getInvestment(rowId, period);
       if (!data) return;
-      row.values[year] = investmentTotal(rowId, year);
+      row.values[period] = investmentTotal(rowId, period);
     }
 
     function normalizeQuery(text) {
@@ -1362,15 +1418,120 @@
       return row && (row.category === "주식" || row.category === "금/비트");
     }
 
-    function isInvestmentCell(rowId, year) {
+    function isInvestmentCell(rowId, period) {
       const row = assetRows.find((item) => item.id === rowId);
-      return isInvestmentRow(row) && assetYears.includes(Number(year));
+      return isInvestmentRow(row) && assetPeriods.includes(period);
+    }
+
+    function normalizeAssetRowPeriods(rows) {
+      const currentYear = new Date().getFullYear();
+      const backup = {};
+      for (const row of rows) {
+        const nextValues = {};
+        for (const [key, value] of Object.entries(row.values || {})) {
+          if (isValidPeriod(key)) {
+            if (comparePeriods(key, currentPeriod()) <= 0) nextValues[key] = value;
+            else {
+              backup[row.id] = backup[row.id] || {};
+              backup[row.id][key] = value;
+            }
+            continue;
+          }
+          const year = Number(key);
+          if (!Number.isFinite(year)) continue;
+          const period = periodForLegacyYear(year);
+          if (period) nextValues[period] = value;
+          else if (year > currentYear) {
+            backup[row.id] = backup[row.id] || {};
+            backup[row.id][key] = value;
+          }
+        }
+        row.values = nextValues;
+      }
+      assetFutureBackup = { ...assetFutureBackup, ...backup };
+    }
+
+    function normalizeInvestmentPeriods(source) {
+      const currentYear = new Date().getFullYear();
+      const normalized = {};
+      const backup = {};
+      for (const [key, data] of Object.entries(source || {})) {
+        const [rowId, rawPeriod] = key.split(":");
+        if (!rowId || !rawPeriod) continue;
+        if (isValidPeriod(rawPeriod)) {
+          if (comparePeriods(rawPeriod, currentPeriod()) <= 0) normalized[investmentKey(rowId, rawPeriod)] = data;
+          else {
+            backup[rowId] = backup[rowId] || {};
+            backup[rowId][rawPeriod] = data;
+          }
+          continue;
+        }
+        const year = Number(rawPeriod);
+        const period = periodForLegacyYear(year);
+        if (period) normalized[investmentKey(rowId, period)] = data;
+        else if (Number.isFinite(year) && year > currentYear) {
+          backup[rowId] = backup[rowId] || {};
+          backup[rowId][rawPeriod] = data;
+        }
+      }
+      assetFutureBackup.investmentData = { ...(assetFutureBackup.investmentData || {}), ...backup };
+      return normalized;
+    }
+
+    function latestPeriodWithAnyData(beforeOrAt = latestManagedPeriod()) {
+      const knownPeriods = new Set(assetPeriods);
+      for (const row of assetRows) {
+        for (const key of Object.keys(row.values || {})) {
+          if (isValidPeriod(key)) knownPeriods.add(key);
+        }
+      }
+      return [...knownPeriods]
+        .filter((period) => comparePeriods(period, beforeOrAt) <= 0)
+        .sort(comparePeriods)
+        .reverse()
+        .find((period) => assetRows.some((row) => Object.prototype.hasOwnProperty.call(row.values || {}, period)));
+    }
+
+    function snapshotPeriod(sourcePeriod, targetPeriod) {
+      if (!sourcePeriod || !targetPeriod) return false;
+      for (const row of assetRows) {
+        row.values = row.values || {};
+        row.values[targetPeriod] = rowValue(row, sourcePeriod);
+      }
+      const copiedInvestment = {};
+      for (const [key, data] of Object.entries(investmentData)) {
+        const [rowId, period] = key.split(":");
+        if (period === sourcePeriod) copiedInvestment[investmentKey(rowId, targetPeriod)] = structuredClone(data);
+      }
+      investmentData = { ...investmentData, ...copiedInvestment };
+      return true;
+    }
+
+    function ensureMonthlySnapshots() {
+      const current = currentPeriod();
+      const previous = previousMonthPeriod(current);
+      let changed = false;
+      if (!assetPeriods.includes(current)) {
+        assetPeriods = buildAssetPeriods(Number(document.getElementById("assetStartYear")?.value) || 2024);
+        changed = true;
+      }
+      const hasPreviousSnapshot = assetRows.some((row) => Object.prototype.hasOwnProperty.call(row.values || {}, previous));
+      if (comparePeriods(previous, current) < 0 && assetPeriods.includes(previous) && !hasPreviousSnapshot) {
+        const source = latestPeriodWithAnyData(previousMonthPeriod(previous)) || latestPeriodWithAnyData(current);
+        if (source) changed = snapshotPeriod(source, previous) || changed;
+      }
+      const hasCurrentSnapshot = assetRows.some((row) => Object.prototype.hasOwnProperty.call(row.values || {}, current));
+      if (isCurrentMonthEnd() && !hasCurrentSnapshot) {
+        const source = latestPeriodWithAnyData(previous) || latestPeriodWithAnyData(current);
+        if (source) changed = snapshotPeriod(source, current) || changed;
+      }
+      return changed;
     }
 
     function applyGoldToAssetRow() {
       if (!selectedInvestment || selectedRow()?.category !== "금/비트") {
         const status = document.getElementById("priceStatus");
-        if (status) status.textContent = "먼저 자산 기록표에서 금/비트 연도 칸을 선택해주세요.";
+        if (status) status.textContent = "먼저 자산 기록표에서 금/비트 월 칸을 선택해주세요.";
         return;
       }
       const kindInput = document.getElementById("goldAssetKind");
@@ -1399,12 +1560,12 @@
         updatedAt: new Date().toISOString().slice(0, 10),
         locked: true
       };
-      setInvestment(selectedInvestment.rowId, selectedInvestment.year, data);
-      syncInvestmentValue(selectedInvestment.rowId, selectedInvestment.year);
+      setInvestment(selectedInvestment.rowId, selectedInvestment.period, data);
+      syncInvestmentValue(selectedInvestment.rowId, selectedInvestment.period);
       gramsInput.value = "";
       priceInput.value = "";
       refreshAssetView();
-      if (status) status.textContent = `${selectedInvestment.year}년 ${kindInput.value} 항목 반영 및 자동 저장 완료`;
+      if (status) status.textContent = `${periodLabel(selectedInvestment.period)} ${kindInput.value} 항목 반영 및 자동 저장 완료`;
     }
 
     async function resolveSymbol(query) {
@@ -1424,8 +1585,8 @@
 
     function updateStockRowsFromHoldings() {
       for (const key of Object.keys(investmentData)) {
-        const [rowId, yearText] = key.split(":");
-        syncInvestmentValue(rowId, Number(yearText));
+        const [rowId, period] = key.split(":");
+        syncInvestmentValue(rowId, period);
       }
     }
 
@@ -1433,7 +1594,9 @@
       try {
         localStorage.setItem("pensionAssetRows", JSON.stringify(assetRows));
         localStorage.setItem("pensionInvestmentData", JSON.stringify(investmentData));
-        localStorage.setItem("pensionAssetYears", JSON.stringify(assetYears));
+        localStorage.setItem("pensionAssetPeriods", JSON.stringify(assetPeriods));
+        localStorage.setItem("pensionAssetFutureBackup", JSON.stringify(assetFutureBackup));
+        localStorage.removeItem("pensionAssetYears");
         localStorage.removeItem("pensionHoldings");
         localStorage.removeItem("pensionGoldState");
         const status = document.getElementById("saveStatus");
@@ -1466,8 +1629,8 @@
       const head = document.getElementById("assetHead");
       const body = document.getElementById("assetBody");
       if (!cols || !head || !body) return;
-      cols.innerHTML = `<col style="width:70px"><col style="width:178px">${assetYears.map(() => "<col>").join("")}`;
-      head.innerHTML = `<tr><th>대분류</th><th>소분류</th>${assetYears.map((year) => `<th class="${year > new Date().getFullYear() ? "estimate" : ""}">${year}${year > new Date().getFullYear() ? "(E)" : ""}</th>`).join("")}</tr>`;
+      cols.innerHTML = `<col style="width:70px"><col style="width:178px">${assetPeriods.map(() => "<col>").join("")}`;
+      head.innerHTML = `<tr><th>대분류</th><th>소분류</th>${assetPeriods.map((period) => `<th>${periodLabel(period)}</th>`).join("")}</tr>`;
       const spans = categorySpans();
       const used = new Set();
       const html = [];
@@ -1478,22 +1641,21 @@
           used.add(row.category);
         }
         cells.push(`<td class="label">${row.label}</td>`);
-        for (const year of assetYears) {
-          const value = rowValue(row, year);
+        for (const period of assetPeriods) {
+          const value = rowValue(row, period);
           const neg = value < 0 ? " negative" : "";
           if (isInvestmentRow(row)) {
-            const selected = selectedInvestment && selectedInvestment.rowId === row.id && Number(selectedInvestment.year) === Number(year);
-            const hasData = !!getInvestment(row.id, year);
-            const futureZero = year > new Date().getFullYear() && value === 0;
-            cells.push(`<td class="value investment-cell${neg}${selected ? " selected-investment" : ""}${hasData ? " has-investment" : ""}${futureZero ? " future-zero" : ""}" data-row="${row.id}" data-year="${year}" title="${year}년 ${row.category} 상세 정보 편집">${futureZero ? "-" : won(value)}</td>`);
+            const selected = selectedInvestment && selectedInvestment.rowId === row.id && selectedInvestment.period === period;
+            const hasData = !!getInvestment(row.id, period);
+            cells.push(`<td class="value investment-cell${neg}${selected ? " selected-investment" : ""}${hasData ? " has-investment" : ""}" data-row="${row.id}" data-period="${period}" title="${periodLabel(period)} ${row.category} 상세 정보 편집">${won(value)}</td>`);
           } else {
-            cells.push(`<td class="value manual${neg}"><input class="money" data-row="${row.id}" data-year="${year}" value="${won(value)}"></td>`);
+            cells.push(`<td class="value manual${neg}"><input class="money" data-row="${row.id}" data-period="${period}" value="${won(value)}"></td>`);
           }
         }
         html.push(`<tr>${cells.join("")}</tr>`);
       }
 
-      const netByYear = assetYears.map((year) => assetRows.reduce((sum, row) => sum + rowValue(row, year), 0));
+      const netByYear = assetPeriods.map((period) => assetRows.reduce((sum, row) => sum + rowValue(row, period), 0));
       html.push(`<tr class="net-row"><td></td><td class="label">순자산</td>${netByYear.map((value) => `<td class="value">${won(value)}</td>`).join("")}</tr>`);
       html.push(`<tr class="growth-row"><td></td><td class="label">순자산 증가폭</td>${netByYear.map((value, index) => {
         if (index === 0) return "<td></td>";
@@ -1511,15 +1673,15 @@
       const input = event.target;
       const row = assetRows.find((item) => item.id === input.dataset.row);
       if (!row) return;
-      row.values[input.dataset.year] = toNumber(input.value);
-      input.value = won(row.values[input.dataset.year]);
+      row.values[input.dataset.period] = toNumber(input.value);
+      input.value = won(row.values[input.dataset.period]);
       renderAssetTable({ charts: true });
       persistAssetData();
     }
 
     function onInvestmentCellClick(event) {
       const cell = event.currentTarget;
-      selectedInvestment = { rowId: cell.dataset.row, year: Number(cell.dataset.year) };
+      selectedInvestment = { rowId: cell.dataset.row, period: cell.dataset.period };
       // 칸 선택은 "조회/편집 준비" 동작만 한다.
       // 기존 표 금액을 0으로 덮어쓰지 않도록, 상세 투자 정보는 사용자가 실제로 추가/반영할 때만 만든다.
       resetInvestmentDrafts();
@@ -1528,18 +1690,18 @@
     }
 
     function renderAssetSummary() {
-      const year = latestManagedYear();
-      const prevYear = assetYears[assetYears.indexOf(year) - 1];
-      const net = assetRows.reduce((sum, row) => sum + rowValue(row, year), 0);
-      const prevNet = prevYear ? assetRows.reduce((sum, row) => sum + rowValue(row, prevYear), 0) : 0;
-      const stock = assetRows.filter((row) => row.category === "주식").reduce((sum, row) => sum + rowValue(row, year), 0);
-      const debt = assetRows.filter((row) => row.category === "대출").reduce((sum, row) => sum + rowValue(row, year), 0);
+      const period = latestManagedPeriod();
+      const prevPeriod = assetPeriods[assetPeriods.indexOf(period) - 1];
+      const net = assetRows.reduce((sum, row) => sum + rowValue(row, period), 0);
+      const prevNet = prevPeriod ? assetRows.reduce((sum, row) => sum + rowValue(row, prevPeriod), 0) : 0;
+      const stock = assetRows.filter((row) => row.category === "주식").reduce((sum, row) => sum + rowValue(row, period), 0);
+      const debt = assetRows.filter((row) => row.category === "대출").reduce((sum, row) => sum + rowValue(row, period), 0);
       const netEl = document.getElementById("latestNetWorth");
       const growthEl = document.getElementById("latestGrowth");
       const stockEl = document.getElementById("latestStockValue");
       const debtEl = document.getElementById("latestDebt");
       const metricEls = [netEl, growthEl, stockEl, debtEl].filter(Boolean).map((el) => el.closest(".metric")).filter(Boolean);
-      const hasData = assetRows.some((row) => row.category !== "순자산" && row.category !== "증가율" && rowValue(row, year) !== 0);
+      const hasData = assetRows.some((row) => row.category !== "순자산" && row.category !== "증가율" && rowValue(row, period) !== 0);
       metricEls.forEach((el) => el.classList.toggle("empty", !hasData));
       if (!hasData) {
         if (netEl) netEl.textContent = "아직 입력된 데이터 없음";
@@ -1548,28 +1710,30 @@
         if (debtEl) debtEl.textContent = "데이터 입력 후 표시됩니다";
       } else {
         if (netEl) netEl.textContent = compactWon(net);
-        if (growthEl) growthEl.textContent = prevNet ? pct((net - prevNet) / Math.abs(prevNet)) : "전년 데이터 없음";
+        if (growthEl) growthEl.textContent = prevNet ? pct((net - prevNet) / Math.abs(prevNet)) : "직전 기록 없음";
         if (stockEl) stockEl.textContent = compactWon(stock);
         if (debtEl) debtEl.textContent = compactWon(debt);
       }
-      renderManagedYearUi(year);
+      renderManagedYearUi(period);
     }
 
-    function renderManagedYearUi(year = latestManagedYear()) {
+    function renderManagedYearUi(period = latestManagedPeriod()) {
       const badge = document.getElementById("managedYearBadge");
       const latestButton = document.getElementById("updateLatestPrices");
       const selectedButton = document.getElementById("updateSelectedYearPrices");
-      if (badge) badge.textContent = `관리 연도 ${year}`;
-      if (latestButton) latestButton.textContent = "최신 연도 전체 가격 업데이트";
-      if (selectedButton) selectedButton.textContent = "선택 연도 가격 업데이트";
+      const endInput = document.getElementById("assetEndYear");
+      if (badge) badge.textContent = `관리 월 ${periodLabel(period)}`;
+      if (endInput) endInput.value = periodLabel(period);
+      if (latestButton) latestButton.textContent = "최신 월 전체 가격 업데이트";
+      if (selectedButton) selectedButton.textContent = "선택 월 가격 업데이트";
     }
 
-    function assetCategoryTotals(year) {
+    function assetCategoryTotals(period) {
       const totals = { "부동산": 0, "연금": 0, "주식": 0, "금/비트": 0, "현금": 0, "대출": 0 };
       for (const row of assetRows) {
         const key = row.category === "주식" && /연금|퇴직|IRP/i.test(row.label || "") ? "연금" : row.category;
         if (totals[key] === undefined) totals[key] = 0;
-        totals[key] += rowValue(row, year);
+        totals[key] += rowValue(row, period);
       }
       return totals;
     }
@@ -1613,12 +1777,12 @@
       const canvas = document.getElementById("assetNetChart");
       if (!canvas || !window.Chart) return;
       ensureChartDataLabels();
-      const totals = assetYears.map((year) => assetCategoryTotals(year));
+      const totals = assetPeriods.map((period) => assetCategoryTotals(period));
       const netValues = totals.map((total) => Object.values(total).reduce((sum, value) => sum + value, 0));
       const assetTotals = totals.map((total) => ["부동산", "연금", "주식", "금/비트", "현금"].reduce((sum, key) => sum + Math.max(0, total[key] || 0), 0));
       const maxAssetTotal = Math.max(0, ...assetTotals);
-      const labels = assetYears.map((year) => `${year}${year > new Date().getFullYear() ? "(E)" : ""}`);
-      const managedIndex = Math.max(0, assetYears.indexOf(latestManagedYear()));
+      const labels = assetPeriods.map(periodLabel);
+      const managedIndex = Math.max(0, assetPeriods.indexOf(latestManagedPeriod()));
       const latestNet = netValues[managedIndex] ?? netValues.at(-1) ?? 0;
       const latestTotals = totals[managedIndex] || {};
       const prevNet = managedIndex > 0 ? netValues[managedIndex - 1] : 0;
@@ -1632,7 +1796,7 @@
       const kpiStockShare = document.getElementById("chartKpiStockShare");
       const kpiRealEstateShare = document.getElementById("chartKpiRealEstateShare");
       if (kpiNet) kpiNet.textContent = positiveTotal ? compactWon(latestNet) : "데이터 입력 후 표시";
-      if (kpiDelta) kpiDelta.textContent = prevNet ? compactWon(latestNet - prevNet) : "전년 데이터 없음";
+      if (kpiDelta) kpiDelta.textContent = prevNet ? compactWon(latestNet - prevNet) : "직전 기록 없음";
       if (kpiStockShare) kpiStockShare.textContent = stockShare === null ? "데이터 입력 후 표시" : pct(stockShare);
       if (kpiRealEstateShare) kpiRealEstateShare.textContent = realEstateShare === null ? "데이터 입력 후 표시" : pct(realEstateShare);
       if (assetNetChartInstance) assetNetChartInstance.destroy();
@@ -1742,8 +1906,8 @@
       const canvas = document.getElementById("assetMixChart");
       if (!canvas || !window.Chart) return;
       ensureChartDataLabels();
-      const year = latestManagedYear();
-      const totals = assetCategoryTotals(year);
+      const period = latestManagedPeriod();
+      const totals = assetCategoryTotals(period);
       const keys = ["부동산", "연금", "주식", "금/비트", "현금"];
       const labels = ["부동산", "연금", "주식", "금/비트", "현금"];
       const values = keys.map((key) => Math.max(0, totals[key] || 0));
@@ -1836,14 +2000,14 @@
       if (!totalEl || !countEl || !labelEl || !countLabelEl || !row) return;
       if (row.category === "금/비트") {
         const count = goldItems(selectedInvestmentData()).length;
-        labelEl.textContent = "해당 연도 금/비트 합계";
+        labelEl.textContent = "해당 월 금/비트 합계";
         countLabelEl.textContent = "항목 수";
         totalEl.textContent = compactWon(currentValue);
         countEl.textContent = `${count}개`;
         return;
       }
       const count = activeHoldings().length;
-      labelEl.textContent = "해당 연도 주식 합계";
+      labelEl.textContent = "해당 월 주식 합계";
       countLabelEl.textContent = "보유 종목";
       totalEl.textContent = compactWon(currentValue);
       countEl.textContent = `${count}개`;
@@ -1877,12 +2041,12 @@
       body.hidden = false;
       body.style.display = "";
       const row = selectedRow();
-      const currentValue = rowValue(row, selectedInvestment.year);
+      const currentValue = rowValue(row, selectedInvestment.period);
       const data = selectedInvestmentData();
       const detailText = data ? "상세정보 있음" : "상세정보 없음, 기존 표 금액 유지";
-      const selectedParts = [selectedInvestment.year, row.category, row.label];
-      if (isPastManagedYear(selectedInvestment.year)) selectedParts.push("과거 기록");
-      title.textContent = `${selectedInvestment.year}년 ${row.category} 자산 편집${isPastManagedYear(selectedInvestment.year) ? " · 과거 기록" : ""}`;
+      const selectedParts = [periodLabel(selectedInvestment.period), row.category, row.label];
+      if (isPastManagedPeriod(selectedInvestment.period)) selectedParts.push("과거 기록");
+      title.textContent = `${periodLabel(selectedInvestment.period)} ${row.category} 자산 편집${isPastManagedPeriod(selectedInvestment.period) ? " · 과거 기록" : ""}`;
       badge.textContent = selectedParts.join(" · ");
       label.textContent = `${row.label} / 현재 표 금액 ${won(currentValue)} / ${detailText}`;
       renderInvestmentSummary(row, currentValue);
@@ -1924,7 +2088,7 @@
         data.holdings.splice(Number(button.dataset.delete), 1);
         data.locked = true;
         data.updatedAt = new Date().toISOString().slice(0, 10);
-        syncInvestmentValue(selectedInvestment.rowId, selectedInvestment.year);
+        syncInvestmentValue(selectedInvestment.rowId, selectedInvestment.period);
         refreshAssetView();
       }));
     }
@@ -1936,7 +2100,7 @@
       data.holdings[Number(input.dataset.index)][input.dataset.field] = toNumber(input.value);
       data.locked = true;
       data.updatedAt = new Date().toISOString().slice(0, 10);
-      syncInvestmentValue(selectedInvestment.rowId, selectedInvestment.year);
+      syncInvestmentValue(selectedInvestment.rowId, selectedInvestment.period);
       refreshAssetView();
     }
 
@@ -1972,13 +2136,13 @@
         if (!data) return;
         const items = goldItems(data);
         items.splice(Number(button.dataset.deleteGold), 1);
-        setInvestment(selectedInvestment.rowId, selectedInvestment.year, {
+        setInvestment(selectedInvestment.rowId, selectedInvestment.period, {
           type: "gold",
           items,
           updatedAt: new Date().toISOString().slice(0, 10),
           locked: true
         });
-        syncInvestmentValue(selectedInvestment.rowId, selectedInvestment.year);
+        syncInvestmentValue(selectedInvestment.rowId, selectedInvestment.period);
         refreshAssetView();
       }));
     }
@@ -1991,13 +2155,13 @@
       const item = items[Number(input.dataset.index)];
       if (!item) return;
       item[input.dataset.field] = toNumber(input.value);
-      setInvestment(selectedInvestment.rowId, selectedInvestment.year, {
+      setInvestment(selectedInvestment.rowId, selectedInvestment.period, {
         type: "gold",
         items,
         updatedAt: new Date().toISOString().slice(0, 10),
         locked: true
       });
-      syncInvestmentValue(selectedInvestment.rowId, selectedInvestment.year);
+      syncInvestmentValue(selectedInvestment.rowId, selectedInvestment.period);
       refreshAssetView();
     }
 
@@ -2147,7 +2311,7 @@
     async function updateGoldPrice() {
       const status = document.getElementById("priceStatus");
       if (!selectedInvestment || selectedRow()?.category !== "금/비트") {
-        if (status) status.textContent = "먼저 자산 기록표에서 금/비트 연도 칸을 선택해주세요.";
+        if (status) status.textContent = "먼저 자산 기록표에서 금/비트 월 칸을 선택해주세요.";
         return;
       }
       if (status) status.textContent = "KRX 금 가격 업데이트 중...";
@@ -2212,70 +2376,70 @@
       return { ok, errors, sources };
     }
 
-    async function updateInvestmentYearPrices(year, { rowId = null } = {}) {
+    async function updateInvestmentPeriodPrices(period, { rowId = null } = {}) {
       let ok = 0;
       const errors = [];
       const sources = new Set();
       const targets = Object.entries(investmentData).filter(([key, data]) => {
-        const [keyRowId, keyYear] = key.split(":");
-        if (Number(keyYear) !== Number(year)) return false;
+        const [keyRowId, keyPeriod] = key.split(":");
+        if (keyPeriod !== period) return false;
         if (rowId && keyRowId !== rowId) return false;
         return data && (data.type === "stock" || data.type === "gold");
       });
       for (const [key, data] of targets) {
-        const [keyRowId, keyYear] = key.split(":");
+        const [keyRowId, keyPeriod] = key.split(":");
         const result = await updateInvestmentRecordPrices(data);
         ok += result.ok;
         result.errors.forEach((error) => errors.push(error));
         result.sources.forEach((source) => sources.add(source));
-        setInvestment(keyRowId, Number(keyYear), data);
-        syncInvestmentValue(keyRowId, Number(keyYear));
+        setInvestment(keyRowId, keyPeriod, data);
+        syncInvestmentValue(keyRowId, keyPeriod);
       }
       refreshAssetView();
       return { ok, errors, sources };
     }
 
-    function confirmPastYearUpdate(year) {
-      if (!isPastManagedYear(year)) return true;
-      return window.confirm("과거 연도 기록을 현재가로 업데이트할 수 있습니다. 기록 보존을 위해 신중히 진행하세요. 계속할까요?");
+    function confirmPastPeriodUpdate(period) {
+      if (!isPastManagedPeriod(period)) return true;
+      return window.confirm("과거 기록을 현재가로 업데이트할 수 있습니다. 기록 보존을 위해 신중히 진행하세요. 계속할까요?");
     }
 
     async function updateLatestYearPrices() {
       const status = document.getElementById("priceStatus");
-      const year = latestManagedYear();
-      if (status) status.textContent = `${year}년 투자 자산 가격 업데이트 중...`;
-      const result = await updateInvestmentYearPrices(year);
+      const period = latestManagedPeriod();
+      if (status) status.textContent = `${periodLabel(period)} 투자 자산 가격 업데이트 중...`;
+      const result = await updateInvestmentPeriodPrices(period);
       if (status) {
         status.textContent = result.ok
-          ? `${year}년 현재 자산 ${result.ok}개 가격 업데이트 및 자동 저장됨${result.errors.length ? `, 실패 ${result.errors.length}개` : ""}`
-          : `${year}년에 업데이트할 투자 자산이 없거나 가격 조회에 실패했습니다.`;
+          ? `${periodLabel(period)} 현재 자산 ${result.ok}개 가격 업데이트 및 자동 저장됨${result.errors.length ? `, 실패 ${result.errors.length}개` : ""}`
+          : `${periodLabel(period)}에 업데이트할 투자 자산이 없거나 가격 조회에 실패했습니다.`;
       }
     }
 
     async function updateSelectedYearPrices() {
       const status = document.getElementById("priceStatus");
       if (!selectedInvestment) {
-        if (status) status.textContent = "먼저 주식 또는 금/비트 연도 칸을 선택해주세요.";
+        if (status) status.textContent = "먼저 주식 또는 금/비트 월 칸을 선택해주세요.";
         return;
       }
-      const year = Number(selectedInvestment.year);
-      if (!confirmPastYearUpdate(year)) return;
-      if (status) status.textContent = `${year}년 투자 자산 가격 업데이트 중...`;
-      const result = await updateInvestmentYearPrices(year);
+      const period = selectedInvestment.period;
+      if (!confirmPastPeriodUpdate(period)) return;
+      if (status) status.textContent = `${periodLabel(period)} 투자 자산 가격 업데이트 중...`;
+      const result = await updateInvestmentPeriodPrices(period);
       if (status) {
         status.textContent = result.ok
-          ? `${year}년 투자 자산 ${result.ok}개 가격 업데이트 및 자동 저장됨${result.errors.length ? `, 실패 ${result.errors.length}개` : ""}`
-          : `${year}년에 업데이트할 투자 자산이 없거나 가격 조회에 실패했습니다.`;
+          ? `${periodLabel(period)} 투자 자산 ${result.ok}개 가격 업데이트 및 자동 저장됨${result.errors.length ? `, 실패 ${result.errors.length}개` : ""}`
+          : `${periodLabel(period)}에 업데이트할 투자 자산이 없거나 가격 조회에 실패했습니다.`;
       }
     }
 
     async function updatePrices() {
       const status = document.getElementById("priceStatus");
       if (!selectedInvestment || !selectedRow()) {
-        if (status) status.textContent = "먼저 업데이트할 주식 또는 금/비트 연도 칸을 선택해주세요.";
+        if (status) status.textContent = "먼저 업데이트할 주식 또는 금/비트 월 칸을 선택해주세요.";
         return;
       }
-      if (!confirmPastYearUpdate(selectedInvestment.year)) return;
+      if (!confirmPastPeriodUpdate(selectedInvestment.period)) return;
       const row = selectedRow();
       if (row.category === "금/비트") {
         await updateGoldPrice();
@@ -2283,17 +2447,17 @@
       }
       const data = selectedInvestmentData();
       if (!data || !Array.isArray(data.holdings) || data.holdings.length === 0) {
-        if (status) status.textContent = "선택한 연도에 등록된 종목이 없습니다.";
+        if (status) status.textContent = "선택한 월에 등록된 종목이 없습니다.";
         return;
       }
-      if (status) status.textContent = `${selectedInvestment.year}년 ${row.label} 종가 업데이트 중...`;
+      if (status) status.textContent = `${periodLabel(selectedInvestment.period)} ${row.label} 종가 업데이트 중...`;
       const { ok, errors, sources } = await updateInvestmentRecordPrices(data);
-      setInvestment(selectedInvestment.rowId, selectedInvestment.year, data);
-      syncInvestmentValue(selectedInvestment.rowId, selectedInvestment.year);
+      setInvestment(selectedInvestment.rowId, selectedInvestment.period, data);
+      syncInvestmentValue(selectedInvestment.rowId, selectedInvestment.period);
       refreshAssetView();
       if (status) {
         status.textContent = ok
-          ? `${selectedInvestment.year}년 ${ok}개 종목 가격 업데이트 및 자동 저장 완료 (${[...sources].join(", ")})${errors.length ? `, 실패 ${errors.length}개` : ""}`
+          ? `${periodLabel(selectedInvestment.period)} ${ok}개 종목 가격 업데이트 및 자동 저장 완료 (${[...sources].join(", ")})${errors.length ? `, 실패 ${errors.length}개` : ""}`
           : `가격 업데이트 실패. 가격 연결 상태를 확인하거나 현재가를 직접 입력해주세요. ${errors[0] || ""}`;
       }
     }
@@ -2397,19 +2561,28 @@
 
     function rebuildAssetYears() {
       const start = Math.round(toNumber(document.getElementById("assetStartYear").value));
-      const end = Math.round(toNumber(document.getElementById("assetEndYear").value));
-      assetYears = [];
-      for (let year = start; year <= end; year += 1) assetYears.push(year);
-      if (selectedInvestment && !assetYears.includes(Number(selectedInvestment.year))) selectedInvestment = null;
+      assetPeriods = buildAssetPeriods(start || 2024);
+      if (selectedInvestment && !assetPeriods.includes(selectedInvestment.period)) selectedInvestment = null;
       renderAssetTable();
       renderInvestmentPanel();
       persistAssetData();
     }
 
+    function closeCurrentMonthSnapshot() {
+      const status = document.getElementById("priceStatus");
+      const target = currentPeriod();
+      const source = latestPeriodWithAnyData(target) || latestManagedPeriod();
+      if (!assetPeriods.includes(target)) assetPeriods = buildAssetPeriods(Number(document.getElementById("assetStartYear")?.value) || 2024);
+      snapshotPeriod(source, target);
+      selectedInvestment = null;
+      refreshAssetView();
+      if (status) status.textContent = `${periodLabel(target)} 마감 스냅샷 저장 완료`;
+    }
+
     async function addHolding() {
       const status = document.getElementById("priceStatus");
       if (!selectedInvestment || selectedRow()?.category !== "주식") {
-        if (status) status.textContent = "먼저 자산 기록표에서 주식 연도 칸을 선택해주세요.";
+        if (status) status.textContent = "먼저 자산 기록표에서 주식 월 칸을 선택해주세요.";
         return;
       }
       const nameInput = document.getElementById("holdingName");
@@ -2456,20 +2629,20 @@
         updatedAt,
         source
       });
-      setInvestment(selectedInvestment.rowId, selectedInvestment.year, data);
-      syncInvestmentValue(selectedInvestment.rowId, selectedInvestment.year);
+      setInvestment(selectedInvestment.rowId, selectedInvestment.period, data);
+      syncInvestmentValue(selectedInvestment.rowId, selectedInvestment.period);
       nameInput.value = "";
       sharesInput.value = "";
       priceInput.value = "";
       clearSearchResults();
       refreshAssetView();
-      if (status) status.textContent = `${selectedInvestment.year}년 ${picked.name} ${shares.toLocaleString("ko-KR")}주 추가 및 자동 저장 완료`;
+      if (status) status.textContent = `${periodLabel(selectedInvestment.period)} ${picked.name} ${shares.toLocaleString("ko-KR")}주 추가 및 자동 저장 완료`;
     }
 
     function exportAssetCsv() {
-      const header = ["대분류", "소분류", ...assetYears];
-      const lines = assetRows.map((row) => [row.category, row.label, ...assetYears.map((year) => Math.round(rowValue(row, year)))].join(","));
-      const net = ["", "순자산", ...assetYears.map((year) => Math.round(assetRows.reduce((sum, row) => sum + rowValue(row, year), 0)))];
+      const header = ["대분류", "소분류", ...assetPeriods.map(periodLabel)];
+      const lines = assetRows.map((row) => [row.category, row.label, ...assetPeriods.map((period) => Math.round(rowValue(row, period)))].join(","));
+      const net = ["", "순자산", ...assetPeriods.map((period) => Math.round(assetRows.reduce((sum, row) => sum + rowValue(row, period), 0)))];
       const csv = "\ufeff" + [header.join(","), ...lines, net.join(",")].join("\n");
       const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
       const link = document.createElement("a");
@@ -2483,26 +2656,50 @@
       try {
         const savedRows = localStorage.getItem("pensionAssetRows");
         const savedInvestment = localStorage.getItem("pensionInvestmentData");
+        const savedPeriods = localStorage.getItem("pensionAssetPeriods");
         const savedYears = localStorage.getItem("pensionAssetYears");
+        const savedFutureBackup = localStorage.getItem("pensionAssetFutureBackup");
+        if (savedFutureBackup) {
+          const parsedBackup = JSON.parse(savedFutureBackup);
+          if (parsedBackup && typeof parsedBackup === "object" && !Array.isArray(parsedBackup)) assetFutureBackup = parsedBackup;
+        }
         if (savedRows) {
           const parsedRows = JSON.parse(savedRows);
           if (Array.isArray(parsedRows)) assetRows = parsedRows;
         }
-        if (savedYears) {
+        normalizeAssetRowPeriods(assetRows);
+        if (savedPeriods) {
+          const parsedPeriods = JSON.parse(savedPeriods);
+          if (Array.isArray(parsedPeriods) && parsedPeriods.every(isValidPeriod)) {
+            const start = Math.min(...parsedPeriods.map(periodYear));
+            assetPeriods = buildAssetPeriods(Number.isFinite(start) ? start : 2024);
+          }
+        } else if (savedYears) {
           const parsedYears = JSON.parse(savedYears);
-          if (Array.isArray(parsedYears) && parsedYears.every((year) => Number.isFinite(Number(year)))) assetYears = parsedYears.map(Number);
+          if (Array.isArray(parsedYears) && parsedYears.every((year) => Number.isFinite(Number(year)))) {
+            const start = Math.min(...parsedYears.filter((year) => Number(year) <= new Date().getFullYear()).map(Number));
+            assetPeriods = buildAssetPeriods(Number.isFinite(start) ? start : 2024);
+          }
         }
+        if (!assetPeriods.length) assetPeriods = buildAssetPeriods(2024);
         if (savedInvestment) {
           const parsedInvestment = JSON.parse(savedInvestment);
-          if (parsedInvestment && typeof parsedInvestment === "object" && !Array.isArray(parsedInvestment)) investmentData = parsedInvestment;
+          if (parsedInvestment && typeof parsedInvestment === "object" && !Array.isArray(parsedInvestment)) {
+            investmentData = normalizeInvestmentPeriods(parsedInvestment);
+          }
         }
+        const changed = ensureMonthlySnapshots();
         const startInput = document.getElementById("assetStartYear");
         const endInput = document.getElementById("assetEndYear");
-        if (startInput) startInput.value = assetYears[0];
-        if (endInput) endInput.value = assetYears.at(-1);
+        if (startInput) startInput.value = periodYear(assetPeriods[0] || currentPeriod());
+        if (endInput) endInput.value = periodLabel(latestManagedPeriod());
+        if (changed || savedYears) persistAssetData();
       } catch (error) {
         const status = document.getElementById("priceStatus");
         if (status) status.textContent = `자동 복원 실패: ${error.message}`;
+        assetRows = structuredClone(ASSET_ROWS);
+        assetPeriods = buildAssetPeriods(2024);
+        normalizeAssetRowPeriods(assetRows);
       }
     }
 
@@ -2728,9 +2925,9 @@
     }
 
     function useLatestAssets() {
-      const year = latestActualYear();
-      const privateValue = rowValue(assetRows.find((r) => r.id === "retirementStock"), year);
-      const irpTaxable = rowValue(assetRows.find((r) => r.id === "hynixStock"), year);
+      const period = latestManagedPeriod();
+      const privateValue = rowValue(assetRows.find((r) => r.id === "retirementStock"), period);
+      const irpTaxable = rowValue(assetRows.find((r) => r.id === "hynixStock"), period);
       simInputs.private_balance.value = won(privateValue);
       simInputs.irp_taxable_balance.value = won(irpTaxable);
       runPension();
@@ -2765,6 +2962,7 @@
         if (tab.dataset.tab === "pension") renderCharts();
       }));
       bind("rebuildAssetYears", "click", rebuildAssetYears);
+      bind("closeCurrentMonth", "click", closeCurrentMonthSnapshot);
       bind("checkProxy", "click", checkLocalProxy);
       bind("updateLatestPrices", "click", updateLatestYearPrices);
       bind("updateSelectedYearPrices", "click", updateSelectedYearPrices);
@@ -2779,8 +2977,8 @@
       bind("applyGoldManual", "click", applyGoldToAssetRow);
       bind("clearHoldings", "click", () => {
         if (!selectedInvestment || selectedRow()?.category !== "주식") return;
-        setInvestment(selectedInvestment.rowId, selectedInvestment.year, { type: "stock", holdings: [], updatedAt: "", locked: true });
-        syncInvestmentValue(selectedInvestment.rowId, selectedInvestment.year);
+        setInvestment(selectedInvestment.rowId, selectedInvestment.period, { type: "stock", holdings: [], updatedAt: "", locked: true });
+        syncInvestmentValue(selectedInvestment.rowId, selectedInvestment.period);
         clearSearchResults();
         refreshAssetView();
       });
