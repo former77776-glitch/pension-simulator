@@ -934,12 +934,210 @@
       line-height: 1.45;
     }
 
+    .house-plan {
+      display: grid;
+      gap: 12px;
+    }
+
+    .house-plan-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: start;
+      padding: 14px;
+    }
+
+    .house-plan-head h2 {
+      margin: 0 0 4px;
+      font-size: 20px;
+      letter-spacing: 0;
+    }
+
+    .house-plan-head p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .house-status {
+      min-width: 170px;
+      text-align: right;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .house-layout {
+      display: grid;
+      grid-template-columns: 390px minmax(0, 1fr);
+      gap: 12px;
+      align-items: start;
+    }
+
+    .house-form,
+    .ratio-list {
+      display: grid;
+      gap: 8px;
+      padding: 12px;
+    }
+
+    .house-form h3,
+    .ratio-list h3 {
+      margin: 0 0 2px;
+      font-size: 15px;
+    }
+
+    .house-field {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 150px 34px;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .house-field label,
+    .ratio-item label {
+      min-width: 0;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1.3;
+    }
+
+    .house-field input,
+    .house-field select {
+      height: 32px;
+      min-width: 0;
+      text-align: right;
+    }
+
+    .house-field select {
+      text-align: left;
+    }
+
+    .house-field .unit {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .ratio-item {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 1fr 64px;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .ratio-item input[type="range"] {
+      padding: 0;
+    }
+
+    .ratio-item input[type="number"] {
+      height: 30px;
+      text-align: right;
+    }
+
+    .house-summary {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .house-summary .metric {
+      min-height: 78px;
+    }
+
+    .loan-ok {
+      color: var(--green);
+    }
+
+    .loan-bad {
+      color: var(--red);
+    }
+
+    .house-chart-card {
+      padding: 14px;
+      min-width: 0;
+    }
+
+    .house-chart-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .house-chart-box {
+      height: 300px;
+      min-height: 300px;
+      position: relative;
+    }
+
+    .house-chart-box canvas {
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    .house-tables {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .house-table-card {
+      padding: 12px;
+      min-width: 0;
+      overflow: auto;
+    }
+
+    .house-table-card h3 {
+      margin: 0 0 8px;
+      font-size: 15px;
+    }
+
+    .house-table {
+      width: 100%;
+      min-width: 620px;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: 12px;
+    }
+
+    .house-table th,
+    .house-table td {
+      border: 1px solid var(--border);
+      padding: 7px 8px;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .house-table th {
+      background: #eff6ff;
+      color: var(--navy);
+      font-weight: 900;
+    }
+
+    .house-table th:first-child,
+    .house-table td:first-child {
+      text-align: left;
+      width: 130px;
+      background: #f8fafc;
+      font-weight: 800;
+    }
+
     @media (max-width: 1100px) {
-      .asset-grid, .sim-grid, .charts, .summary, .analysis-strip, .chart-kpis {
+      .asset-grid, .sim-grid, .charts, .summary, .analysis-strip, .chart-kpis, .house-layout, .house-summary, .house-tables {
         grid-template-columns: 1fr;
       }
       .sidebar {
         max-height: none;
+      }
+      .house-plan-head {
+        display: grid;
+      }
+      .house-status {
+        text-align: left;
       }
     }
   </style>
@@ -951,6 +1149,7 @@
       <nav class="tabs">
         <button type="button" class="tab active" data-tab="assets">자산 기록</button>
         <button type="button" class="tab" data-tab="pension">연금 시뮬레이션</button>
+        <button type="button" class="tab" data-tab="housePlan">부동산 구매 계획</button>
       </nav>
     </div>
 
@@ -1141,6 +1340,84 @@
         </section>
       </div>
     </section>
+
+    <section id="housePlanPanel" class="panel">
+      <div class="house-plan">
+        <div class="card house-plan-head">
+          <div>
+            <h2>부동산 구매 계획</h2>
+            <p>자산기록 최신 월을 기준으로 현금화 가능한 자산과 필요 대출금을 계산합니다. 연금성 자산과 부채성 항목은 가용 재원에서 제외합니다.</p>
+          </div>
+          <div class="house-status" id="housePlanStatus">기준 월 -</div>
+        </div>
+
+        <div class="house-layout">
+          <aside class="card house-form">
+            <h3>구매 조건</h3>
+            <div class="house-field"><label for="housePrice">목표 집값</label><input id="housePrice" data-house-input="money" value="1,600,000,000원"><span class="unit">원</span></div>
+            <div class="house-field"><label for="houseAcquisitionTax">취득세</label><input id="houseAcquisitionTax" data-house-input="money" value="56,000,000원"><span class="unit">원</span></div>
+            <div class="house-field"><label for="houseBuyFee">중개수수료, 살 때</label><input id="houseBuyFee" data-house-input="money" value="8,800,000원"><span class="unit">원</span></div>
+            <div class="house-field"><label for="houseSellFee">중개수수료, 팔 때</label><input id="houseSellFee" data-house-input="money" value="2,024,000원"><span class="unit">원</span></div>
+            <div class="house-field"><label for="houseInterior">인테리어비</label><input id="houseInterior" data-house-input="money" value="150,000,000원"><span class="unit">원</span></div>
+            <div class="house-field"><label for="houseReserve">구매 후 최소 여유잔액</label><input id="houseReserve" data-house-input="money" value="50,000,000원"><span class="unit">원</span></div>
+            <div class="house-field"><label for="houseLtv">LTV 기준</label><input id="houseLtv" data-house-input="percent" value="60%"><span class="unit">%</span></div>
+            <div class="house-field"><label for="houseLoanRate">예상 대출 금리</label><input id="houseLoanRate" data-house-input="percent" value="4.5%"><span class="unit">%</span></div>
+            <div class="house-field"><label for="houseLoanYears">대출 기간</label><input id="houseLoanYears" data-house-input="number" value="30"><span class="unit">년</span></div>
+            <div class="house-field"><label for="existingHomePrice">기존 집 예상 처분가</label><input id="existingHomePrice" data-house-input="money" value="0원"><span class="unit">원</span></div>
+            <div class="house-field"><label for="houseScenarioSelect">기존 집 처분 여부</label><select id="houseScenarioSelect" data-house-input="text"><option value="sell">처분 시</option><option value="keep">미처분 시</option></select><span class="unit"></span></div>
+            <h3>미래 가정</h3>
+            <div class="house-field"><label for="houseAnnualSavings">현금/저축성 자산 증가액</label><input id="houseAnnualSavings" data-house-input="money" value="160,000,000원"><span class="unit">원/년</span></div>
+            <div class="house-field"><label for="houseInvestmentGrowth">투자자산 상승률</label><input id="houseInvestmentGrowth" data-house-input="percent" value="5%"><span class="unit">%</span></div>
+            <div class="house-field"><label for="houseHomeGrowth">기존 집 가격 상승률</label><input id="houseHomeGrowth" data-house-input="percent" value="0%"><span class="unit">%</span></div>
+          </aside>
+
+          <section class="house-plan">
+            <div class="card ratio-list">
+              <h3>현금화 비율</h3>
+              <div id="houseRatioList"></div>
+            </div>
+            <section class="house-summary">
+              <div class="card metric"><span>구매 가능 여부</span><strong id="houseCanBuy">-</strong></div>
+              <div class="card metric"><span>총 필요 비용</span><strong id="houseTotalCost">-</strong></div>
+              <div class="card metric"><span>현금화 가능 자산</span><strong id="houseAvailableAssets">-</strong></div>
+              <div class="card metric"><span>필요 대출금</span><strong id="houseLoanNeeded">-</strong></div>
+              <div class="card metric"><span>LTV 기준 대출 가능액</span><strong id="houseLoanLimit">-</strong></div>
+              <div class="card metric"><span>구매 후 여유잔액</span><strong id="houseRemainingCash">-</strong></div>
+              <div class="card metric"><span>예상 월 이자</span><strong id="houseMonthlyInterest">-</strong></div>
+              <div class="card metric"><span>원리금균등 월 상환액</span><strong id="houseMonthlyPayment">-</strong></div>
+            </section>
+            <div class="card house-chart-card">
+              <div class="house-chart-head">
+                <div>
+                  <div class="chart-title">이사 자금 로드맵</div>
+                  <div class="chart-desc">가용 금액과 대출 필요 금액을 기간별로 비교합니다.</div>
+                </div>
+              </div>
+              <div class="house-chart-box">
+                <canvas id="housePlanChart"></canvas>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <section class="house-tables">
+          <div class="card house-table-card">
+            <h3>부동산 처분 시</h3>
+            <table class="house-table">
+              <thead id="houseSellHead"></thead>
+              <tbody id="houseSellBody"></tbody>
+            </table>
+          </div>
+          <div class="card house-table-card">
+            <h3>부동산 미처분 시</h3>
+            <table class="house-table">
+              <thead id="houseKeepHead"></thead>
+              <tbody id="houseKeepBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </section>
   </main>
   <div class="tooltip" id="tooltip"></div>
 
@@ -1218,6 +1495,19 @@
     let searchRequestId = 0;
     let assetNetChartInstance = null;
     let assetMixChartInstance = null;
+    let housePlanChartInstance = null;
+
+    const HOUSE_PLAN_STORAGE_KEY = "pensionHousePlanInputs";
+    const HOUSE_RATIO_GROUPS = [
+      { key: "cash", label: "현금", defaultValue: 100 },
+      { key: "isa", label: "ISA", defaultValue: 100 },
+      { key: "subscription", label: "청약계좌", defaultValue: 100 },
+      { key: "stock", label: "일반 주식", defaultValue: 100 },
+      { key: "hynix", label: "하이닉스 주식", defaultValue: 100 },
+      { key: "gold", label: "금/비트", defaultValue: 100 },
+      { key: "home", label: "기존 아파트 처분가", defaultValue: 100 }
+    ];
+    const houseRatios = Object.fromEntries(HOUSE_RATIO_GROUPS.map((item) => [item.key, item.defaultValue]));
 
     const FIELD_GROUPS = [
       ["나이 입력", [
@@ -1733,6 +2023,7 @@
       renderAssetTable({ charts });
       renderInvestmentPanel();
       persistAssetData();
+      if (document.getElementById("housePlanPanel")?.classList.contains("active")) renderHousePlan();
     }
 
     function categorySpans() {
@@ -3127,6 +3418,264 @@
       renderCharts();
     }
 
+    function houseSetText(id, value, className = "") {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.textContent = value;
+      el.className = className;
+    }
+
+    function houseInputValue(id) {
+      return toNumber(document.getElementById(id)?.value);
+    }
+
+    function housePercentValue(id) {
+      return houseInputValue(id) / 100;
+    }
+
+    function isHousePensionAsset(row) {
+      const text = `${row?.category || ""} ${row?.label || ""} ${row?.id || ""}`;
+      return /개인연금|연금저축|퇴직연금|연금|IRP|DC/i.test(text);
+    }
+
+    function houseAssetGroup(row) {
+      if (!row || row.debt || row.category === "대출") return null;
+      if (isHousePensionAsset(row)) return null;
+      const text = `${row.id || ""} ${row.category || ""} ${row.label || ""}`.toLowerCase();
+      if (row.category === "부동산") return "home";
+      if (row.category === "금/비트") return "gold";
+      if (text.includes("하이닉스") || text.includes("hynix")) return "hynix";
+      if (row.category === "주식") return "stock";
+      if (text.includes("isa")) return "isa";
+      if (text.includes("청약")) return "subscription";
+      if (row.category === "현금") return "cash";
+      return null;
+    }
+
+    function houseLatestAssets() {
+      const period = latestManagedPeriod();
+      const groups = Object.fromEntries(HOUSE_RATIO_GROUPS.map((item) => [item.key, 0]));
+      let debt = 0;
+      for (const row of assetRows) {
+        const value = rowValue(row, period);
+        if (row.debt || row.category === "대출") {
+          debt += Math.abs(Math.min(0, value));
+          continue;
+        }
+        const group = houseAssetGroup(row);
+        if (group) groups[group] += Math.max(0, value);
+      }
+      return { period, groups, debt };
+    }
+
+    function renderHouseRatioControls() {
+      const wrap = document.getElementById("houseRatioList");
+      if (!wrap) return;
+      wrap.innerHTML = HOUSE_RATIO_GROUPS.map((item) => `
+        <div class="ratio-item">
+          <label for="houseRatio_${item.key}">${item.label}</label>
+          <input id="houseRatio_${item.key}" type="range" min="0" max="100" step="5" value="${houseRatios[item.key]}" data-house-ratio="${item.key}">
+          <input type="number" min="0" max="100" step="5" value="${houseRatios[item.key]}" aria-label="${item.label} 비율" data-house-ratio-number="${item.key}">
+        </div>
+      `).join("");
+    }
+
+    function persistHousePlanInputs() {
+      try {
+        const values = {};
+        document.querySelectorAll("[data-house-input]").forEach((input) => { values[input.id] = input.value; });
+        localStorage.setItem(HOUSE_PLAN_STORAGE_KEY, JSON.stringify({ values, ratios: houseRatios }));
+      } catch (_error) {
+        // localStorage 사용이 막힌 환경에서는 저장만 건너뛴다.
+      }
+    }
+
+    function loadHousePlanInputs() {
+      let saved = null;
+      try {
+        saved = JSON.parse(localStorage.getItem(HOUSE_PLAN_STORAGE_KEY) || "null");
+      } catch (_error) {
+        saved = null;
+      }
+      if (saved?.values && typeof saved.values === "object") {
+        for (const [id, value] of Object.entries(saved.values)) {
+          const input = document.getElementById(id);
+          if (input) input.value = value;
+        }
+      }
+      if (saved?.ratios && typeof saved.ratios === "object") {
+        for (const item of HOUSE_RATIO_GROUPS) {
+          const next = Number(saved.ratios[item.key]);
+          if (Number.isFinite(next)) houseRatios[item.key] = Math.max(0, Math.min(100, next));
+        }
+        renderHouseRatioControls();
+      }
+      if (!saved?.values?.existingHomePrice) {
+        const input = document.getElementById("existingHomePrice");
+        if (input) input.value = won(houseLatestAssets().groups.home || 0);
+      }
+    }
+
+    function readHousePlanInputs() {
+      const reserve = houseInputValue("houseReserve");
+      const sellFee = houseInputValue("houseSellFee");
+      const baseCost = houseInputValue("housePrice")
+        + houseInputValue("houseAcquisitionTax")
+        + houseInputValue("houseBuyFee")
+        + houseInputValue("houseInterior")
+        + reserve;
+      return {
+        price: houseInputValue("housePrice"),
+        reserve,
+        ltv: housePercentValue("houseLtv"),
+        loanRate: housePercentValue("houseLoanRate"),
+        loanYears: Math.max(1, houseInputValue("houseLoanYears")),
+        existingHomePrice: houseInputValue("existingHomePrice"),
+        scenario: document.getElementById("houseScenarioSelect")?.value || "sell",
+        annualSavings: houseInputValue("houseAnnualSavings"),
+        investmentGrowth: housePercentValue("houseInvestmentGrowth"),
+        homeGrowth: housePercentValue("houseHomeGrowth"),
+        totalCostSell: baseCost + sellFee,
+        totalCostKeep: baseCost
+      };
+    }
+
+    function futureHouseLabels(period) {
+      const startYear = periodYear(period);
+      return Array.from({ length: 6 }, (_, i) => i === 0 ? periodLabel(period) : String(startYear + i));
+    }
+
+    function projectedHouseGroups(baseGroups, p, index) {
+      return {
+        cash: baseGroups.cash + p.annualSavings * index,
+        isa: baseGroups.isa,
+        subscription: baseGroups.subscription,
+        stock: baseGroups.stock * ((1 + p.investmentGrowth) ** index),
+        hynix: baseGroups.hynix * ((1 + p.investmentGrowth) ** index),
+        gold: baseGroups.gold * ((1 + p.investmentGrowth) ** index),
+        home: p.existingHomePrice * ((1 + p.homeGrowth) ** index)
+      };
+    }
+
+    function houseAvailableAmount(groups, debt, scenario) {
+      const liquid = ["cash", "isa", "subscription", "stock", "hynix", "gold"]
+        .reduce((sum, key) => sum + (groups[key] || 0) * (houseRatios[key] || 0) / 100, 0);
+      const home = scenario === "sell" ? (groups.home || 0) * (houseRatios.home || 0) / 100 : 0;
+      return liquid + home - debt;
+    }
+
+    function houseScenarioRow(p, assets, scenario, index) {
+      const groups = projectedHouseGroups(assets.groups, p, index);
+      const totalCost = scenario === "sell" ? p.totalCostSell : p.totalCostKeep;
+      const available = houseAvailableAmount(groups, assets.debt, scenario);
+      const loanNeeded = Math.max(0, totalCost - available);
+      const loanLimit = p.price * p.ltv;
+      const canBuy = loanNeeded <= loanLimit;
+      const monthlyInterest = loanNeeded * p.loanRate / 12;
+      const months = Math.max(1, p.loanYears * 12);
+      const monthlyRate = p.loanRate / 12;
+      const monthlyPayment = loanNeeded <= 0
+        ? 0
+        : monthlyRate > 0
+          ? loanNeeded * monthlyRate * ((1 + monthlyRate) ** months) / (((1 + monthlyRate) ** months) - 1)
+          : loanNeeded / months;
+      const hardCost = Math.max(0, totalCost - p.reserve);
+      const remainingCash = Math.max(0, available + loanNeeded - hardCost);
+      return { totalCost, available, loanNeeded, loanLimit, canBuy, monthlyInterest, monthlyPayment, remainingCash };
+    }
+
+    function housePlanRoadmap() {
+      const p = readHousePlanInputs();
+      const assets = houseLatestAssets();
+      const labels = futureHouseLabels(assets.period);
+      const sell = labels.map((_, index) => houseScenarioRow(p, assets, "sell", index));
+      const keep = labels.map((_, index) => houseScenarioRow(p, assets, "keep", index));
+      return { p, assets, labels, sell, keep };
+    }
+
+    function renderHouseScenarioTable(prefix, labels, rows, ltvLabel) {
+      const head = document.getElementById(`${prefix}Head`);
+      const body = document.getElementById(`${prefix}Body`);
+      if (!head || !body) return;
+      head.innerHTML = `<tr><th>항목</th>${labels.map((label) => `<th>${label}</th>`).join("")}</tr>`;
+      const tableRows = [
+        ["가용 금액", (row) => compactWon(row.available)],
+        ["대출 필요 금액", (row) => compactWon(row.loanNeeded)],
+        ["총비용", (row) => compactWon(row.totalCost)],
+        [`대출 가능 여부, LTV ${ltvLabel}`, (row) => `<span class="${row.canBuy ? "loan-ok" : "loan-bad"}">${row.canBuy ? "가능" : "불가능"}</span>`]
+      ];
+      body.innerHTML = tableRows.map(([label, value]) => `<tr><td>${label}</td>${rows.map((row) => `<td>${value(row)}</td>`).join("")}</tr>`).join("");
+    }
+
+    function renderHousePlanChart(labels, rows) {
+      const canvas = document.getElementById("housePlanChart");
+      if (!canvas || typeof Chart === "undefined") return;
+      housePlanChartInstance?.destroy();
+      housePlanChartInstance = new Chart(canvas, {
+        type: "bar",
+        data: {
+          labels,
+          datasets: [
+            { label: "가용 금액", data: rows.map((row) => row.available), backgroundColor: "#2563eb", borderRadius: 5 },
+            { label: "대출 필요 금액", data: rows.map((row) => row.loanNeeded), backgroundColor: "#f59e0b", borderRadius: 5 }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: "bottom" },
+            datalabels: { display: false },
+            tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${compactWon(ctx.raw)}` } }
+          },
+          scales: {
+            x: { grid: { display: false } },
+            y: { ticks: { callback: (value) => compactWon(value) }, grace: "10%" }
+          }
+        }
+      });
+    }
+
+    function renderHousePlan() {
+      if (!document.getElementById("housePlanPanel")) return;
+      const { p, assets, labels, sell, keep } = housePlanRoadmap();
+      const selectedRows = p.scenario === "keep" ? keep : sell;
+      const current = selectedRows[0];
+      const ltvLabel = `${Math.round(p.ltv * 100)}%`;
+      houseSetText("housePlanStatus", `기준 월 ${periodLabel(assets.period)}`);
+      houseSetText("houseCanBuy", current.canBuy ? "가능" : "불가능", current.canBuy ? "loan-ok" : "loan-bad");
+      houseSetText("houseTotalCost", compactWon(current.totalCost));
+      houseSetText("houseAvailableAssets", compactWon(current.available));
+      houseSetText("houseLoanNeeded", compactWon(current.loanNeeded));
+      houseSetText("houseLoanLimit", compactWon(current.loanLimit));
+      houseSetText("houseRemainingCash", compactWon(current.remainingCash));
+      houseSetText("houseMonthlyInterest", compactWon(current.monthlyInterest));
+      houseSetText("houseMonthlyPayment", compactWon(current.monthlyPayment));
+      renderHouseScenarioTable("houseSell", labels, sell, ltvLabel);
+      renderHouseScenarioTable("houseKeep", labels, keep, ltvLabel);
+      renderHousePlanChart(labels, selectedRows);
+      persistHousePlanInputs();
+    }
+
+    function onHouseInputChanged(event) {
+      const input = event.target;
+      if (input?.dataset?.houseInput === "money" && event.type === "blur") input.value = won(toNumber(input.value));
+      if (input?.dataset?.houseInput === "percent" && event.type === "blur") input.value = `${toNumber(input.value).toLocaleString("ko-KR", { maximumFractionDigits: 1 })}%`;
+      renderHousePlan();
+    }
+
+    function onHouseRatioInput(event) {
+      const key = event.target?.dataset?.houseRatio || event.target?.dataset?.houseRatioNumber;
+      if (!key) return;
+      const value = Math.max(0, Math.min(100, Number(event.target.value) || 0));
+      houseRatios[key] = value;
+      const range = document.querySelector(`[data-house-ratio="${key}"]`);
+      const number = document.querySelector(`[data-house-ratio-number="${key}"]`);
+      if (range) range.value = value;
+      if (number) number.value = value;
+      renderHousePlan();
+    }
+
     function renderSimTable() {
       document.getElementById("tableHead").innerHTML = `<tr>${SIM_COLUMNS.map((c, i) => `<th class="${i < 5 ? "main" : ""}">${c}</th>`).join("")}</tr>`;
       document.getElementById("tableBody").innerHTML = pensionRows.map((row) => `<tr>${SIM_COLUMNS.map((c, i) => `<td class="${i < 2 ? "center" : ""}">${SIM_MONEY.has(c) ? won(row[c]) : row[c]}</td>`).join("")}</tr>`).join("");
@@ -3250,6 +3799,7 @@
         tab.classList.add("active");
         document.getElementById(`${tab.dataset.tab}Panel`)?.classList.add("active");
         if (tab.dataset.tab === "pension") renderCharts();
+        if (tab.dataset.tab === "housePlan") renderHousePlan();
       }));
       bind("rebuildAssetYears", "click", rebuildAssetYears);
       bind("closeCurrentMonth", "click", closeCurrentMonthSnapshot);
@@ -3275,13 +3825,23 @@
       bind("runBtn", "click", runPension);
       bind("csvBtn", "click", exportPensionCsv);
       bind("resetBtn", "click", resetPension);
+      document.querySelectorAll("[data-house-input]").forEach((input) => {
+        input.addEventListener("input", onHouseInputChanged);
+        input.addEventListener("change", onHouseInputChanged);
+        input.addEventListener("blur", onHouseInputChanged);
+      });
+      document.getElementById("houseRatioList")?.addEventListener("input", onHouseRatioInput);
+      document.getElementById("houseRatioList")?.addEventListener("change", onHouseRatioInput);
     }
 
     renderSimInputs();
+    renderHouseRatioControls();
     bindEvents();
     loadStoredAssetData();
+    loadHousePlanInputs();
     renderAssetTable();
     renderInvestmentPanel();
+    renderHousePlan();
     runPension();
     autoConnectPriceApi();
   </script>
