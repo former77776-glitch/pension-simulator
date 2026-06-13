@@ -762,7 +762,7 @@
 
     .field {
       display: grid;
-      grid-template-columns: 130px minmax(0, 1fr) 28px;
+      grid-template-columns: 130px minmax(0, 1fr) 28px 30px;
       gap: 6px;
       align-items: center;
       margin: 6px 0;
@@ -774,10 +774,48 @@
       background: #f8fafc;
     }
 
+    .stepper {
+      display: grid;
+      grid-template-rows: 1fr 1fr;
+      gap: 2px;
+    }
+
+    .stepper button {
+      min-height: 18px;
+      padding: 0;
+      border-radius: 5px;
+      font-size: 10px;
+      line-height: 1;
+    }
+
+    .compact-hint {
+      grid-column: 2 / 5;
+      margin-top: -3px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.25;
+      text-align: right;
+      min-height: 14px;
+    }
+
     .sim-actions {
       display: grid;
       gap: 6px;
       margin: 2px 0 8px;
+    }
+
+    .auto-run-toggle {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .auto-run-toggle input {
+      width: 16px;
+      height: 16px;
     }
 
     .guide {
@@ -1082,6 +1120,7 @@
             <button type="button" id="csvBtn">CSV 저장</button>
             <button type="button" id="resetBtn">기본값 복원</button>
             <button type="button" id="useLatestAssets">자산기록 최신 월 연금 재원 반영</button>
+            <label class="auto-run-toggle"><input type="checkbox" id="autoRunPension" checked> 입력값 변경 시 자동 재계산</label>
           </div>
           <div class="card guide asset-link-preview" id="assetPensionLinkPreview">
             <strong>간편 계산: 연금성 자산 합계를 1:1:1로 나눠 반영합니다.</strong>
@@ -2832,14 +2871,27 @@
         fs.innerHTML = `<legend>${group}</legend>`;
         for (const [key, label, value, kind] of fields) {
           simDefaults[key] = value;
-          fs.insertAdjacentHTML("beforeend", `<div class="field"><label for="${key}">${label}</label><input id="${key}" data-kind="${kind}" value="${value}"><span>${kind === "percent" ? "%" : kind === "age" ? "세" : "원"}</span></div>`);
+          fs.insertAdjacentHTML("beforeend", `
+            <div class="field" data-field="${key}">
+              <label for="${key}">${label}</label>
+              <input id="${key}" data-kind="${kind}" value="${value}">
+              <span>${kind === "percent" ? "%" : kind === "age" ? "세" : "원"}</span>
+              <div class="stepper">
+                <button type="button" data-step-target="${key}" data-direction="up" aria-label="${label} 증가">▲</button>
+                <button type="button" data-step-target="${key}" data-direction="down" aria-label="${label} 감소">▼</button>
+              </div>
+              <div class="compact-hint" id="${key}_hint"></div>
+            </div>
+          `);
         }
         form.append(fs);
       }
       form.querySelectorAll("input").forEach((input) => {
         simInputs[input.id] = input;
-        input.addEventListener("input", runPension);
+        input.addEventListener("input", () => onSimInputChanged({ format: false }));
       });
+      form.querySelectorAll("button[data-step-target]").forEach((button) => button.addEventListener("click", onSimStepperClick));
+      updateSimCompactHints();
     }
 
     function readSimInputs() {
@@ -2852,6 +2904,93 @@
       }
       if (p.start_age > p.end_age) throw new Error("시작 나이는 종료 나이보다 작거나 같아야 합니다.");
       return p;
+    }
+
+    function autoRunEnabled() {
+      return document.getElementById("autoRunPension")?.checked !== false;
+    }
+
+    function simMoneyStep(key, value) {
+      const abs = Math.abs(value || 0);
+      if (key === "nhis_fixed_monthly") return 50000;
+      if (["target_net_cash", "private_annual_withdrawal", "national_pension_annual"].includes(key)) return 1000000;
+      if (["private_balance", "irp_retire_balance", "irp_taxable_balance"].includes(key)) {
+        if (abs < 10000000) return 100000;
+        if (abs < 100000000) return 1000000;
+        return 10000000;
+      }
+      if (abs < 10000000) return 100000;
+      if (abs < 100000000) return 1000000;
+      if (abs < 1000000000) return 10000000;
+      return 100000000;
+    }
+
+    function clampSimValue(key, value) {
+      if (key === "national_pension_start_age") return Math.min(70, Math.max(65, Math.round(value)));
+      if (key === "start_age") return Math.min(Math.round(value), toNumber(simInputs.end_age?.value || value));
+      if (key === "end_age") return Math.max(Math.round(value), toNumber(simInputs.start_age?.value || value));
+      if (key === "one_time_expense_age") {
+        const start = toNumber(simInputs.start_age?.value || value);
+        const end = toNumber(simInputs.end_age?.value || value);
+        return Math.min(end, Math.max(start, Math.round(value)));
+      }
+      if (simInputs[key]?.dataset.kind === "age") return Math.max(0, Math.round(value));
+      if (simInputs[key]?.dataset.kind === "percent") return Math.max(0, value);
+      return Math.max(0, value);
+    }
+
+    function formatSimInputValue(key, value) {
+      const input = simInputs[key];
+      if (!input) return String(value);
+      if (input.dataset.kind === "money") return won(value);
+      if (input.dataset.kind === "percent") return `${value.toFixed(1)}%`;
+      return String(Math.round(value));
+    }
+
+    function updateSimCompactHints() {
+      for (const [key, input] of Object.entries(simInputs)) {
+        const hint = document.getElementById(`${key}_hint`);
+        if (!hint) continue;
+        if (input.dataset.kind === "money") {
+          const value = toNumber(input.value);
+          hint.textContent = value ? compactWon(value) : "";
+        } else {
+          hint.textContent = "";
+        }
+      }
+    }
+
+    function onSimInputChanged({ format = false } = {}) {
+      if (format) {
+        for (const [key, input] of Object.entries(simInputs)) {
+          input.value = formatSimInputValue(key, clampSimValue(key, toNumber(input.value)));
+        }
+      }
+      updateSimCompactHints();
+      if (autoRunEnabled()) {
+        runPension();
+      } else {
+        const status = document.getElementById("status");
+        if (status) status.textContent = "입력값이 변경되었습니다. 시뮬레이션 실행을 눌러 결과를 갱신하세요.";
+      }
+    }
+
+    function onSimStepperClick(event) {
+      const button = event.currentTarget;
+      const key = button.dataset.stepTarget;
+      const input = simInputs[key];
+      if (!input) return;
+      const direction = button.dataset.direction === "up" ? 1 : -1;
+      let value = toNumber(input.value);
+      if (input.dataset.kind === "money") {
+        value += direction * simMoneyStep(key, value);
+      } else if (input.dataset.kind === "percent") {
+        value += direction * (event.shiftKey ? 1.0 : 0.1);
+      } else {
+        value += direction;
+      }
+      input.value = formatSimInputValue(key, clampSimValue(key, value));
+      onSimInputChanged();
     }
 
     function nationalPensionDelayBonus(startAge) {
@@ -3111,6 +3250,7 @@
 
     function runPension() {
       try {
+        updateSimCompactHints();
         pensionRows = simulatePension();
         renderPension();
       } catch (error) {
@@ -3162,6 +3302,7 @@
       simInputs.irp_taxable_balance.value = won(preview.irpTaxableBalance);
       simInputs.irp_retire_balance.value = won(preview.irpRetireBalance);
       renderAssetPensionLinkPreview();
+      updateSimCompactHints();
       runPension();
       const status = document.getElementById("status");
       if (status) status.textContent = `${periodLabel(preview.period)} 기준 연금성 자산 ${compactWon(preview.total)}을 1:1:1로 반영했습니다.`;
@@ -3180,6 +3321,7 @@
 
     function resetPension() {
       Object.entries(simDefaults).forEach(([key, value]) => { simInputs[key].value = value; });
+      updateSimCompactHints();
       runPension();
     }
 
