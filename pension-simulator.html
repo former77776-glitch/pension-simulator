@@ -2512,10 +2512,21 @@
               }
             },
             datalabels: {
-              display: (ctx) => hasDataLabels() && ctx.raw >= 5,
-              color: "#ffffff",
+              display: (ctx) => {
+                const value = Number(ctx.raw) || 0;
+                if (!hasDataLabels() || !grossTotals[ctx.dataIndex] || value < 5) return false;
+                const area = ctx.chart.chartArea;
+                if (!area) return true;
+                const barWidth = (area.right - area.left) / Math.max(1, labels.length);
+                const segmentHeight = (area.bottom - area.top) * value / 100;
+                const mobileTight = (area.right - area.left) < 560 && value < 8;
+                return !mobileTight && barWidth >= 34 && segmentHeight >= 16;
+              },
+              color: (ctx) => ctx.dataset.label === "금/비트" ? "#111827" : "#ffffff",
+              textStrokeColor: (ctx) => ctx.dataset.label === "금/비트" ? "rgba(255,255,255,.45)" : "rgba(15,23,42,.28)",
+              textStrokeWidth: 2,
               font: { size: 11, weight: "900" },
-              formatter: (value) => value >= 5 ? `${value.toFixed(1)}%` : "",
+              formatter: (value) => `${Number(value).toFixed(1)}%`,
               anchor: "center",
               align: "center",
               clamp: true,
