@@ -1023,7 +1023,7 @@
 
     .ratio-item {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 1fr 64px;
+      grid-template-columns: minmax(0, 1fr) 1fr 64px 86px;
       gap: 8px;
       align-items: center;
     }
@@ -1035,6 +1035,31 @@
     .ratio-item input[type="number"] {
       height: 30px;
       text-align: right;
+    }
+
+    .ratio-amount {
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 900;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .cost-basis {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .cost-basis .metric {
+      min-height: 70px;
+    }
+
+    .house-note {
+      padding: 10px 12px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
     }
 
     .house-summary {
@@ -1127,7 +1152,7 @@
     }
 
     @media (max-width: 1100px) {
-      .asset-grid, .sim-grid, .charts, .summary, .analysis-strip, .chart-kpis, .house-layout, .house-summary, .house-tables {
+      .asset-grid, .sim-grid, .charts, .summary, .analysis-strip, .chart-kpis, .house-layout, .house-summary, .house-tables, .cost-basis {
         grid-template-columns: 1fr;
       }
       .sidebar {
@@ -1355,9 +1380,16 @@
           <aside class="card house-form">
             <h3>구매 조건</h3>
             <div class="house-field"><label for="housePrice">목표 집값</label><input id="housePrice" data-house-input="money" value="1,600,000,000원"><span class="unit">원</span></div>
-            <div class="house-field"><label for="houseAcquisitionTax">취득세</label><input id="houseAcquisitionTax" data-house-input="money" value="56,000,000원"><span class="unit">원</span></div>
-            <div class="house-field"><label for="houseBuyFee">중개수수료, 살 때</label><input id="houseBuyFee" data-house-input="money" value="8,800,000원"><span class="unit">원</span></div>
-            <div class="house-field"><label for="houseSellFee">중개수수료, 팔 때</label><input id="houseSellFee" data-house-input="money" value="2,024,000원"><span class="unit">원</span></div>
+            <div class="house-field"><label for="houseCountType">주택 수 구분</label><select id="houseCountType" data-house-input="text"><option value="one">1주택</option><option value="temporaryTwo">일시적 2주택</option><option value="multi">2주택 이상</option></select><span class="unit"></span></div>
+            <div class="house-field"><label for="houseRegulated">조정대상지역 여부</label><select id="houseRegulated" data-house-input="text"><option value="no">아니오</option><option value="yes">예</option></select><span class="unit"></span></div>
+            <div class="house-field"><label for="houseAreaOver85">전용면적 85㎡ 초과</label><select id="houseAreaOver85" data-house-input="text"><option value="no">아니오</option><option value="yes">예</option></select><span class="unit"></span></div>
+            <div class="house-field"><label for="houseAcqAdjustment">취득세 수동 보정</label><input id="houseAcqAdjustment" data-house-input="money" value="0원"><span class="unit">원</span></div>
+            <div class="house-field"><label for="houseAcquisitionTax">취득 관련 세금</label><input id="houseAcquisitionTax" data-house-input="money" value="0원" readonly><span class="unit">원</span></div>
+            <div class="house-field"><label for="houseBrokerVat">중개수수료 부가세</label><select id="houseBrokerVat" data-house-input="text"><option value="yes">포함</option><option value="no">미포함</option></select><span class="unit"></span></div>
+            <div class="house-field"><label for="houseBuyFeeAdjustment">매수 중개수수료 보정</label><input id="houseBuyFeeAdjustment" data-house-input="money" value="0원"><span class="unit">원</span></div>
+            <div class="house-field"><label for="houseSellFeeAdjustment">매도 중개수수료 보정</label><input id="houseSellFeeAdjustment" data-house-input="money" value="0원"><span class="unit">원</span></div>
+            <div class="house-field"><label for="houseBuyFee">매수 중개수수료</label><input id="houseBuyFee" data-house-input="money" value="0원" readonly><span class="unit">원</span></div>
+            <div class="house-field"><label for="houseSellFee">매도 중개수수료</label><input id="houseSellFee" data-house-input="money" value="0원" readonly><span class="unit">원</span></div>
             <div class="house-field"><label for="houseInterior">인테리어비</label><input id="houseInterior" data-house-input="money" value="150,000,000원"><span class="unit">원</span></div>
             <div class="house-field"><label for="houseReserve">구매 후 최소 여유잔액</label><input id="houseReserve" data-house-input="money" value="50,000,000원"><span class="unit">원</span></div>
             <div class="house-field"><label for="houseLtv">LTV 기준</label><input id="houseLtv" data-house-input="percent" value="60%"><span class="unit">%</span></div>
@@ -1365,10 +1397,7 @@
             <div class="house-field"><label for="houseLoanYears">대출 기간</label><input id="houseLoanYears" data-house-input="number" value="30"><span class="unit">년</span></div>
             <div class="house-field"><label for="existingHomePrice">기존 집 예상 처분가</label><input id="existingHomePrice" data-house-input="money" value="0원"><span class="unit">원</span></div>
             <div class="house-field"><label for="houseScenarioSelect">기존 집 처분 여부</label><select id="houseScenarioSelect" data-house-input="text"><option value="sell">처분 시</option><option value="keep">미처분 시</option></select><span class="unit"></span></div>
-            <h3>미래 가정</h3>
-            <div class="house-field"><label for="houseAnnualSavings">현금/저축성 자산 증가액</label><input id="houseAnnualSavings" data-house-input="money" value="160,000,000원"><span class="unit">원/년</span></div>
-            <div class="house-field"><label for="houseInvestmentGrowth">투자자산 상승률</label><input id="houseInvestmentGrowth" data-house-input="percent" value="5%"><span class="unit">%</span></div>
-            <div class="house-field"><label for="houseHomeGrowth">기존 집 가격 상승률</label><input id="houseHomeGrowth" data-house-input="percent" value="0%"><span class="unit">%</span></div>
+            <div class="card house-note">취득세는 간이 계산입니다. 실제 세액은 주택 수, 지역, 면적, 정책 변경에 따라 달라질 수 있습니다.</div>
           </aside>
 
           <section class="house-plan">
@@ -1382,9 +1411,16 @@
               <div class="card metric"><span>현금화 가능 자산</span><strong id="houseAvailableAssets">-</strong></div>
               <div class="card metric"><span>필요 대출금</span><strong id="houseLoanNeeded">-</strong></div>
               <div class="card metric"><span>LTV 기준 대출 가능액</span><strong id="houseLoanLimit">-</strong></div>
+              <div class="card metric"><span>자금 부족액</span><strong id="houseShortage">-</strong></div>
               <div class="card metric"><span>구매 후 여유잔액</span><strong id="houseRemainingCash">-</strong></div>
-              <div class="card metric"><span>예상 월 이자</span><strong id="houseMonthlyInterest">-</strong></div>
               <div class="card metric"><span>원리금균등 월 상환액</span><strong id="houseMonthlyPayment">-</strong></div>
+            </section>
+            <section class="cost-basis">
+              <div class="card metric"><span>취득 관련 세금</span><strong id="basisAcquisitionTax">-</strong></div>
+              <div class="card metric"><span>매수 중개수수료</span><strong id="basisBuyFee">-</strong></div>
+              <div class="card metric"><span>매도 중개수수료</span><strong id="basisSellFee">-</strong></div>
+              <div class="card metric"><span>인테리어비</span><strong id="basisInterior">-</strong></div>
+              <div class="card metric"><span>최소 여유잔액</span><strong id="basisReserve">-</strong></div>
             </section>
             <div class="card house-chart-card">
               <div class="house-chart-head">
@@ -3452,8 +3488,7 @@
       return null;
     }
 
-    function houseLatestAssets() {
-      const period = latestManagedPeriod();
+    function houseAssetsForPeriod(period) {
       const groups = Object.fromEntries(HOUSE_RATIO_GROUPS.map((item) => [item.key, 0]));
       let debt = 0;
       for (const row of assetRows) {
@@ -3468,6 +3503,18 @@
       return { period, groups, debt };
     }
 
+    function houseLatestAssets() {
+      const latest = assetPeriods.at(-1) || latestManagedPeriod();
+      const assets = houseAssetsForPeriod(latest);
+      const manualHome = houseInputValue("existingHomePrice");
+      if (manualHome > 0) assets.groups.home = manualHome;
+      return assets;
+    }
+
+    function houseRatioAppliedAmount(key, assets = houseLatestAssets()) {
+      return (assets.groups[key] || 0) * (houseRatios[key] || 0) / 100;
+    }
+
     function renderHouseRatioControls() {
       const wrap = document.getElementById("houseRatioList");
       if (!wrap) return;
@@ -3476,8 +3523,17 @@
           <label for="houseRatio_${item.key}">${item.label}</label>
           <input id="houseRatio_${item.key}" type="range" min="0" max="100" step="5" value="${houseRatios[item.key]}" data-house-ratio="${item.key}">
           <input type="number" min="0" max="100" step="5" value="${houseRatios[item.key]}" aria-label="${item.label} 비율" data-house-ratio-number="${item.key}">
+          <span class="ratio-amount" id="houseRatioAmount_${item.key}">-</span>
         </div>
       `).join("");
+    }
+
+    function updateHouseRatioAmounts(assets = houseLatestAssets()) {
+      const scenario = document.getElementById("houseScenarioSelect")?.value || "sell";
+      for (const item of HOUSE_RATIO_GROUPS) {
+        const el = document.getElementById(`houseRatioAmount_${item.key}`);
+        if (el) el.textContent = item.key === "home" && scenario === "keep" ? "미처분" : compactWon(houseRatioAppliedAmount(item.key, assets));
+      }
     }
 
     function persistHousePlanInputs() {
@@ -3512,16 +3568,70 @@
       }
       if (!saved?.values?.existingHomePrice) {
         const input = document.getElementById("existingHomePrice");
-        if (input) input.value = won(houseLatestAssets().groups.home || 0);
+        if (input) input.value = won((houseAssetsForPeriod(assetPeriods.at(-1) || latestManagedPeriod()).groups.home) || 0);
       }
     }
 
+    function acquisitionBaseRate(price) {
+      const eok = price / 100000000;
+      if (eok <= 6) return 0.01;
+      if (eok <= 9) return Math.max(0.01, Math.min(0.03, ((eok * 2 / 3) - 3) / 100));
+      return 0.03;
+    }
+
+    function brokerFeeBase(price) {
+      const value = Math.max(0, price);
+      let rate = 0.007;
+      let cap = Infinity;
+      if (value < 50000000) { rate = 0.006; cap = 250000; }
+      else if (value < 200000000) { rate = 0.005; cap = 800000; }
+      else if (value < 900000000) rate = 0.004;
+      else if (value < 1200000000) rate = 0.005;
+      else if (value < 1500000000) rate = 0.006;
+      const fee = Math.min(value * rate, cap);
+      return document.getElementById("houseBrokerVat")?.value === "no" ? fee : fee * 1.1;
+    }
+
+    function houseCostBreakdown() {
+      const price = houseInputValue("housePrice");
+      const existingHomePrice = houseInputValue("existingHomePrice");
+      const acquisitionBase = price * acquisitionBaseRate(price);
+      const localEducationTax = acquisitionBase * 0.10;
+      const ruralTax = document.getElementById("houseAreaOver85")?.value === "yes" ? price * 0.002 : 0;
+      const acqAdjustment = houseInputValue("houseAcqAdjustment");
+      const buyFee = brokerFeeBase(price) + houseInputValue("houseBuyFeeAdjustment");
+      const sellFee = brokerFeeBase(existingHomePrice) + houseInputValue("houseSellFeeAdjustment");
+      const acquisitionTotal = acquisitionBase + localEducationTax + ruralTax + acqAdjustment;
+      const warning = document.getElementById("houseCountType")?.value === "multi" || document.getElementById("houseRegulated")?.value === "yes"
+        ? "다주택/조정지역은 중과 가능성이 있어 수동 보정이 필요할 수 있습니다."
+        : "";
+      return {
+        acquisitionBase,
+        localEducationTax,
+        ruralTax,
+        acquisitionTotal: Math.max(0, acquisitionTotal),
+        buyFee: Math.max(0, buyFee),
+        sellFee: Math.max(0, sellFee),
+        warning
+      };
+    }
+
+    function syncHouseAutoCostInputs(costs = houseCostBreakdown()) {
+      const acquisition = document.getElementById("houseAcquisitionTax");
+      const buy = document.getElementById("houseBuyFee");
+      const sell = document.getElementById("houseSellFee");
+      if (acquisition) acquisition.value = won(costs.acquisitionTotal);
+      if (buy) buy.value = won(costs.buyFee);
+      if (sell) sell.value = won(costs.sellFee);
+    }
+
     function readHousePlanInputs() {
+      const costs = houseCostBreakdown();
+      syncHouseAutoCostInputs(costs);
       const reserve = houseInputValue("houseReserve");
-      const sellFee = houseInputValue("houseSellFee");
       const baseCost = houseInputValue("housePrice")
-        + houseInputValue("houseAcquisitionTax")
-        + houseInputValue("houseBuyFee")
+        + costs.acquisitionTotal
+        + costs.buyFee
         + houseInputValue("houseInterior")
         + reserve;
       return {
@@ -3532,65 +3642,54 @@
         loanYears: Math.max(1, houseInputValue("houseLoanYears")),
         existingHomePrice: houseInputValue("existingHomePrice"),
         scenario: document.getElementById("houseScenarioSelect")?.value || "sell",
-        annualSavings: houseInputValue("houseAnnualSavings"),
-        investmentGrowth: housePercentValue("houseInvestmentGrowth"),
-        homeGrowth: housePercentValue("houseHomeGrowth"),
-        totalCostSell: baseCost + sellFee,
+        interior: houseInputValue("houseInterior"),
+        costs,
+        totalCostSell: baseCost + costs.sellFee,
         totalCostKeep: baseCost
       };
     }
 
-    function futureHouseLabels(period) {
-      const startYear = periodYear(period);
-      return Array.from({ length: 6 }, (_, i) => i === 0 ? periodLabel(period) : String(startYear + i));
-    }
-
-    function projectedHouseGroups(baseGroups, p, index) {
-      return {
-        cash: baseGroups.cash + p.annualSavings * index,
-        isa: baseGroups.isa,
-        subscription: baseGroups.subscription,
-        stock: baseGroups.stock * ((1 + p.investmentGrowth) ** index),
-        hynix: baseGroups.hynix * ((1 + p.investmentGrowth) ** index),
-        gold: baseGroups.gold * ((1 + p.investmentGrowth) ** index),
-        home: p.existingHomePrice * ((1 + p.homeGrowth) ** index)
-      };
-    }
-
-    function houseAvailableAmount(groups, debt, scenario) {
+    function houseAvailableAmount(groups, _debt, scenario) {
       const liquid = ["cash", "isa", "subscription", "stock", "hynix", "gold"]
         .reduce((sum, key) => sum + (groups[key] || 0) * (houseRatios[key] || 0) / 100, 0);
       const home = scenario === "sell" ? (groups.home || 0) * (houseRatios.home || 0) / 100 : 0;
-      return liquid + home - debt;
+      return liquid + home;
     }
 
-    function houseScenarioRow(p, assets, scenario, index) {
-      const groups = projectedHouseGroups(assets.groups, p, index);
+    function houseScenarioRow(p, assets, scenario) {
       const totalCost = scenario === "sell" ? p.totalCostSell : p.totalCostKeep;
-      const available = houseAvailableAmount(groups, assets.debt, scenario);
+      const available = houseAvailableAmount(assets.groups, assets.debt, scenario);
       const loanNeeded = Math.max(0, totalCost - available);
       const loanLimit = p.price * p.ltv;
-      const canBuy = loanNeeded <= loanLimit;
+      const shortage = Math.max(0, totalCost - available - loanLimit);
+      const canBuy = shortage <= 0;
       const monthlyInterest = loanNeeded * p.loanRate / 12;
       const months = Math.max(1, p.loanYears * 12);
       const monthlyRate = p.loanRate / 12;
-      const monthlyPayment = loanNeeded <= 0
+      const financedLoan = Math.min(loanNeeded, loanLimit);
+      const monthlyPayment = financedLoan <= 0
         ? 0
         : monthlyRate > 0
-          ? loanNeeded * monthlyRate * ((1 + monthlyRate) ** months) / (((1 + monthlyRate) ** months) - 1)
-          : loanNeeded / months;
+          ? financedLoan * monthlyRate * ((1 + monthlyRate) ** months) / (((1 + monthlyRate) ** months) - 1)
+          : financedLoan / months;
       const hardCost = Math.max(0, totalCost - p.reserve);
-      const remainingCash = Math.max(0, available + loanNeeded - hardCost);
-      return { totalCost, available, loanNeeded, loanLimit, canBuy, monthlyInterest, monthlyPayment, remainingCash };
+      const remainingCash = Math.max(0, available + financedLoan - hardCost);
+      const status = canBuy ? "구매 가능" : loanNeeded > loanLimit ? "대출 한도 초과" : "자금 부족";
+      return { totalCost, available, loanNeeded, loanLimit, shortage, canBuy, status, monthlyInterest, monthlyPayment, remainingCash };
     }
 
     function housePlanRoadmap() {
       const p = readHousePlanInputs();
-      const assets = houseLatestAssets();
-      const labels = futureHouseLabels(assets.period);
-      const sell = labels.map((_, index) => houseScenarioRow(p, assets, "sell", index));
-      const keep = labels.map((_, index) => houseScenarioRow(p, assets, "keep", index));
-      return { p, assets, labels, sell, keep };
+      const periods = assetPeriods.length ? [...assetPeriods] : [latestManagedPeriod()];
+      const labels = periods.map(periodLabel);
+      const assetsByPeriod = periods.map((period) => {
+        const assets = houseAssetsForPeriod(period);
+        if (period === periods.at(-1) && p.existingHomePrice > 0) assets.groups.home = p.existingHomePrice;
+        return assets;
+      });
+      const sell = assetsByPeriod.map((assets) => houseScenarioRow(p, assets, "sell"));
+      const keep = assetsByPeriod.map((assets) => houseScenarioRow(p, assets, "keep"));
+      return { p, periods, assets: assetsByPeriod.at(-1), labels, sell, keep };
     }
 
     function renderHouseScenarioTable(prefix, labels, rows, ltvLabel) {
@@ -3599,10 +3698,13 @@
       if (!head || !body) return;
       head.innerHTML = `<tr><th>항목</th>${labels.map((label) => `<th>${label}</th>`).join("")}</tr>`;
       const tableRows = [
-        ["가용 금액", (row) => compactWon(row.available)],
+        ["현금화 가능 자산", (row) => compactWon(row.available)],
+        ["LTV 대출 가능액", (row) => compactWon(row.loanLimit)],
         ["대출 필요 금액", (row) => compactWon(row.loanNeeded)],
         ["총비용", (row) => compactWon(row.totalCost)],
-        [`대출 가능 여부, LTV ${ltvLabel}`, (row) => `<span class="${row.canBuy ? "loan-ok" : "loan-bad"}">${row.canBuy ? "가능" : "불가능"}</span>`]
+        ["자금 부족액", (row) => compactWon(row.shortage)],
+        ["구매 후 여유액", (row) => compactWon(row.remainingCash)],
+        [`구매 가능 여부, LTV ${ltvLabel}`, (row) => `<span class="${row.canBuy ? "loan-ok" : "loan-bad"}">${row.status}</span>`]
       ];
       body.innerHTML = tableRows.map(([label, value]) => `<tr><td>${label}</td>${rows.map((row) => `<td>${value(row)}</td>`).join("")}</tr>`).join("");
     }
@@ -3616,8 +3718,9 @@
         data: {
           labels,
           datasets: [
-            { label: "가용 금액", data: rows.map((row) => row.available), backgroundColor: "#2563eb", borderRadius: 5 },
-            { label: "대출 필요 금액", data: rows.map((row) => row.loanNeeded), backgroundColor: "#f59e0b", borderRadius: 5 }
+            { label: "현금화 가능 자산", data: rows.map((row) => row.available), backgroundColor: "#2563eb", borderRadius: 5 },
+            { label: "LTV 대출 가능액", data: rows.map((row) => row.loanLimit), backgroundColor: "#34a853", borderRadius: 5 },
+            { label: "자금 부족액", data: rows.map((row) => row.shortage), backgroundColor: "#ef4444", borderRadius: 5 }
           ]
         },
         options: {
@@ -3626,7 +3729,13 @@
           plugins: {
             legend: { position: "bottom" },
             datalabels: { display: false },
-            tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${compactWon(ctx.raw)}` } }
+            tooltip: { callbacks: {
+              label: (ctx) => `${ctx.dataset.label}: ${compactWon(ctx.raw)}`,
+              afterBody: (items) => {
+                const row = rows[items[0]?.dataIndex || 0];
+                return [`필요 대출금: ${compactWon(row.loanNeeded)}`, `총 필요 비용: ${compactWon(row.totalCost)}`];
+              }
+            } }
           },
           scales: {
             x: { grid: { display: false } },
@@ -3640,17 +3749,24 @@
       if (!document.getElementById("housePlanPanel")) return;
       const { p, assets, labels, sell, keep } = housePlanRoadmap();
       const selectedRows = p.scenario === "keep" ? keep : sell;
-      const current = selectedRows[0];
+      const current = selectedRows.at(-1);
+      const basisLabel = labels.at(-1) || "-";
       const ltvLabel = `${Math.round(p.ltv * 100)}%`;
-      houseSetText("housePlanStatus", `기준 월 ${periodLabel(assets.period)}`);
-      houseSetText("houseCanBuy", current.canBuy ? "가능" : "불가능", current.canBuy ? "loan-ok" : "loan-bad");
+      houseSetText("housePlanStatus", `구매 가능 여부 기준: ${basisLabel}${p.costs.warning ? ` · ${p.costs.warning}` : ""}`);
+      houseSetText("houseCanBuy", current.canBuy ? `${basisLabel} 기준 구매 가능` : `${basisLabel} 기준 ${current.status}`, current.canBuy ? "loan-ok" : "loan-bad");
       houseSetText("houseTotalCost", compactWon(current.totalCost));
       houseSetText("houseAvailableAssets", compactWon(current.available));
       houseSetText("houseLoanNeeded", compactWon(current.loanNeeded));
       houseSetText("houseLoanLimit", compactWon(current.loanLimit));
+      houseSetText("houseShortage", compactWon(current.shortage), current.shortage > 0 ? "loan-bad" : "loan-ok");
       houseSetText("houseRemainingCash", compactWon(current.remainingCash));
-      houseSetText("houseMonthlyInterest", compactWon(current.monthlyInterest));
       houseSetText("houseMonthlyPayment", compactWon(current.monthlyPayment));
+      houseSetText("basisAcquisitionTax", compactWon(p.costs.acquisitionTotal));
+      houseSetText("basisBuyFee", compactWon(p.costs.buyFee));
+      houseSetText("basisSellFee", p.scenario === "sell" ? compactWon(p.costs.sellFee) : "미반영");
+      houseSetText("basisInterior", compactWon(p.interior));
+      houseSetText("basisReserve", compactWon(p.reserve));
+      updateHouseRatioAmounts(assets);
       renderHouseScenarioTable("houseSell", labels, sell, ltvLabel);
       renderHouseScenarioTable("houseKeep", labels, keep, ltvLabel);
       renderHousePlanChart(labels, selectedRows);
