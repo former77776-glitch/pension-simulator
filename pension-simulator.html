@@ -970,22 +970,29 @@
 
     .house-layout {
       display: grid;
-      grid-template-columns: 390px minmax(0, 1fr);
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 12px;
       align-items: start;
     }
 
-    .house-form,
+    .house-section,
     .ratio-list {
       display: grid;
       gap: 8px;
       padding: 12px;
     }
 
-    .house-form h3,
+    .house-section h3,
     .ratio-list h3 {
       margin: 0 0 2px;
       font-size: 15px;
+    }
+
+    .house-section p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
     }
 
     .house-field {
@@ -1064,7 +1071,7 @@
 
     .house-summary {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(6, minmax(0, 1fr));
       gap: 8px;
     }
 
@@ -1077,6 +1084,36 @@
     }
 
     .loan-bad {
+      color: var(--red);
+    }
+
+    .house-badge {
+      display: inline-flex;
+      align-items: center;
+      width: fit-content;
+      min-height: 28px;
+      padding: 0 10px;
+      border-radius: 999px;
+      background: #eef2ff;
+      color: var(--navy);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 24px;
+      padding: 0 8px;
+      border-radius: 999px;
+      background: #ecfdf3;
+      color: var(--green);
+      font-weight: 900;
+    }
+
+    .status-badge.bad {
+      background: #fef2f2;
       color: var(--red);
     }
 
@@ -1094,14 +1131,21 @@
     }
 
     .house-chart-box {
-      height: 300px;
-      min-height: 300px;
+      height: 340px;
+      min-height: 340px;
       position: relative;
     }
 
     .house-chart-box canvas {
       width: 100% !important;
       height: 100% !important;
+    }
+
+    .house-chart-note {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
     }
 
     .house-tables {
@@ -1143,12 +1187,33 @@
       font-weight: 900;
     }
 
+    .house-table th.final-period,
+    .house-table td.final-period {
+      background: #fff7ed;
+    }
+
     .house-table th:first-child,
     .house-table td:first-child {
       text-align: left;
       width: 130px;
       background: #f8fafc;
       font-weight: 800;
+    }
+
+    details.house-details {
+      display: grid;
+      gap: 8px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    details.house-details > summary {
+      cursor: pointer;
+      font-weight: 900;
+      padding: 10px 12px;
+      color: var(--navy);
+      list-style-position: inside;
     }
 
     @media (max-width: 1100px) {
@@ -1377,9 +1442,18 @@
         </div>
 
         <div class="house-layout">
-          <aside class="card house-form">
+          <section class="card house-section">
             <h3>구매 조건</h3>
             <div class="house-field"><label for="housePrice">목표 집값</label><input id="housePrice" data-house-input="money" value="1,600,000,000원"><span class="unit">원</span></div>
+            <div class="house-field"><label for="houseScenarioSelect">기존 집 처분 여부</label><select id="houseScenarioSelect" data-house-input="text"><option value="sell">처분 시</option><option value="keep">미처분 시</option></select><span class="unit"></span></div>
+            <div class="house-field"><label for="houseLtv">LTV 기준</label><input id="houseLtv" data-house-input="percent" value="60%"><span class="unit">%</span></div>
+            <div class="house-field"><label for="houseLoanRate">대출 금리</label><input id="houseLoanRate" data-house-input="percent" value="4.5%"><span class="unit">%</span></div>
+            <div class="house-field"><label for="houseLoanYears">대출 기간</label><input id="houseLoanYears" data-house-input="number" value="30"><span class="unit">년</span></div>
+            <div class="house-field"><label for="existingHomePrice">기존 집 예상 처분가</label><input id="existingHomePrice" data-house-input="money" value="0원"><span class="unit">원</span></div>
+          </section>
+
+          <section class="card house-section">
+            <h3>비용 설정</h3>
             <div class="house-field"><label for="houseCountType">주택 수 구분</label><select id="houseCountType" data-house-input="text"><option value="one">1주택</option><option value="temporaryTwo">일시적 2주택</option><option value="multi">2주택 이상</option></select><span class="unit"></span></div>
             <div class="house-field"><label for="houseRegulated">조정대상지역 여부</label><select id="houseRegulated" data-house-input="text"><option value="no">아니오</option><option value="yes">예</option></select><span class="unit"></span></div>
             <div class="house-field"><label for="houseAreaOver85">전용면적 85㎡ 초과</label><select id="houseAreaOver85" data-house-input="text"><option value="no">아니오</option><option value="yes">예</option></select><span class="unit"></span></div>
@@ -1392,49 +1466,51 @@
             <div class="house-field"><label for="houseSellFee">매도 중개수수료</label><input id="houseSellFee" data-house-input="money" value="0원" readonly><span class="unit">원</span></div>
             <div class="house-field"><label for="houseInterior">인테리어비</label><input id="houseInterior" data-house-input="money" value="150,000,000원"><span class="unit">원</span></div>
             <div class="house-field"><label for="houseReserve">구매 후 최소 여유잔액</label><input id="houseReserve" data-house-input="money" value="50,000,000원"><span class="unit">원</span></div>
-            <div class="house-field"><label for="houseLtv">LTV 기준</label><input id="houseLtv" data-house-input="percent" value="60%"><span class="unit">%</span></div>
-            <div class="house-field"><label for="houseLoanRate">예상 대출 금리</label><input id="houseLoanRate" data-house-input="percent" value="4.5%"><span class="unit">%</span></div>
-            <div class="house-field"><label for="houseLoanYears">대출 기간</label><input id="houseLoanYears" data-house-input="number" value="30"><span class="unit">년</span></div>
-            <div class="house-field"><label for="existingHomePrice">기존 집 예상 처분가</label><input id="existingHomePrice" data-house-input="money" value="0원"><span class="unit">원</span></div>
-            <div class="house-field"><label for="houseScenarioSelect">기존 집 처분 여부</label><select id="houseScenarioSelect" data-house-input="text"><option value="sell">처분 시</option><option value="keep">미처분 시</option></select><span class="unit"></span></div>
             <div class="card house-note">취득세는 간이 계산입니다. 실제 세액은 주택 수, 지역, 면적, 정책 변경에 따라 달라질 수 있습니다.</div>
-          </aside>
+          </section>
 
-          <section class="house-plan">
-            <div class="card ratio-list">
-              <h3>현금화 비율</h3>
-              <div id="houseRatioList"></div>
-            </div>
-            <section class="house-summary">
-              <div class="card metric"><span>구매 가능 여부</span><strong id="houseCanBuy">-</strong></div>
-              <div class="card metric"><span>총 필요 비용</span><strong id="houseTotalCost">-</strong></div>
-              <div class="card metric"><span>현금화 가능 자산</span><strong id="houseAvailableAssets">-</strong></div>
-              <div class="card metric"><span>필요 대출금</span><strong id="houseLoanNeeded">-</strong></div>
-              <div class="card metric"><span>LTV 기준 대출 가능액</span><strong id="houseLoanLimit">-</strong></div>
-              <div class="card metric"><span>자금 부족액</span><strong id="houseShortage">-</strong></div>
-              <div class="card metric"><span>구매 후 여유잔액</span><strong id="houseRemainingCash">-</strong></div>
-              <div class="card metric"><span>원리금균등 월 상환액</span><strong id="houseMonthlyPayment">-</strong></div>
-            </section>
-            <section class="cost-basis">
-              <div class="card metric"><span>취득 관련 세금</span><strong id="basisAcquisitionTax">-</strong></div>
-              <div class="card metric"><span>매수 중개수수료</span><strong id="basisBuyFee">-</strong></div>
-              <div class="card metric"><span>매도 중개수수료</span><strong id="basisSellFee">-</strong></div>
-              <div class="card metric"><span>인테리어비</span><strong id="basisInterior">-</strong></div>
-              <div class="card metric"><span>최소 여유잔액</span><strong id="basisReserve">-</strong></div>
-            </section>
-            <div class="card house-chart-card">
-              <div class="house-chart-head">
-                <div>
-                  <div class="chart-title">이사 자금 로드맵</div>
-                  <div class="chart-desc">가용 금액과 대출 필요 금액을 기간별로 비교합니다.</div>
-                </div>
-              </div>
-              <div class="house-chart-box">
-                <canvas id="housePlanChart"></canvas>
-              </div>
-            </div>
+          <section class="card house-section">
+            <h3>결과 해석</h3>
+            <span class="house-badge" id="houseBasisBadge">기준 period -</span>
+            <p>마지막 표시 period 기준으로 현금화 가능 자산과 LTV 한도를 더해 총 필요 비용을 감당할 수 있는지 판단합니다.</p>
+            <p>자금 부족액은 총 필요 비용에서 현금화 가능 자산과 LTV 한도를 뺀 금액입니다.</p>
           </section>
         </div>
+
+        <section class="house-summary">
+          <div class="card metric"><span>구매 가능 여부</span><strong id="houseCanBuy">-</strong></div>
+          <div class="card metric"><span>총 필요 비용</span><strong id="houseTotalCost">-</strong></div>
+          <div class="card metric"><span>현금화 가능 자산</span><strong id="houseAvailableAssets">-</strong></div>
+          <div class="card metric"><span>대출 필요 금액</span><strong id="houseLoanNeeded">-</strong></div>
+          <div class="card metric"><span>LTV 기준 대출 가능액</span><strong id="houseLoanLimit">-</strong></div>
+          <div class="card metric"><span>자금 부족액</span><strong id="houseShortage">-</strong></div>
+        </section>
+
+        <div class="card house-chart-card">
+          <div class="house-chart-head">
+            <div>
+              <div class="chart-title">이사 자금 로드맵</div>
+              <div class="chart-desc">자산기록 표시 period 기준으로 구매 가능성을 비교합니다.</div>
+            </div>
+          </div>
+          <div class="house-chart-box">
+            <canvas id="housePlanChart"></canvas>
+          </div>
+          <p class="house-chart-note">현금화 가능 자산과 대출 필요 금액을 비교한 그래프입니다. 점선은 LTV 기준 대출 한도입니다.</p>
+        </div>
+
+        <details class="house-details" open>
+          <summary>비용 상세</summary>
+          <section class="cost-basis">
+            <div class="card metric"><span>취득 관련 세금</span><strong id="basisAcquisitionTax">-</strong></div>
+            <div class="card metric"><span>매수 중개수수료</span><strong id="basisBuyFee">-</strong></div>
+            <div class="card metric"><span>매도 중개수수료</span><strong id="basisSellFee">-</strong></div>
+            <div class="card metric"><span>인테리어비</span><strong id="basisInterior">-</strong></div>
+            <div class="card metric"><span>최소 여유잔액</span><strong id="basisReserve">-</strong></div>
+            <div class="card metric"><span>구매 후 여유액</span><strong id="houseRemainingCash">-</strong></div>
+            <div class="card metric"><span>원리금균등 월 상환액</span><strong id="houseMonthlyPayment">-</strong></div>
+          </section>
+        </details>
 
         <section class="house-tables">
           <div class="card house-table-card">
@@ -1451,6 +1527,11 @@
               <tbody id="houseKeepBody"></tbody>
             </table>
           </div>
+        </section>
+
+        <section class="card ratio-list">
+          <h3>현금화 가능 자산 설정</h3>
+          <div id="houseRatioList"></div>
         </section>
       </div>
     </section>
@@ -3696,22 +3777,26 @@
       const head = document.getElementById(`${prefix}Head`);
       const body = document.getElementById(`${prefix}Body`);
       if (!head || !body) return;
-      head.innerHTML = `<tr><th>항목</th>${labels.map((label) => `<th>${label}</th>`).join("")}</tr>`;
+      const lastIndex = Math.max(0, labels.length - 1);
+      head.innerHTML = `<tr><th>항목</th>${labels.map((label, index) => `<th class="${index === lastIndex ? "final-period" : ""}">${label}${index === lastIndex ? " · 최종 기준" : ""}</th>`).join("")}</tr>`;
       const tableRows = [
         ["현금화 가능 자산", (row) => compactWon(row.available)],
-        ["LTV 대출 가능액", (row) => compactWon(row.loanLimit)],
-        ["대출 필요 금액", (row) => compactWon(row.loanNeeded)],
         ["총비용", (row) => compactWon(row.totalCost)],
-        ["자금 부족액", (row) => compactWon(row.shortage)],
+        ["대출 필요 금액", (row) => compactWon(row.loanNeeded)],
+        ["LTV 기준 대출 가능액", (row) => compactWon(row.loanLimit)],
+        ["자금 부족액", (row) => `<span class="${row.shortage > 0 ? "loan-bad" : "loan-ok"}">${compactWon(row.shortage)}</span>`],
         ["구매 후 여유액", (row) => compactWon(row.remainingCash)],
-        [`구매 가능 여부, LTV ${ltvLabel}`, (row) => `<span class="${row.canBuy ? "loan-ok" : "loan-bad"}">${row.status}</span>`]
+        [`구매 가능 여부, LTV ${ltvLabel}`, (row) => `<span class="status-badge ${row.canBuy ? "" : "bad"}">${row.status}</span>`]
       ];
-      body.innerHTML = tableRows.map(([label, value]) => `<tr><td>${label}</td>${rows.map((row) => `<td>${value(row)}</td>`).join("")}</tr>`).join("");
+      body.innerHTML = tableRows.map(([label, value]) => `<tr><td>${label}</td>${rows.map((row, index) => `<td class="${index === lastIndex ? "final-period" : ""}">${value(row)}</td>`).join("")}</tr>`).join("");
     }
 
     function renderHousePlanChart(labels, rows) {
       const canvas = document.getElementById("housePlanChart");
       if (!canvas || typeof Chart === "undefined") return;
+      ensureChartDataLabels();
+      const ltvLimit = rows[0]?.loanLimit || 0;
+      const lastIndex = Math.max(0, rows.length - 1);
       housePlanChartInstance?.destroy();
       housePlanChartInstance = new Chart(canvas, {
         type: "bar",
@@ -3719,8 +3804,33 @@
           labels,
           datasets: [
             { label: "현금화 가능 자산", data: rows.map((row) => row.available), backgroundColor: "#2563eb", borderRadius: 5 },
-            { label: "LTV 대출 가능액", data: rows.map((row) => row.loanLimit), backgroundColor: "#34a853", borderRadius: 5 },
-            { label: "자금 부족액", data: rows.map((row) => row.shortage), backgroundColor: "#ef4444", borderRadius: 5 }
+            {
+              label: "대출 필요 금액",
+              data: rows.map((row) => row.loanNeeded),
+              backgroundColor: "#f59e0b",
+              borderRadius: 5,
+              datalabels: {
+                display: (ctx) => rows[ctx.dataIndex]?.shortage > 0,
+                formatter: (_value, ctx) => `자금 부족 ${compactWon(rows[ctx.dataIndex].shortage)}`,
+                color: "#ef4444",
+                anchor: "end",
+                align: "top",
+                offset: 2,
+                font: { weight: "900", size: 11 }
+              }
+            },
+            {
+              type: "line",
+              label: `LTV ${Math.round((rows[0]?.loanLimit || 0) / Math.max(1, houseInputValue("housePrice")) * 100)}% 한도`,
+              data: rows.map(() => ltvLimit),
+              borderColor: "#334155",
+              backgroundColor: "#334155",
+              borderDash: [6, 5],
+              pointRadius: 0,
+              borderWidth: 2,
+              fill: false,
+              datalabels: { display: false }
+            }
           ]
         },
         options: {
@@ -3730,10 +3840,20 @@
             legend: { position: "bottom" },
             datalabels: { display: false },
             tooltip: { callbacks: {
+              title: (items) => {
+                const index = items[0]?.dataIndex || 0;
+                return `${labels[index]}${index === lastIndex ? " · 최종 기준" : ""}`;
+              },
               label: (ctx) => `${ctx.dataset.label}: ${compactWon(ctx.raw)}`,
               afterBody: (items) => {
                 const row = rows[items[0]?.dataIndex || 0];
-                return [`필요 대출금: ${compactWon(row.loanNeeded)}`, `총 필요 비용: ${compactWon(row.totalCost)}`];
+                return [
+                  `현금화 가능 자산: ${compactWon(row.available)}`,
+                  `총 필요 비용: ${compactWon(row.totalCost)}`,
+                  `대출 필요 금액: ${compactWon(row.loanNeeded)}`,
+                  `LTV 기준 대출 가능액: ${compactWon(row.loanLimit)}`,
+                  `자금 부족액: ${compactWon(row.shortage)}`
+                ];
               }
             } }
           },
@@ -3753,6 +3873,7 @@
       const basisLabel = labels.at(-1) || "-";
       const ltvLabel = `${Math.round(p.ltv * 100)}%`;
       houseSetText("housePlanStatus", `구매 가능 여부 기준: ${basisLabel}${p.costs.warning ? ` · ${p.costs.warning}` : ""}`);
+      houseSetText("houseBasisBadge", `구매 가능 여부 기준: ${basisLabel}`, "house-badge");
       houseSetText("houseCanBuy", current.canBuy ? `${basisLabel} 기준 구매 가능` : `${basisLabel} 기준 ${current.status}`, current.canBuy ? "loan-ok" : "loan-bad");
       houseSetText("houseTotalCost", compactWon(current.totalCost));
       houseSetText("houseAvailableAssets", compactWon(current.available));
