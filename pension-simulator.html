@@ -136,6 +136,10 @@
       margin-top: 10px;
     }
 
+    .asset-chart-card.wide {
+      grid-column: 1 / -1;
+    }
+
     .asset-chart-card {
       padding: 14px;
       min-width: 0;
@@ -1311,6 +1315,17 @@
             <div class="card asset-chart-card">
               <div class="asset-chart-head">
                 <div class="chart-copy">
+                  <div class="chart-title">월별 자산 비중</div>
+                  <div class="chart-desc">표시된 기간별 자산군 비중입니다.</div>
+                </div>
+              </div>
+              <div class="asset-chart-box">
+                <canvas id="assetCompositionChart"></canvas>
+              </div>
+            </div>
+            <div class="card asset-chart-card">
+              <div class="asset-chart-head">
+                <div class="chart-copy">
                   <div class="chart-title">최근 자산 비중</div>
                   <div class="chart-desc">최신 월의 주요 자산군 구성을 보여줍니다.</div>
                 </div>
@@ -1620,6 +1635,7 @@
     let searchRequestId = 0;
     let assetNetChartInstance = null;
     let assetMixChartInstance = null;
+    let assetCompositionChartInstance = null;
     let housePlanChartInstance = null;
 
     const HOUSE_PLAN_STORAGE_KEY = "pensionHousePlanInputs";
@@ -2265,7 +2281,14 @@
     function assetCategoryTotals(period) {
       const totals = { "부동산": 0, "연금": 0, "주식": 0, "금/비트": 0, "현금": 0, "대출": 0 };
       for (const row of assetRows) {
-        const key = row.category === "주식" && /연금|퇴직|IRP/i.test(row.label || "") ? "연금" : row.category;
+        const text = `${row.category || ""} ${row.label || ""} ${row.id || ""}`;
+        let key = row.category;
+        if (row.debt || row.category === "대출") key = "대출";
+        else if (/개인연금|연금저축|퇴직연금|연금|IRP|DC/i.test(text)) key = "연금";
+        else if (/아파트|부동산|주택/i.test(text)) key = "부동산";
+        else if (/금|비트|코인|KRX/i.test(text)) key = "금/비트";
+        else if (/현금|예금|청약/i.test(text)) key = "현금";
+        else if (row.category === "주식" || /주식|하이닉스|ETF|ISA/i.test(text)) key = "주식";
         if (totals[key] === undefined) totals[key] = 0;
         totals[key] += rowValue(row, period);
       }
@@ -2436,6 +2459,87 @@
       }
     };
 
+    function drawAssetCompositionChart() {
+      const canvas = document.getElementById("assetCompositionChart");
+      if (!canvas || !window.Chart) return;
+      ensureChartDataLabels();
+      const categories = [
+        { key: "부동산", color: "#2563eb" },
+        { key: "주식", color: "#0f766e" },
+        { key: "금/비트", color: "#f59e0b" },
+        { key: "현금", color: "#64748b" },
+        { key: "연금", color: "#7c3aed" }
+      ];
+      const labels = assetPeriods.map(periodLabel);
+      const totalsByPeriod = assetPeriods.map((period) => assetCategoryTotals(period));
+      const grossTotals = totalsByPeriod.map((totals) => categories.reduce((sum, item) => sum + Math.max(0, totals[item.key] || 0), 0));
+      const percentData = categories.map((item) => totalsByPeriod.map((totals, index) => {
+        const gross = grossTotals[index] || 0;
+        return gross ? Math.max(0, totals[item.key] || 0) / gross * 100 : 0;
+      }));
+      if (assetCompositionChartInstance) assetCompositionChartInstance.destroy();
+      assetCompositionChartInstance = new Chart(canvas, {
+        type: "bar",
+        data: {
+          labels,
+          datasets: categories.map((item, index) => ({
+            label: item.key,
+            data: percentData[index],
+            backgroundColor: item.color,
+            borderColor: "#ffffff",
+            borderWidth: 1,
+            borderRadius: 4,
+            stack: "composition"
+          }))
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          resizeDelay: 120,
+          layout: { padding: { top: 12, right: 8, bottom: 0, left: 0 } },
+          plugins: {
+            legend: { position: "bottom", labels: { boxWidth: 10, boxHeight: 10, usePointStyle: true } },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => {
+                  const rawAmount = Math.max(0, totalsByPeriod[ctx.dataIndex]?.[ctx.dataset.label] || 0);
+                  return `${ctx.dataset.label}: ${ctx.raw.toFixed(1)}% (${compactWon(rawAmount)})`;
+                },
+                footer: (items) => {
+                  const index = items[0]?.dataIndex || 0;
+                  return `총자산: ${compactWon(grossTotals[index] || 0)}`;
+                }
+              }
+            },
+            datalabels: {
+              display: (ctx) => hasDataLabels() && ctx.raw >= 5,
+              color: "#ffffff",
+              font: { size: 11, weight: "900" },
+              formatter: (value) => value >= 5 ? `${value.toFixed(1)}%` : "",
+              anchor: "center",
+              align: "center",
+              clamp: true,
+              clip: true
+            }
+          },
+          scales: {
+            x: {
+              stacked: true,
+              grid: { display: false },
+              ticks: { color: "#667085", maxRotation: 45, minRotation: assetPeriods.length > 8 ? 35 : 0, autoSkip: true }
+            },
+            y: {
+              stacked: true,
+              min: 0,
+              max: 100,
+              grid: { color: "#eef2f7" },
+              ticks: { color: "#667085", callback: (value) => `${value}%` }
+            }
+          }
+        }
+      });
+    }
+
     function drawAssetMixChart() {
       const canvas = document.getElementById("assetMixChart");
       if (!canvas || !window.Chart) return;
@@ -2502,6 +2606,7 @@
 
     function renderAssetCharts() {
       drawAssetNetChart();
+      drawAssetCompositionChart();
       drawAssetMixChart();
     }
 
