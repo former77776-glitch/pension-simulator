@@ -2492,6 +2492,7 @@
             stack: "composition"
           }))
         },
+        plugins: hasDataLabels() ? [window.ChartDataLabels] : [],
         options: {
           responsive: true,
           maintainAspectRatio: false,
@@ -2513,7 +2514,7 @@
             },
             datalabels: {
               display: (ctx) => {
-                const value = Number(ctx.raw) || 0;
+                const value = Number(ctx.dataset?.data?.[ctx.dataIndex] || 0);
                 if (!hasDataLabels() || !grossTotals[ctx.dataIndex] || value < 5) return false;
                 const area = ctx.chart.chartArea;
                 if (!area) return true;
@@ -2526,7 +2527,10 @@
               textStrokeColor: (ctx) => ctx.dataset.label === "금/비트" ? "rgba(255,255,255,.45)" : "rgba(15,23,42,.28)",
               textStrokeWidth: 2,
               font: { size: 11, weight: "900" },
-              formatter: (value) => `${Number(value).toFixed(1)}%`,
+              formatter: (value) => {
+                const n = Number(value || 0);
+                return n >= 5 ? `${n.toFixed(1)}%` : "";
+              },
               anchor: "center",
               align: "center",
               clamp: true,
