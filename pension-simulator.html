@@ -970,9 +970,16 @@
 
     .house-layout {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: 360px minmax(0, 1fr);
       gap: 12px;
       align-items: start;
+    }
+
+    .house-sidebar,
+    .house-main {
+      display: grid;
+      gap: 12px;
+      min-width: 0;
     }
 
     .house-section,
@@ -1030,9 +1037,13 @@
 
     .ratio-item {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 1fr 64px 86px;
+      grid-template-columns: minmax(0, 1fr) 96px 58px;
       gap: 8px;
       align-items: center;
+    }
+
+    .ratio-item label {
+      grid-column: 1 / -1;
     }
 
     .ratio-item input[type="range"] {
@@ -1045,10 +1056,11 @@
     }
 
     .ratio-amount {
+      grid-column: 1 / -1;
       color: var(--text);
       font-size: 12px;
       font-weight: 900;
-      text-align: right;
+      text-align: left;
       white-space: nowrap;
     }
 
@@ -1442,97 +1454,93 @@
         </div>
 
         <div class="house-layout">
-          <section class="card house-section">
-            <h3>구매 조건</h3>
-            <div class="house-field"><label for="housePrice">목표 집값</label><input id="housePrice" data-house-input="money" value="1,600,000,000원"><span class="unit">원</span></div>
-            <div class="house-field"><label for="houseScenarioSelect">기존 집 처분 여부</label><select id="houseScenarioSelect" data-house-input="text"><option value="sell">처분 시</option><option value="keep">미처분 시</option></select><span class="unit"></span></div>
-            <div class="house-field"><label for="houseLtv">LTV 기준</label><input id="houseLtv" data-house-input="percent" value="60%"><span class="unit">%</span></div>
-            <div class="house-field"><label for="houseLoanRate">대출 금리</label><input id="houseLoanRate" data-house-input="percent" value="4.5%"><span class="unit">%</span></div>
-            <div class="house-field"><label for="houseLoanYears">대출 기간</label><input id="houseLoanYears" data-house-input="number" value="30"><span class="unit">년</span></div>
-            <div class="house-field"><label for="existingHomePrice">기존 집 예상 처분가</label><input id="existingHomePrice" data-house-input="money" value="0원"><span class="unit">원</span></div>
-          </section>
+          <aside class="house-sidebar">
+            <section class="card house-section">
+              <h3>구매 조건</h3>
+              <div class="house-field"><label for="housePrice">목표 집값</label><input id="housePrice" data-house-input="money" value="1,600,000,000원"><span class="unit">원</span></div>
+              <div class="house-field"><label for="houseScenarioSelect">기존 집 처분 여부</label><select id="houseScenarioSelect" data-house-input="text"><option value="sell">처분 시</option><option value="keep">미처분 시</option></select><span class="unit"></span></div>
+              <div class="house-field"><label for="existingHomePrice">기존 집 예상 처분가</label><input id="existingHomePrice" data-house-input="money" value="0원"><span class="unit">원</span></div>
+              <div class="house-field"><label for="houseLtv">LTV 기준</label><input id="houseLtv" data-house-input="percent" value="60%"><span class="unit">%</span></div>
+              <div class="house-field"><label for="houseLoanRate">대출 금리</label><input id="houseLoanRate" data-house-input="percent" value="4.5%"><span class="unit">%</span></div>
+              <div class="house-field"><label for="houseLoanYears">대출 기간</label><input id="houseLoanYears" data-house-input="number" value="30"><span class="unit">년</span></div>
+            </section>
 
-          <section class="card house-section">
-            <h3>비용 설정</h3>
-            <div class="house-field"><label for="houseCountType">주택 수 구분</label><select id="houseCountType" data-house-input="text"><option value="one">1주택</option><option value="temporaryTwo">일시적 2주택</option><option value="multi">2주택 이상</option></select><span class="unit"></span></div>
-            <div class="house-field"><label for="houseRegulated">조정대상지역 여부</label><select id="houseRegulated" data-house-input="text"><option value="no">아니오</option><option value="yes">예</option></select><span class="unit"></span></div>
-            <div class="house-field"><label for="houseAreaOver85">전용면적 85㎡ 초과</label><select id="houseAreaOver85" data-house-input="text"><option value="no">아니오</option><option value="yes">예</option></select><span class="unit"></span></div>
-            <div class="house-field"><label for="houseAcqAdjustment">취득세 수동 보정</label><input id="houseAcqAdjustment" data-house-input="money" value="0원"><span class="unit">원</span></div>
-            <div class="house-field"><label for="houseAcquisitionTax">취득 관련 세금</label><input id="houseAcquisitionTax" data-house-input="money" value="0원" readonly><span class="unit">원</span></div>
-            <div class="house-field"><label for="houseBrokerVat">중개수수료 부가세</label><select id="houseBrokerVat" data-house-input="text"><option value="yes">포함</option><option value="no">미포함</option></select><span class="unit"></span></div>
-            <div class="house-field"><label for="houseBuyFeeAdjustment">매수 중개수수료 보정</label><input id="houseBuyFeeAdjustment" data-house-input="money" value="0원"><span class="unit">원</span></div>
-            <div class="house-field"><label for="houseSellFeeAdjustment">매도 중개수수료 보정</label><input id="houseSellFeeAdjustment" data-house-input="money" value="0원"><span class="unit">원</span></div>
-            <div class="house-field"><label for="houseBuyFee">매수 중개수수료</label><input id="houseBuyFee" data-house-input="money" value="0원" readonly><span class="unit">원</span></div>
-            <div class="house-field"><label for="houseSellFee">매도 중개수수료</label><input id="houseSellFee" data-house-input="money" value="0원" readonly><span class="unit">원</span></div>
-            <div class="house-field"><label for="houseInterior">인테리어비</label><input id="houseInterior" data-house-input="money" value="150,000,000원"><span class="unit">원</span></div>
-            <div class="house-field"><label for="houseReserve">구매 후 최소 여유잔액</label><input id="houseReserve" data-house-input="money" value="50,000,000원"><span class="unit">원</span></div>
-            <div class="card house-note">취득세는 간이 계산입니다. 실제 세액은 주택 수, 지역, 면적, 정책 변경에 따라 달라질 수 있습니다.</div>
-          </section>
+            <section class="card ratio-list">
+              <h3>현금화 자산 설정</h3>
+              <div id="houseRatioList"></div>
+            </section>
 
-          <section class="card house-section">
-            <h3>결과 해석</h3>
-            <span class="house-badge" id="houseBasisBadge">기준 period -</span>
-            <p>마지막 표시 period 기준으로 현금화 가능 자산과 LTV 한도를 더해 총 필요 비용을 감당할 수 있는지 판단합니다.</p>
-            <p>자금 부족액은 총 필요 비용에서 현금화 가능 자산과 LTV 한도를 뺀 금액입니다.</p>
-          </section>
-        </div>
+            <section class="card house-section">
+              <h3>비용 설정</h3>
+              <div class="house-field"><label for="houseCountType">주택 수 구분</label><select id="houseCountType" data-house-input="text"><option value="one">1주택</option><option value="temporaryTwo">일시적 2주택</option><option value="multi">2주택 이상</option></select><span class="unit"></span></div>
+              <div class="house-field"><label for="houseRegulated">조정대상지역 여부</label><select id="houseRegulated" data-house-input="text"><option value="no">아니오</option><option value="yes">예</option></select><span class="unit"></span></div>
+              <div class="house-field"><label for="houseAreaOver85">전용면적 85㎡ 초과</label><select id="houseAreaOver85" data-house-input="text"><option value="no">아니오</option><option value="yes">예</option></select><span class="unit"></span></div>
+              <div class="house-field"><label for="houseAcqAdjustment">취득세 수동 보정</label><input id="houseAcqAdjustment" data-house-input="money" value="0원"><span class="unit">원</span></div>
+              <div class="house-field"><label for="houseAcquisitionTax">취득 관련 세금</label><input id="houseAcquisitionTax" data-house-input="money" value="0원" readonly><span class="unit">원</span></div>
+              <div class="house-field"><label for="houseBrokerVat">중개수수료 부가세</label><select id="houseBrokerVat" data-house-input="text"><option value="yes">포함</option><option value="no">미포함</option></select><span class="unit"></span></div>
+              <div class="house-field"><label for="houseBuyFeeAdjustment">매수 중개수수료 보정</label><input id="houseBuyFeeAdjustment" data-house-input="money" value="0원"><span class="unit">원</span></div>
+              <div class="house-field"><label for="houseSellFeeAdjustment">매도 중개수수료 보정</label><input id="houseSellFeeAdjustment" data-house-input="money" value="0원"><span class="unit">원</span></div>
+              <div class="house-field"><label for="houseBuyFee">매수 중개수수료</label><input id="houseBuyFee" data-house-input="money" value="0원" readonly><span class="unit">원</span></div>
+              <div class="house-field"><label for="houseSellFee">매도 중개수수료</label><input id="houseSellFee" data-house-input="money" value="0원" readonly><span class="unit">원</span></div>
+              <div class="house-field"><label for="houseInterior">인테리어비</label><input id="houseInterior" data-house-input="money" value="150,000,000원"><span class="unit">원</span></div>
+              <div class="house-field"><label for="houseReserve">최소 여유잔액</label><input id="houseReserve" data-house-input="money" value="50,000,000원"><span class="unit">원</span></div>
+            </section>
+          </aside>
 
-        <section class="house-summary">
-          <div class="card metric"><span>구매 가능 여부</span><strong id="houseCanBuy">-</strong></div>
-          <div class="card metric"><span>총 필요 비용</span><strong id="houseTotalCost">-</strong></div>
-          <div class="card metric"><span>현금화 가능 자산</span><strong id="houseAvailableAssets">-</strong></div>
-          <div class="card metric"><span>대출 필요 금액</span><strong id="houseLoanNeeded">-</strong></div>
-          <div class="card metric"><span>LTV 기준 대출 가능액</span><strong id="houseLoanLimit">-</strong></div>
-          <div class="card metric"><span>자금 부족액</span><strong id="houseShortage">-</strong></div>
-        </section>
+          <section class="house-main">
+            <section class="house-summary">
+              <div class="card metric"><span>구매 가능 여부</span><strong id="houseCanBuy">-</strong></div>
+              <div class="card metric"><span>총 필요 비용</span><strong id="houseTotalCost">-</strong></div>
+              <div class="card metric"><span>현금화 가능 자산</span><strong id="houseAvailableAssets">-</strong></div>
+              <div class="card metric"><span>대출 필요 금액</span><strong id="houseLoanNeeded">-</strong></div>
+              <div class="card metric"><span>LTV 기준 대출 가능액</span><strong id="houseLoanLimit">-</strong></div>
+              <div class="card metric"><span>자금 부족액</span><strong id="houseShortage">-</strong></div>
+            </section>
 
-        <div class="card house-chart-card">
-          <div class="house-chart-head">
-            <div>
-              <div class="chart-title">이사 자금 로드맵</div>
-              <div class="chart-desc">자산기록 표시 period 기준으로 구매 가능성을 비교합니다.</div>
+            <div class="card house-chart-card">
+              <div class="house-chart-head">
+                <div>
+                  <div class="chart-title">이사 자금 로드맵</div>
+                  <div class="chart-desc">자산기록 표시 period 기준으로 구매 가능성을 비교합니다.</div>
+                </div>
+              </div>
+              <div class="house-chart-box">
+                <canvas id="housePlanChart"></canvas>
+              </div>
+              <p class="house-chart-note">현금화 가능 자산과 대출 필요 금액을 비교한 그래프입니다. 점선은 LTV 기준 대출 한도입니다.</p>
             </div>
-          </div>
-          <div class="house-chart-box">
-            <canvas id="housePlanChart"></canvas>
-          </div>
-          <p class="house-chart-note">현금화 가능 자산과 대출 필요 금액을 비교한 그래프입니다. 점선은 LTV 기준 대출 한도입니다.</p>
-        </div>
 
-        <details class="house-details" open>
-          <summary>비용 상세</summary>
-          <section class="cost-basis">
-            <div class="card metric"><span>취득 관련 세금</span><strong id="basisAcquisitionTax">-</strong></div>
-            <div class="card metric"><span>매수 중개수수료</span><strong id="basisBuyFee">-</strong></div>
-            <div class="card metric"><span>매도 중개수수료</span><strong id="basisSellFee">-</strong></div>
-            <div class="card metric"><span>인테리어비</span><strong id="basisInterior">-</strong></div>
-            <div class="card metric"><span>최소 여유잔액</span><strong id="basisReserve">-</strong></div>
-            <div class="card metric"><span>구매 후 여유액</span><strong id="houseRemainingCash">-</strong></div>
-            <div class="card metric"><span>원리금균등 월 상환액</span><strong id="houseMonthlyPayment">-</strong></div>
+            <section class="house-tables">
+              <div class="card house-table-card">
+                <h3>부동산 처분 시</h3>
+                <table class="house-table">
+                  <thead id="houseSellHead"></thead>
+                  <tbody id="houseSellBody"></tbody>
+                </table>
+              </div>
+              <div class="card house-table-card">
+                <h3>부동산 미처분 시</h3>
+                <table class="house-table">
+                  <thead id="houseKeepHead"></thead>
+                  <tbody id="houseKeepBody"></tbody>
+                </table>
+              </div>
+            </section>
+
+            <details class="house-details" open>
+              <summary>비용 상세</summary>
+              <section class="cost-basis">
+                <div class="card metric"><span>취득 관련 세금</span><strong id="basisAcquisitionTax">-</strong></div>
+                <div class="card metric"><span>매수 중개수수료</span><strong id="basisBuyFee">-</strong></div>
+                <div class="card metric"><span>매도 중개수수료</span><strong id="basisSellFee">-</strong></div>
+                <div class="card metric"><span>인테리어비</span><strong id="basisInterior">-</strong></div>
+                <div class="card metric"><span>최소 여유잔액</span><strong id="basisReserve">-</strong></div>
+                <div class="card metric"><span>구매 후 여유액</span><strong id="houseRemainingCash">-</strong></div>
+                <div class="card metric"><span>원리금균등 월 상환액</span><strong id="houseMonthlyPayment">-</strong></div>
+              </section>
+            </details>
           </section>
-        </details>
-
-        <section class="house-tables">
-          <div class="card house-table-card">
-            <h3>부동산 처분 시</h3>
-            <table class="house-table">
-              <thead id="houseSellHead"></thead>
-              <tbody id="houseSellBody"></tbody>
-            </table>
-          </div>
-          <div class="card house-table-card">
-            <h3>부동산 미처분 시</h3>
-            <table class="house-table">
-              <thead id="houseKeepHead"></thead>
-              <tbody id="houseKeepBody"></tbody>
-            </table>
-          </div>
-        </section>
-
-        <section class="card ratio-list">
-          <h3>현금화 가능 자산 설정</h3>
-          <div id="houseRatioList"></div>
-        </section>
+        </div>
       </div>
     </section>
   </main>
@@ -3613,7 +3621,12 @@
       const scenario = document.getElementById("houseScenarioSelect")?.value || "sell";
       for (const item of HOUSE_RATIO_GROUPS) {
         const el = document.getElementById(`houseRatioAmount_${item.key}`);
-        if (el) el.textContent = item.key === "home" && scenario === "keep" ? "미처분" : compactWon(houseRatioAppliedAmount(item.key, assets));
+        const isInactiveHome = item.key === "home" && scenario === "keep";
+        const range = document.querySelector(`[data-house-ratio="${item.key}"]`);
+        const number = document.querySelector(`[data-house-ratio-number="${item.key}"]`);
+        if (range) range.disabled = isInactiveHome;
+        if (number) number.disabled = isInactiveHome;
+        if (el) el.textContent = isInactiveHome ? "미처분 시 미반영" : `${houseRatios[item.key]}% · ${compactWon(houseRatioAppliedAmount(item.key, assets))} 반영`;
       }
     }
 
@@ -3873,7 +3886,6 @@
       const basisLabel = labels.at(-1) || "-";
       const ltvLabel = `${Math.round(p.ltv * 100)}%`;
       houseSetText("housePlanStatus", `구매 가능 여부 기준: ${basisLabel}${p.costs.warning ? ` · ${p.costs.warning}` : ""}`);
-      houseSetText("houseBasisBadge", `구매 가능 여부 기준: ${basisLabel}`, "house-badge");
       houseSetText("houseCanBuy", current.canBuy ? `${basisLabel} 기준 구매 가능` : `${basisLabel} 기준 ${current.status}`, current.canBuy ? "loan-ok" : "loan-bad");
       houseSetText("houseTotalCost", compactWon(current.totalCost));
       houseSetText("houseAvailableAssets", compactWon(current.available));
