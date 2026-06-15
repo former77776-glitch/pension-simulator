@@ -2278,17 +2278,23 @@
       if (selectedButton) selectedButton.textContent = "선택 월 가격 업데이트";
     }
 
+    function assetCategoryKey(row) {
+      const known = new Set(["부동산", "연금", "주식", "금/비트", "현금", "대출"]);
+      if (row?.debt || row?.category === "대출") return "대출";
+      if (known.has(row?.category)) return row.category;
+      const text = `${row?.category || ""} ${row?.label || ""} ${row?.id || ""}`;
+      if (/개인연금|연금저축|퇴직연금|연금|IRP|DC/i.test(text)) return "연금";
+      if (/아파트|부동산|주택/i.test(text)) return "부동산";
+      if (/금\/비트|금|골드|비트|비트코인|코인|crypto|BTC|KRX/i.test(text)) return "금/비트";
+      if (/현금|예금|보유\s*현금|청약/i.test(text)) return "현금";
+      if (/주식|하이닉스|ETF|ISA/i.test(text)) return "주식";
+      return row?.category || "현금";
+    }
+
     function assetCategoryTotals(period) {
       const totals = { "부동산": 0, "연금": 0, "주식": 0, "금/비트": 0, "현금": 0, "대출": 0 };
       for (const row of assetRows) {
-        const text = `${row.category || ""} ${row.label || ""} ${row.id || ""}`;
-        let key = row.category;
-        if (row.debt || row.category === "대출") key = "대출";
-        else if (/개인연금|연금저축|퇴직연금|연금|IRP|DC/i.test(text)) key = "연금";
-        else if (/아파트|부동산|주택/i.test(text)) key = "부동산";
-        else if (/금|비트|코인|KRX/i.test(text)) key = "금/비트";
-        else if (/현금|예금|청약/i.test(text)) key = "현금";
-        else if (row.category === "주식" || /주식|하이닉스|ETF|ISA/i.test(text)) key = "주식";
+        const key = assetCategoryKey(row);
         if (totals[key] === undefined) totals[key] = 0;
         totals[key] += rowValue(row, period);
       }
