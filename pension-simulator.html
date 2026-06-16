@@ -1666,12 +1666,14 @@
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.9/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    const SUPABASE_URL = "";
-    const SUPABASE_ANON_KEY = "";
+    const SUPABASE_URL = "https://lnrdbbxzevejurshraem.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxucmRiYnh6ZXZlanVyc2hyYWVtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MDY1MTAsImV4cCI6MjA5NzE4MjUxMH0.YDh0_RXFk-FmRw9-0nCwXpUtQ4fS9uODGvUuhIIdGuQ";
     const FAMILY_ASSETS_TABLE = "family_assets";
     const FAMILY_KEY = "kim_family";
-    const FAMILY_PASSWORD_SHA256 = "";
+    const FAMILY_PASSWORD_SHA256 = "e4782cfc2b471cd4e24686f692188416d8a313cccb62679dc08c348447c2507b";
+    const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
     const SERVER_AUTH_STORAGE_KEY = "pensionServerSyncAuth";
     const SERVER_AUTO_SAVE_STORAGE_KEY = "pensionServerAutoSave";
     const SERVER_LAST_SYNC_STORAGE_KEY = "pensionServerLastSyncAt";
