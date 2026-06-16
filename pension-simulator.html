@@ -270,6 +270,87 @@
       font-weight: 800;
     }
 
+    .server-sync-card {
+      display: grid;
+      gap: 10px;
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+
+    .server-sync-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .server-sync-title {
+      font-size: 15px;
+      font-weight: 900;
+      color: var(--navy);
+    }
+
+    .server-sync-desc,
+    .server-sync-meta {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .server-sync-form,
+    .server-sync-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .server-sync-form input[type="password"] {
+      width: min(260px, 100%);
+    }
+
+    .server-sync-form label {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .server-sync-form input[type="checkbox"] {
+      width: auto;
+      height: auto;
+    }
+
+    .server-sync-actions button:disabled {
+      opacity: .55;
+      cursor: not-allowed;
+    }
+
+    .sync-badge {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      padding: 0 8px;
+      border-radius: 999px;
+      background: #f1f5f9;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .sync-badge.connected {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .sync-badge.pending {
+      background: #fff7ed;
+      color: #9a3412;
+    }
+
     .managed-year-badge {
       display: inline-flex;
       align-items: center;
@@ -1267,6 +1348,28 @@
         <div class="card metric empty"><span>대출 잔액</span><strong id="latestDebt">데이터 입력 후 표시됩니다</strong></div>
       </div>
 
+      <div class="card server-sync-card" id="serverSyncCard">
+        <div class="server-sync-head">
+          <div>
+            <div class="server-sync-title">가족 서버 동기화</div>
+            <div class="server-sync-desc">서버 동기화를 켜면 PC, 모바일, 가족 기기에서 같은 자산 데이터를 볼 수 있습니다. 처음에는 수동 저장/불러오기로 확인한 뒤 자동 서버 저장을 켜는 것을 권장합니다.</div>
+          </div>
+          <span class="sync-badge" id="serverSyncBadge">서버 동기화: 연결 안 됨</span>
+        </div>
+        <div class="server-sync-form" id="serverSyncLogin">
+          <input id="familyPasswordInput" type="password" autocomplete="current-password" placeholder="가족 비밀번호">
+          <label><input type="checkbox" id="rememberFamilyDevice" checked> 이 기기에서 기억하기</label>
+          <button type="button" class="primary" id="connectFamilySync">연결하기</button>
+        </div>
+        <div class="server-sync-actions">
+          <button type="button" id="loadFromServer" disabled>서버에서 불러오기</button>
+          <button type="button" id="saveToServer" disabled>서버에 저장하기</button>
+          <button type="button" id="toggleAutoServerSave" disabled>자동 서버 저장 OFF</button>
+          <button type="button" id="logoutServerSync" disabled>이 기기에서 로그아웃</button>
+        </div>
+        <div class="server-sync-meta" id="serverSyncMeta">가족 비밀번호를 입력하면 PC와 모바일에서 같은 자산 데이터를 볼 수 있습니다.</div>
+      </div>
+
       <div class="asset-grid">
         <section>
           <div class="card toolbar">
@@ -1564,6 +1667,19 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.9/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
   <script>
+    const SUPABASE_URL = "";
+    const SUPABASE_ANON_KEY = "";
+    const FAMILY_ASSETS_TABLE = "family_assets";
+    const FAMILY_KEY = "kim_family";
+    const FAMILY_PASSWORD_SHA256 = "";
+    const SERVER_AUTH_STORAGE_KEY = "pensionServerSyncAuth";
+    const SERVER_AUTO_SAVE_STORAGE_KEY = "pensionServerAutoSave";
+    const SERVER_LAST_SYNC_STORAGE_KEY = "pensionServerLastSyncAt";
+    const SERVER_LAST_SAVE_STORAGE_KEY = "pensionServerLastSaveAt";
+    const SERVER_LAST_LOAD_STORAGE_KEY = "pensionServerLastLoadAt";
+    const SERVER_LOCAL_UPDATED_STORAGE_KEY = "pensionLocalUpdatedAt";
+    const SERVER_SYNC_DEBOUNCE_MS = 800;
+
     const ASSET_ROWS = [
       { id: "apartment", category: "부동산", label: "아파트 (실거래가 기준)", type: "manual", values: { 2024: 440000000, 2025: 445000000, 2026: 460000000, 2027: 460000000, 2028: 460000000, 2029: 460000000, 2030: 460000000 } },
       { id: "retirementStock", category: "주식", label: "(상윤+혜진) 연금 계좌", type: "stock", values: { 2024: 75500000, 2025: 100000000, 2026: 151000000 } },
@@ -1637,6 +1753,11 @@
     let assetMixChartInstance = null;
     let assetCompositionChartInstance = null;
     let housePlanChartInstance = null;
+    let serverSync = { connected: false, token: "", autoSave: false, lastSyncAt: "", lastSaveAt: "", lastLoadAt: "" };
+    let serverSaveTimer = null;
+    let serverSaveInFlight = false;
+    let appBootstrapped = false;
+    let suppressServerAutoSave = false;
 
     const HOUSE_PLAN_STORAGE_KEY = "pensionHousePlanInputs";
     const HOUSE_RATIO_GROUPS = [
@@ -1720,6 +1841,332 @@
       if (abs >= 100000000) return `${sign}${(abs / 100000000).toFixed(1)}억`;
       if (abs >= 10000) return `${sign}${Math.round(abs / 10000).toLocaleString("ko-KR")}만`;
       return won(value);
+    }
+
+    function formatDateTime(value) {
+      if (!value) return "-";
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return "-";
+      const pad = (n) => String(n).padStart(2, "0");
+      return `${date.getFullYear()}.${pad(date.getMonth() + 1)}.${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    }
+
+    async function sha256(text) {
+      if (!window.crypto?.subtle) {
+        let hash = 5381;
+        for (const char of String(text || "")) hash = ((hash << 5) + hash) + char.charCodeAt(0);
+        return `fallback-${Math.abs(hash >>> 0).toString(16)}`;
+      }
+      const data = new TextEncoder().encode(String(text || ""));
+      const digest = await crypto.subtle.digest("SHA-256", data);
+      return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+    }
+
+    function supabaseConfigured() {
+      return Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
+    }
+
+    function serverSyncEnabled() {
+      return serverSync.connected && serverSync.autoSave && supabaseConfigured();
+    }
+
+    function markLocalUpdated() {
+      try {
+        localStorage.setItem(SERVER_LOCAL_UPDATED_STORAGE_KEY, new Date().toISOString());
+      } catch (_error) {
+        // localStorage가 막힌 환경에서는 서버 충돌 비교만 건너뛴다.
+      }
+    }
+
+    function serverStatusText(message = "") {
+      const parts = [
+        `마지막 서버 저장: ${formatDateTime(serverSync.lastSaveAt)}`,
+        `마지막 서버 불러오기: ${formatDateTime(serverSync.lastLoadAt)}`
+      ];
+      return message ? `${message} · ${parts.join(" · ")}` : parts.join(" · ");
+    }
+
+    function setServerSyncStatus(message = "") {
+      const badge = document.getElementById("serverSyncBadge");
+      const meta = document.getElementById("serverSyncMeta");
+      const login = document.getElementById("serverSyncLogin");
+      const disabled = !serverSync.connected;
+      ["loadFromServer", "saveToServer", "toggleAutoServerSave", "logoutServerSync"].forEach((id) => {
+        const button = document.getElementById(id);
+        if (button) button.disabled = disabled;
+      });
+      const autoButton = document.getElementById("toggleAutoServerSave");
+      if (autoButton) autoButton.textContent = `자동 서버 저장 ${serverSync.autoSave ? "ON" : "OFF"}`;
+      if (login) login.hidden = serverSync.connected;
+      if (badge) {
+        badge.textContent = serverSync.connected ? "서버 동기화: 연결됨" : "서버 동기화: 연결 안 됨";
+        badge.className = `sync-badge ${serverSync.connected ? "connected" : "pending"}`;
+      }
+      if (meta) {
+        if (!supabaseConfigured()) {
+          meta.textContent = "Supabase URL과 anon key를 설정하면 서버 저장/불러오기를 사용할 수 있습니다.";
+        } else if (!serverSync.connected) {
+          meta.textContent = "가족 비밀번호를 입력하면 PC와 모바일에서 같은 자산 데이터를 볼 수 있습니다.";
+        } else {
+          meta.textContent = serverStatusText(message);
+        }
+      }
+    }
+
+    function loadServerSyncState() {
+      try {
+        const auth = JSON.parse(localStorage.getItem(SERVER_AUTH_STORAGE_KEY) || "null");
+        serverSync.connected = Boolean(auth?.familyKey === FAMILY_KEY && auth?.token);
+        serverSync.token = auth?.token || "";
+        serverSync.autoSave = localStorage.getItem(SERVER_AUTO_SAVE_STORAGE_KEY) === "true";
+        serverSync.lastSyncAt = localStorage.getItem(SERVER_LAST_SYNC_STORAGE_KEY) || "";
+        serverSync.lastSaveAt = localStorage.getItem(SERVER_LAST_SAVE_STORAGE_KEY) || "";
+        serverSync.lastLoadAt = localStorage.getItem(SERVER_LAST_LOAD_STORAGE_KEY) || "";
+      } catch (_error) {
+        serverSync = { connected: false, token: "", autoSave: false, lastSyncAt: "", lastSaveAt: "", lastLoadAt: "" };
+      }
+      setServerSyncStatus();
+    }
+
+    function collectPensionInputsForServer() {
+      const values = {};
+      for (const [key, input] of Object.entries(simInputs)) values[key] = input.value;
+      return {
+        values,
+        autoRun: document.getElementById("autoRunPension")?.checked !== false
+      };
+    }
+
+    function collectHousePlanForServer() {
+      const values = {};
+      document.querySelectorAll("[data-house-input]").forEach((input) => { values[input.id] = input.value; });
+      return { values, ratios: { ...houseRatios } };
+    }
+
+    function collectAppStateForServer() {
+      return {
+        schemaVersion: 1,
+        savedAt: new Date().toISOString(),
+        assetRows,
+        assetPeriods,
+        assetFutureBackup,
+        assetArchivedPeriods,
+        investmentData,
+        pension: collectPensionInputsForServer(),
+        housePlan: collectHousePlanForServer()
+      };
+    }
+
+    function persistServerStateToLocalStorage(data) {
+      if (!data || typeof data !== "object") return;
+      if (Array.isArray(data.assetRows)) localStorage.setItem("pensionAssetRows", JSON.stringify(data.assetRows));
+      if (data.investmentData && typeof data.investmentData === "object") localStorage.setItem("pensionInvestmentData", JSON.stringify(data.investmentData));
+      if (Array.isArray(data.assetPeriods)) localStorage.setItem("pensionAssetPeriods", JSON.stringify(data.assetPeriods));
+      if (data.assetFutureBackup && typeof data.assetFutureBackup === "object") localStorage.setItem("pensionAssetFutureBackup", JSON.stringify(data.assetFutureBackup));
+      if (data.assetArchivedPeriods && typeof data.assetArchivedPeriods === "object") localStorage.setItem("pensionAssetArchivedPeriods", JSON.stringify(data.assetArchivedPeriods));
+      if (data.housePlan && typeof data.housePlan === "object") localStorage.setItem(HOUSE_PLAN_STORAGE_KEY, JSON.stringify(data.housePlan));
+    }
+
+    function applyServerState(data) {
+      if (!data || typeof data !== "object") throw new Error("서버 데이터 형식이 올바르지 않습니다.");
+      if (Array.isArray(data.assetRows)) {
+        assetRows = data.assetRows;
+        normalizeAssetRowPeriods(assetRows);
+      }
+      if (Array.isArray(data.assetPeriods)) assetPeriods = data.assetPeriods.filter(isValidPeriod).sort(comparePeriods);
+      if (!assetPeriods.length) assetPeriods = buildAssetPeriods(2024);
+      assetFutureBackup = data.assetFutureBackup && typeof data.assetFutureBackup === "object" ? data.assetFutureBackup : {};
+      assetArchivedPeriods = data.assetArchivedPeriods && typeof data.assetArchivedPeriods === "object" ? data.assetArchivedPeriods : {};
+      investmentData = data.investmentData && typeof data.investmentData === "object" ? normalizeInvestmentPeriods(data.investmentData) : {};
+      persistServerStateToLocalStorage(data);
+      if (data.pension?.values && typeof data.pension.values === "object") {
+        for (const [key, value] of Object.entries(data.pension.values)) {
+          if (simInputs[key]) simInputs[key].value = value;
+        }
+        const auto = document.getElementById("autoRunPension");
+        if (auto) auto.checked = data.pension.autoRun !== false;
+      }
+      if (data.housePlan && typeof data.housePlan === "object") {
+        loadHousePlanInputs();
+        renderHouseRatioControls();
+      }
+      const startInput = document.getElementById("assetStartYear");
+      const endInput = document.getElementById("assetEndYear");
+      if (startInput) startInput.value = periodYear(assetPeriods[0] || currentPeriod());
+      if (endInput) endInput.value = periodLabel(assetPeriods.at(-1) || latestManagedPeriod());
+      selectedInvestment = null;
+      suppressServerAutoSave = true;
+      try {
+        renderAssetTable();
+        renderInvestmentPanel();
+        updateSimCompactHints();
+        runPension();
+        renderHousePlan();
+      } finally {
+        suppressServerAutoSave = false;
+      }
+    }
+
+    function supabaseHeaders(extra = {}) {
+      return {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        "Content-Type": "application/json",
+        ...extra
+      };
+    }
+
+    function familyAssetUrl(query = "") {
+      const base = SUPABASE_URL.replace(/\/$/, "");
+      return `${base}/rest/v1/${FAMILY_ASSETS_TABLE}${query}`;
+    }
+
+    async function fetchServerAssetRow() {
+      if (!supabaseConfigured()) throw new Error("Supabase URL과 anon key를 먼저 설정하세요.");
+      const query = `?family_key=eq.${encodeURIComponent(FAMILY_KEY)}&select=data_json,updated_at&limit=1`;
+      const response = await fetch(familyAssetUrl(query), { headers: supabaseHeaders() });
+      if (!response.ok) throw new Error(`서버 조회 실패 (${response.status})`);
+      const rows = await response.json();
+      return Array.isArray(rows) && rows.length ? rows[0] : null;
+    }
+
+    async function upsertServerAssetRow(data) {
+      if (!supabaseConfigured()) throw new Error("Supabase URL과 anon key를 먼저 설정하세요.");
+      const response = await fetch(familyAssetUrl("?on_conflict=family_key&select=updated_at"), {
+        method: "POST",
+        headers: supabaseHeaders({ Prefer: "resolution=merge-duplicates,return=representation" }),
+        body: JSON.stringify({
+          family_key: FAMILY_KEY,
+          data_json: data,
+          updated_at: new Date().toISOString()
+        })
+      });
+      if (!response.ok) throw new Error(`서버 저장 실패 (${response.status})`);
+      const rows = await response.json();
+      return Array.isArray(rows) && rows.length ? rows[0] : null;
+    }
+
+    function requireServerConnection() {
+      if (!serverSync.connected) {
+        setServerSyncStatus("가족 비밀번호 연결이 필요합니다.");
+        return false;
+      }
+      if (!supabaseConfigured()) {
+        setServerSyncStatus("Supabase 설정이 필요합니다.");
+        return false;
+      }
+      return true;
+    }
+
+    async function connectFamilySync() {
+      const input = document.getElementById("familyPasswordInput");
+      const remember = document.getElementById("rememberFamilyDevice")?.checked !== false;
+      const password = input?.value || "";
+      if (!password.trim()) {
+        setServerSyncStatus("가족 비밀번호를 입력하세요.");
+        return;
+      }
+      try {
+        const token = await sha256(`${FAMILY_KEY}:${password}`);
+        const passwordHash = await sha256(password);
+        if (FAMILY_PASSWORD_SHA256 && passwordHash !== FAMILY_PASSWORD_SHA256) {
+          setServerSyncStatus("가족 비밀번호가 맞지 않습니다.");
+          return;
+        }
+        serverSync.connected = true;
+        serverSync.token = token;
+        if (remember) {
+          localStorage.setItem(SERVER_AUTH_STORAGE_KEY, JSON.stringify({ familyKey: FAMILY_KEY, token, connectedAt: new Date().toISOString() }));
+        } else {
+          localStorage.removeItem(SERVER_AUTH_STORAGE_KEY);
+        }
+        if (input) input.value = "";
+        setServerSyncStatus(FAMILY_PASSWORD_SHA256 ? "서버 동기화가 연결되었습니다." : "서버 동기화가 연결되었습니다. 배포 전 가족 비밀번호 해시를 설정하세요.");
+      } catch (error) {
+        setServerSyncStatus(`연결 실패: ${error.message}`);
+      }
+    }
+
+    async function loadFromServer() {
+      if (!requireServerConnection()) return;
+      try {
+        setServerSyncStatus("서버에서 불러오는 중입니다.");
+        const row = await fetchServerAssetRow();
+        if (!row?.data_json) {
+          setServerSyncStatus("서버에 저장된 데이터가 없습니다.");
+          return;
+        }
+        const localUpdatedAt = localStorage.getItem(SERVER_LOCAL_UPDATED_STORAGE_KEY) || "";
+        if (row.updated_at && localUpdatedAt && new Date(row.updated_at) > new Date(localUpdatedAt)) {
+          const ok = confirm("서버 데이터가 현재 기기 데이터보다 최신일 수 있습니다. 서버 데이터로 덮어쓸까요?");
+          if (!ok) {
+            setServerSyncStatus("서버 불러오기를 취소했습니다.");
+            return;
+          }
+        }
+        applyServerState(row.data_json);
+        const now = new Date().toISOString();
+        serverSync.lastLoadAt = now;
+        serverSync.lastSyncAt = row.updated_at || now;
+        localStorage.setItem(SERVER_LAST_LOAD_STORAGE_KEY, serverSync.lastLoadAt);
+        localStorage.setItem(SERVER_LAST_SYNC_STORAGE_KEY, serverSync.lastSyncAt);
+        localStorage.setItem(SERVER_LOCAL_UPDATED_STORAGE_KEY, serverSync.lastSyncAt);
+        setServerSyncStatus("서버 데이터를 불러왔습니다.");
+      } catch (error) {
+        setServerSyncStatus(`서버 불러오기 실패: ${error.message}`);
+      }
+    }
+
+    async function saveToServer({ skipConflictCheck = false, silent = false } = {}) {
+      if (!requireServerConnection() || serverSaveInFlight) return;
+      try {
+        serverSaveInFlight = true;
+        if (!silent) setServerSyncStatus("서버에 저장하는 중입니다.");
+        if (!skipConflictCheck) {
+          const row = await fetchServerAssetRow();
+          if (row?.updated_at && (!serverSync.lastSyncAt || new Date(row.updated_at) > new Date(serverSync.lastSyncAt))) {
+            const ok = confirm("서버에 더 최신 데이터가 있습니다. 현재 기기 데이터로 서버를 덮어쓸까요?");
+            if (!ok) {
+              setServerSyncStatus("서버 저장을 취소했습니다.");
+              return;
+            }
+          }
+        }
+        const row = await upsertServerAssetRow(collectAppStateForServer());
+        const now = row?.updated_at || new Date().toISOString();
+        serverSync.lastSaveAt = now;
+        serverSync.lastSyncAt = now;
+        localStorage.setItem(SERVER_LAST_SAVE_STORAGE_KEY, serverSync.lastSaveAt);
+        localStorage.setItem(SERVER_LAST_SYNC_STORAGE_KEY, serverSync.lastSyncAt);
+        localStorage.setItem(SERVER_LOCAL_UPDATED_STORAGE_KEY, now);
+        setServerSyncStatus("서버 저장됨");
+      } catch (error) {
+        setServerSyncStatus(`서버 저장 실패: ${error.message}`);
+      } finally {
+        serverSaveInFlight = false;
+      }
+    }
+
+    function scheduleServerAutoSave() {
+      if (!appBootstrapped || suppressServerAutoSave) return;
+      markLocalUpdated();
+      if (!serverSyncEnabled()) return;
+      window.clearTimeout(serverSaveTimer);
+      serverSaveTimer = window.setTimeout(() => saveToServer({ silent: true }), SERVER_SYNC_DEBOUNCE_MS);
+    }
+
+    function toggleAutoServerSave() {
+      serverSync.autoSave = !serverSync.autoSave;
+      localStorage.setItem(SERVER_AUTO_SAVE_STORAGE_KEY, serverSync.autoSave ? "true" : "false");
+      setServerSyncStatus(serverSync.autoSave ? "자동 서버 저장이 켜졌습니다." : "자동 서버 저장이 꺼졌습니다.");
+    }
+
+    function logoutServerSync() {
+      window.clearTimeout(serverSaveTimer);
+      localStorage.removeItem(SERVER_AUTH_STORAGE_KEY);
+      serverSync.connected = false;
+      serverSync.token = "";
+      setServerSyncStatus("이 기기의 서버 인증만 해제했습니다.");
     }
 
     function escapeHtml(value) {
@@ -2148,6 +2595,7 @@
         localStorage.removeItem("pensionAssetYears");
         localStorage.removeItem("pensionHoldings");
         localStorage.removeItem("pensionGoldState");
+        scheduleServerAutoSave();
         const status = document.getElementById("saveStatus");
         if (status) {
           status.textContent = silent ? "자동 저장됨" : "저장됨";
@@ -3473,6 +3921,7 @@
         }
       }
       updateSimCompactHints();
+      scheduleServerAutoSave();
       if (autoRunEnabled()) {
         runPension();
       } else {
@@ -3761,6 +4210,7 @@
         const values = {};
         document.querySelectorAll("[data-house-input]").forEach((input) => { values[input.id] = input.value; });
         localStorage.setItem(HOUSE_PLAN_STORAGE_KEY, JSON.stringify({ values, ratios: houseRatios }));
+        scheduleServerAutoSave();
       } catch (_error) {
         // localStorage 사용이 막힌 환경에서는 저장만 건너뛴다.
       }
@@ -4160,6 +4610,7 @@
     function resetPension() {
       Object.entries(simDefaults).forEach(([key, value]) => { simInputs[key].value = value; });
       updateSimCompactHints();
+      scheduleServerAutoSave();
       runPension();
     }
 
@@ -4200,6 +4651,11 @@
       bind("runBtn", "click", runPension);
       bind("csvBtn", "click", exportPensionCsv);
       bind("resetBtn", "click", resetPension);
+      bind("connectFamilySync", "click", connectFamilySync);
+      bind("loadFromServer", "click", loadFromServer);
+      bind("saveToServer", "click", () => saveToServer());
+      bind("toggleAutoServerSave", "click", toggleAutoServerSave);
+      bind("logoutServerSync", "click", logoutServerSync);
       document.querySelectorAll("[data-house-input]").forEach((input) => {
         input.addEventListener("input", onHouseInputChanged);
         input.addEventListener("change", onHouseInputChanged);
@@ -4212,12 +4668,14 @@
     renderSimInputs();
     renderHouseRatioControls();
     bindEvents();
+    loadServerSyncState();
     loadStoredAssetData();
     loadHousePlanInputs();
     renderAssetTable();
     renderInvestmentPanel();
     renderHousePlan();
     runPension();
+    appBootstrapped = true;
     autoConnectPriceApi();
   </script>
 </body>
