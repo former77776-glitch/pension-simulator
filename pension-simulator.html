@@ -1646,7 +1646,7 @@
               <div class="house-field"><label for="houseBuyFee">매수 중개수수료</label><input id="houseBuyFee" data-house-input="money" value="0원" readonly><span class="unit">원</span></div>
               <div class="house-field"><label for="houseSellFee">매도 중개수수료</label><input id="houseSellFee" data-house-input="money" value="0원" readonly><span class="unit">원</span></div>
               <div class="house-field"><label for="houseInterior">인테리어비</label><input id="houseInterior" data-house-input="money" value="150,000,000원"><span class="unit">원</span><span class="money-read" id="houseInteriorReadable">1억 5천만</span></div>
-              <div class="house-field"><label for="houseReserve">최소 여유자금</label><input id="houseReserve" data-house-input="money" value="50,000,000원"><span class="unit">원</span><span class="money-read" id="houseReserveReadable">5천만</span></div>
+              <div class="house-field"><label for="houseReserve">잔여 여유 자금</label><input id="houseReserve" data-house-input="money" value="50,000,000원"><span class="unit">원</span><span class="money-read" id="houseReserveReadable">5천만</span></div>
               <p>취득세와 중개보수는 간이 자동 계산값입니다. 실제 금액은 정책, 면적, 주택 수, 협의 결과에 따라 달라질 수 있습니다.</p>
             </section>
 
@@ -1703,7 +1703,7 @@
                 <div class="card metric"><span>매수 중개수수료</span><strong id="basisBuyFee">-</strong></div>
                 <div class="card metric"><span>매도 중개수수료</span><strong id="basisSellFee">-</strong></div>
                 <div class="card metric"><span>인테리어비</span><strong id="basisInterior">-</strong></div>
-                <div class="card metric"><span>최소 여유잔액</span><strong id="basisReserve">-</strong></div>
+                <div class="card metric"><span>잔여 여유 자금</span><strong id="basisReserve">-</strong></div>
                 <div class="card metric"><span>구매 후 여유액</span><strong id="houseRemainingCash">-</strong></div>
                 <div class="card metric"><span>원리금균등 월 상환액</span><strong id="houseMonthlyPayment">-</strong></div>
               </section>
@@ -1732,6 +1732,8 @@
     const SERVER_LAST_LOAD_STORAGE_KEY = "pensionServerLastLoadAt";
     const SERVER_LOCAL_UPDATED_STORAGE_KEY = "pensionLocalUpdatedAt";
     const SERVER_SYNC_DEBOUNCE_MS = 800;
+    const HOUSE_DEFAULT_INTERIOR = 150000000;
+    const HOUSE_DEFAULT_RESERVE = 50000000;
 
     const ASSET_ROWS = [
       { id: "apartment", category: "부동산", label: "아파트 (실거래가 기준)", type: "manual", values: { 2024: 440000000, 2025: 445000000, 2026: 460000000, 2027: 460000000, 2028: 460000000, 2029: 460000000, 2030: 460000000 } },
@@ -4350,8 +4352,8 @@
         if (input) input.value = won((houseAssetsForPeriod(assetPeriods.at(-1) || latestManagedPeriod()).groups.home) || 0);
       }
       setHouseMoneyDefault("housePrice", 1600000000);
-      setHouseMoneyDefault("houseInterior", 150000000);
-      setHouseMoneyDefault("houseReserve", 50000000);
+      setHouseMoneyDefault("houseInterior", HOUSE_DEFAULT_INTERIOR);
+      setHouseMoneyDefault("houseReserve", HOUSE_DEFAULT_RESERVE);
       normalizeHousePercentInput("houseLtv", 60);
       updateHouseReadableHints();
     }
