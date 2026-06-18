@@ -1143,6 +1143,14 @@
       font-weight: 800;
     }
 
+    .money-read {
+      grid-column: 2 / -1;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+
     .house-field:has(#houseAcqAdjustment),
     .house-field:has(#houseBuyFeeAdjustment),
     .house-field:has(#houseSellFeeAdjustment) {
@@ -1481,7 +1489,7 @@
         <aside class="card holdings-card waiting" id="investmentCard">
           <h2 id="investmentTitle">투자 자산 정보</h2>
           <div class="investment-empty" id="investmentEmpty">
-            주식 또는 금/비트 행의 월 칸을 선택하면 상세 정보를 입력할 수 있습니다.
+            주식 또는 금 행의 월 칸을 선택하면 상세 정보를 입력할 수 있습니다.
           </div>
           <div class="investment-body" id="investmentBody" hidden>
             <div class="selection-badge" id="selectedInvestmentBadge">선택된 칸 없음</div>
@@ -1509,23 +1517,23 @@
               <div class="holding-list" id="holdingsBody"></div>
             </div>
             <div id="goldInvestmentPanel">
-              <div class="mini-title">금/비트 정보</div>
+              <div class="mini-title">금 정보</div>
               <div class="holding-form gold-form">
                 <label>자산 종류
                   <select id="goldAssetKind">
                     <option value="금">금</option>
-                    <option value="비트코인">비트코인</option>
-                    <option value="기타">기타</option>
+                    <option value="KRX 금">KRX 금</option>
+                    <option value="GOLD">GOLD</option>
                   </select>
                 </label>
                 <label>보유 수량 <input id="goldGrams" class="num" value="0"></label>
                 <label>단가 <input id="goldPrice" class="num" value="0"></label>
                 <div class="holding-actions">
                   <button type="button" class="primary" id="updateGoldPrice">KRX 금 가격 업데이트</button>
-                  <button type="button" id="applyGoldManual">금/비트 반영 및 고정</button>
+                  <button type="button" id="applyGoldManual">금 반영</button>
                 </div>
               </div>
-              <div class="mini-title">해당 월 금/비트 목록</div>
+              <div class="mini-title">해당 월 금 목록</div>
               <div class="holding-list" id="goldItemsBody"></div>
             </div>
             <p class="status">
@@ -1612,7 +1620,7 @@
           <aside class="house-sidebar">
             <section class="card house-section">
               <h3>구매 조건</h3>
-              <div class="house-field"><label for="housePrice">목표 집값</label><input id="housePrice" data-house-input="money" value="1,600,000,000원"><span class="unit">원</span></div>
+              <div class="house-field"><label for="housePrice">목표 집값</label><input id="housePrice" data-house-input="money" value="1,600,000,000원"><span class="unit">원</span><span class="money-read" id="housePriceReadable">16억</span></div>
               <div class="house-field"><label for="houseScenarioSelect">기존 집 처분 여부</label><select id="houseScenarioSelect" data-house-input="text"><option value="sell">처분 시</option><option value="keep">미처분 시</option></select><span class="unit"></span></div>
               <div class="house-field"><label for="existingHomePrice">기존 집 예상 처분가</label><input id="existingHomePrice" data-house-input="money" value="0원"><span class="unit">원</span></div>
               <div class="house-field"><label for="houseLtv">LTV 기준</label><input id="houseLtv" data-house-input="percent" value="60%"><span class="unit">%</span></div>
@@ -1637,8 +1645,8 @@
               <div class="house-field"><label for="houseSellFeeAdjustment">매도 중개수수료 보정</label><input id="houseSellFeeAdjustment" data-house-input="money" value="0원"><span class="unit">원</span></div>
               <div class="house-field"><label for="houseBuyFee">매수 중개수수료</label><input id="houseBuyFee" data-house-input="money" value="0원" readonly><span class="unit">원</span></div>
               <div class="house-field"><label for="houseSellFee">매도 중개수수료</label><input id="houseSellFee" data-house-input="money" value="0원" readonly><span class="unit">원</span></div>
-              <div class="house-field"><label for="houseInterior">인테리어비</label><input id="houseInterior" data-house-input="money" value="150,000,000원"><span class="unit">원</span></div>
-              <div class="house-field"><label for="houseReserve">최소 여유잔액</label><input id="houseReserve" data-house-input="money" value="50,000,000원"><span class="unit">원</span></div>
+              <div class="house-field"><label for="houseInterior">인테리어비</label><input id="houseInterior" data-house-input="money" value="150,000,000원"><span class="unit">원</span><span class="money-read" id="houseInteriorReadable">1억 5천만</span></div>
+              <div class="house-field"><label for="houseReserve">최소 여유자금</label><input id="houseReserve" data-house-input="money" value="50,000,000원"><span class="unit">원</span><span class="money-read" id="houseReserveReadable">5천만</span></div>
               <p>취득세와 중개보수는 간이 자동 계산값입니다. 실제 금액은 정책, 면적, 주택 수, 협의 결과에 따라 달라질 수 있습니다.</p>
             </section>
 
@@ -1729,7 +1737,7 @@
       { id: "apartment", category: "부동산", label: "아파트 (실거래가 기준)", type: "manual", values: { 2024: 440000000, 2025: 445000000, 2026: 460000000, 2027: 460000000, 2028: 460000000, 2029: 460000000, 2030: 460000000 } },
       { id: "retirementStock", category: "주식", label: "(상윤+혜진) 연금 계좌", type: "stock", values: { 2024: 75500000, 2025: 100000000, 2026: 151000000 } },
       { id: "hynixStock", category: "주식", label: "(상윤+혜진)하이닉스", type: "stock", values: { 2024: 44710000, 2025: 193800000, 2026: 852440000 } },
-      { id: "gold", category: "금/비트", label: "금", type: "manual", values: { 2024: 0, 2025: 11715000, 2026: 22300000 } },
+      { id: "gold", category: "금", label: "금", type: "manual", values: { 2024: 0, 2025: 11715000, 2026: 22300000 } },
       { id: "cash", category: "현금", label: "보유 현금", type: "manual", values: { 2024: 39000000, 2025: 117000000, 2026: 42000000 } },
       { id: "isa", category: "현금", label: "ISA", type: "manual", values: { 2024: 16000000, 2025: 18100000, 2026: 18360000 } },
       { id: "subscription", category: "현금", label: "청약계좌", type: "manual", values: { 2024: 18000000, 2025: 18000000, 2026: 18000000, 2027: 18000000, 2028: 18000000, 2029: 18000000, 2030: 18000000 } },
@@ -1809,7 +1817,7 @@
       { key: "cash", label: "현금", defaultValue: 100 },
       { key: "stock", label: "주식", defaultValue: 100 },
       { key: "pension", label: "연금", defaultValue: 0 },
-      { key: "gold", label: "금/비트", defaultValue: 100 },
+      { key: "gold", label: "금", defaultValue: 100 },
       { key: "home", label: "기존 아파트 처분가", defaultValue: 100 }
     ];
     const houseRatios = Object.fromEntries(HOUSE_RATIO_GROUPS.map((item) => [item.key, item.defaultValue]));
@@ -1884,6 +1892,20 @@
       if (abs >= 100000000) return `${sign}${(abs / 100000000).toFixed(1)}억`;
       if (abs >= 10000) return `${sign}${Math.round(abs / 10000).toLocaleString("ko-KR")}만`;
       return won(value);
+    }
+
+    function formatKoreanWonReadable(value) {
+      const rounded = Math.round(Math.abs(value || 0));
+      const sign = value < 0 ? "-" : "";
+      const eok = Math.floor(rounded / 100000000);
+      const man = Math.floor((rounded % 100000000) / 10000);
+      const parts = [];
+      if (eok) parts.push(`${eok.toLocaleString("ko-KR")}억`);
+      if (man) {
+        if (man % 1000 === 0) parts.push(`${man / 1000}천만`);
+        else parts.push(`${man.toLocaleString("ko-KR")}만`);
+      }
+      return sign + (parts.join(" ") || won(value));
     }
 
     function formatDateTime(value) {
@@ -2429,7 +2451,7 @@
     }
 
     function isInvestmentRow(row) {
-      return row && (row.type === "stock" || row.category === "주식" || row.category === "금/비트");
+      return row && (row.type === "stock" || row.category === "주식" || row.category === "금" || row.category === "금/비트");
     }
 
     function isInvestmentCell(rowId, period) {
@@ -2567,9 +2589,9 @@
     }
 
     function applyGoldToAssetRow() {
-      if (!selectedInvestment || selectedRow()?.category !== "금/비트") {
+      if (!selectedInvestment || !["금", "금/비트"].includes(selectedRow()?.category)) {
         const status = document.getElementById("priceStatus");
-        if (status) status.textContent = "먼저 자산 기록표에서 금/비트 월 칸을 선택해주세요.";
+        if (status) status.textContent = "먼저 자산 기록표에서 금 월 칸을 선택해주세요.";
         return;
       }
       const kindInput = document.getElementById("goldAssetKind");
@@ -2771,20 +2793,26 @@
     }
 
     function assetCategoryKey(row, period = latestManagedPeriod()) {
-      const known = new Set(["부동산", "연금", "주식", "금/비트", "현금", "대출", "대출/부채"]);
+      const known = new Set(["부동산", "연금", "주식", "금", "금/비트", "현금", "대출", "대출/부채"]);
       const text = `${row?.category || ""} ${row?.label || ""} ${row?.id || ""}`;
+      const identity = `${row?.label || ""} ${row?.id || ""}`;
       if (row?.debt || row?.category === "대출" || row?.category === "대출/부채" || /대출|부채/i.test(text) || rowValue(row, period) < 0) return "대출/부채";
       if (/개인연금|연금저축|퇴직연금|퇴직연금\/DC|연금\s*계좌|연금|IRP|DC/i.test(text)) return "연금";
-      if (/금\/비트|금|골드|비트|비트코인|코인|crypto|BTC|KRX/i.test(text)) return "금/비트";
-      if (known.has(row?.category)) return row.category === "대출" ? "대출/부채" : row.category;
+      if (/현금|예금|보유\s*현금|ISA|청약|CMA|파킹통장/i.test(text)) return "현금";
+      if (/비트|비트코인|코인|crypto|BTC/i.test(identity)) return "주식";
+      if (/KRX\s*금|KRX|골드|GOLD|금/i.test(identity) || row?.category === "금" || row?.category === "금/비트") return "금";
+      if (known.has(row?.category)) {
+        if (row.category === "대출") return "대출/부채";
+        if (row.category === "금/비트") return "금";
+        return row.category;
+      }
       if (/아파트|부동산|주택/i.test(text)) return "부동산";
-      if (/현금|예금|보유\s*현금|청약/i.test(text)) return "현금";
-      if (/주식|하이닉스|ETF|ISA/i.test(text)) return "주식";
+      if (/주식|하이닉스|ETF|국내주식|해외주식/i.test(text)) return "주식";
       return row?.category === "대출" ? "대출/부채" : (row?.category || "현금");
     }
 
     function assetCategoryTotals(period) {
-      const totals = { "부동산": 0, "연금": 0, "주식": 0, "금/비트": 0, "현금": 0, "대출/부채": 0 };
+      const totals = { "부동산": 0, "연금": 0, "주식": 0, "금": 0, "현금": 0, "대출/부채": 0 };
       for (const row of assetRows) {
         const key = assetCategoryKey(row, period);
         if (totals[key] === undefined) totals[key] = 0;
@@ -2797,7 +2825,7 @@
       const basisPeriod = assetPeriods.at(-1) || latestManagedPeriod();
       for (const row of rows) {
         const key = assetCategoryKey(row, basisPeriod);
-        if (["부동산", "연금", "주식", "금/비트", "현금", "대출/부채"].includes(key)) row.category = key;
+        if (["부동산", "연금", "주식", "금", "현금", "대출/부채"].includes(key)) row.category = key;
       }
     }
 
@@ -2842,14 +2870,14 @@
       ensureChartDataLabels();
       const totals = assetPeriods.map((period) => assetCategoryTotals(period));
       const netValues = totals.map((total) => Object.values(total).reduce((sum, value) => sum + value, 0));
-      const assetTotals = totals.map((total) => ["부동산", "연금", "주식", "금/비트", "현금"].reduce((sum, key) => sum + Math.max(0, total[key] || 0), 0));
+      const assetTotals = totals.map((total) => ["부동산", "연금", "주식", "금", "현금"].reduce((sum, key) => sum + Math.max(0, total[key] || 0), 0));
       const maxAssetTotal = Math.max(0, ...assetTotals);
       const labels = assetPeriods.map(periodLabel);
       const managedIndex = Math.max(0, assetPeriods.indexOf(latestManagedPeriod()));
       const latestNet = netValues[managedIndex] ?? netValues.at(-1) ?? 0;
       const latestTotals = totals[managedIndex] || {};
       const prevNet = managedIndex > 0 ? netValues[managedIndex - 1] : 0;
-      const positiveTotal = ["부동산", "연금", "주식", "금/비트", "현금"].reduce((sum, key) => sum + Math.max(0, latestTotals[key] || 0), 0);
+      const positiveTotal = ["부동산", "연금", "주식", "금", "현금"].reduce((sum, key) => sum + Math.max(0, latestTotals[key] || 0), 0);
       const stockShare = positiveTotal ? Math.max(0, latestTotals["주식"] || 0) / positiveTotal : null;
       const realEstateShare = positiveTotal ? Math.max(0, latestTotals["부동산"] || 0) / positiveTotal : null;
       const stat = document.getElementById("assetNetChartValue");
@@ -2866,7 +2894,7 @@
       const stackedCategories = [
         { key: "부동산", color: "#2563eb" },
         { key: "주식", color: "#0f766e" },
-        { key: "금/비트", color: "#f59e0b" },
+        { key: "금", color: "#f59e0b" },
         { key: "현금", color: "#64748b" },
         { key: "연금", color: "#7c3aed" }
       ];
@@ -2972,7 +3000,7 @@
       const categories = [
         { key: "부동산", color: "#2563eb" },
         { key: "주식", color: "#0f766e" },
-        { key: "금/비트", color: "#f59e0b" },
+        { key: "금", color: "#f59e0b" },
         { key: "현금", color: "#64748b" },
         { key: "연금", color: "#7c3aed" }
       ];
@@ -3029,8 +3057,8 @@
                 const mobileTight = (area.right - area.left) < 560 && value < 8;
                 return !mobileTight && barWidth >= 34 && segmentHeight >= 16;
               },
-              color: (ctx) => ctx.dataset.label === "금/비트" ? "#111827" : "#ffffff",
-              textStrokeColor: (ctx) => ctx.dataset.label === "금/비트" ? "rgba(255,255,255,.45)" : "rgba(15,23,42,.28)",
+              color: (ctx) => ctx.dataset.label === "금" ? "#111827" : "#ffffff",
+              textStrokeColor: (ctx) => ctx.dataset.label === "금" ? "rgba(255,255,255,.45)" : "rgba(15,23,42,.28)",
               textStrokeWidth: 2,
               font: { size: 11, weight: "900" },
               formatter: (value) => {
@@ -3067,8 +3095,8 @@
       ensureChartDataLabels();
       const period = latestManagedPeriod();
       const totals = assetCategoryTotals(period);
-      const keys = ["부동산", "연금", "주식", "금/비트", "현금"];
-      const labels = ["부동산", "연금", "주식", "금/비트", "현금"];
+      const keys = ["부동산", "연금", "주식", "금", "현금"];
+      const labels = ["부동산", "연금", "주식", "금", "현금"];
       const values = keys.map((key) => Math.max(0, totals[key] || 0));
       const rawTotal = values.reduce((sum, value) => sum + value, 0);
       const total = rawTotal || 1;
@@ -3158,9 +3186,9 @@
       const labelEl = document.getElementById("investmentSummaryLabel");
       const countLabelEl = document.getElementById("investmentSummaryCountLabel");
       if (!totalEl || !countEl || !labelEl || !countLabelEl || !row) return;
-      if (row.category === "금/비트") {
+      if (["금", "금/비트"].includes(row.category)) {
         const count = goldItems(selectedInvestmentData()).length;
-        labelEl.textContent = "해당 월 금/비트 합계";
+        labelEl.textContent = "해당 월 금 합계";
         countLabelEl.textContent = "항목 수";
         totalEl.textContent = compactWon(currentValue);
         countEl.textContent = `${count}개`;
@@ -3211,7 +3239,7 @@
       label.textContent = `${row.label} / 현재 표 금액 ${won(currentValue)} / ${detailText}`;
       renderInvestmentSummary(row, currentValue);
       stockPanel.style.display = row.type === "stock" || row.category === "주식" ? "block" : "none";
-      goldPanel.style.display = row.category === "금/비트" ? "block" : "none";
+      goldPanel.style.display = ["금", "금/비트"].includes(row.category) ? "block" : "none";
       renderHoldings();
       renderGoldItems();
     }
@@ -3268,7 +3296,7 @@
       const body = document.getElementById("goldItemsBody");
       if (!body) return;
       const row = selectedRow();
-      if (!row || row.category !== "금/비트") {
+      if (!row || !["금", "금/비트"].includes(row.category)) {
         body.innerHTML = "";
         return;
       }
@@ -3470,8 +3498,8 @@
 
     async function updateGoldPrice() {
       const status = document.getElementById("priceStatus");
-      if (!selectedInvestment || selectedRow()?.category !== "금/비트") {
-        if (status) status.textContent = "먼저 자산 기록표에서 금/비트 월 칸을 선택해주세요.";
+      if (!selectedInvestment || !["금", "금/비트"].includes(selectedRow()?.category)) {
+        if (status) status.textContent = "먼저 자산 기록표에서 금 월 칸을 선택해주세요.";
         return;
       }
       if (status) status.textContent = "KRX 금 가격 업데이트 중...";
@@ -3579,7 +3607,7 @@
     async function updateSelectedYearPrices() {
       const status = document.getElementById("priceStatus");
       if (!selectedInvestment) {
-        if (status) status.textContent = "먼저 주식 또는 금/비트 월 칸을 선택해주세요.";
+        if (status) status.textContent = "먼저 주식 또는 금 월 칸을 선택해주세요.";
         return;
       }
       const period = selectedInvestment.period;
@@ -3596,12 +3624,12 @@
     async function updatePrices() {
       const status = document.getElementById("priceStatus");
       if (!selectedInvestment || !selectedRow()) {
-        if (status) status.textContent = "먼저 업데이트할 주식 또는 금/비트 월 칸을 선택해주세요.";
+        if (status) status.textContent = "먼저 업데이트할 주식 또는 금 월 칸을 선택해주세요.";
         return;
       }
       if (!confirmPastPeriodUpdate(selectedInvestment.period)) return;
       const row = selectedRow();
-      if (row.category === "금/비트") {
+      if (["금", "금/비트"].includes(row.category)) {
         await updateGoldPrice();
         return;
       }
@@ -4182,7 +4210,38 @@
     }
 
     function housePercentValue(id) {
-      return houseInputValue(id) / 100;
+      const raw = houseInputValue(id);
+      if (!Number.isFinite(raw) || raw <= 0) return id === "houseLtv" ? 0.6 : 0;
+      return raw <= 1 ? raw : raw / 100;
+    }
+
+    function setHouseMoneyDefault(id, value) {
+      const input = document.getElementById(id);
+      if (!input) return;
+      const current = toNumber(input.value);
+      if (!String(input.value || "").trim() || !Number.isFinite(current) || current <= 0) input.value = won(value);
+    }
+
+    function normalizeHousePercentInput(id, defaultPercent) {
+      const input = document.getElementById(id);
+      if (!input) return;
+      const raw = toNumber(input.value);
+      const normalized = (!String(input.value || "").trim() || !Number.isFinite(raw) || raw <= 0)
+        ? defaultPercent
+        : raw <= 1 ? raw * 100 : raw;
+      input.value = `${normalized.toLocaleString("ko-KR", { maximumFractionDigits: 1 })}%`;
+    }
+
+    function updateHouseReadableHints() {
+      const pairs = [
+        ["housePriceReadable", "housePrice"],
+        ["houseInteriorReadable", "houseInterior"],
+        ["houseReserveReadable", "houseReserve"]
+      ];
+      for (const [hintId, inputId] of pairs) {
+        const el = document.getElementById(hintId);
+        if (el) el.textContent = formatKoreanWonReadable(houseInputValue(inputId));
+      }
     }
 
     function isHousePensionAsset(row) {
@@ -4196,7 +4255,7 @@
       if (category === "연금" || isHousePensionAsset(row)) return "pension";
       const text = `${row.id || ""} ${row.category || ""} ${row.label || ""}`.toLowerCase();
       if (category === "부동산") return "home";
-      if (category === "금/비트") return "gold";
+      if (category === "금" || category === "금/비트") return "gold";
       if (category === "주식") return "stock";
       if (category === "현금") return "cash";
       return null;
@@ -4290,10 +4349,11 @@
         const input = document.getElementById("existingHomePrice");
         if (input) input.value = won((houseAssetsForPeriod(assetPeriods.at(-1) || latestManagedPeriod()).groups.home) || 0);
       }
-      const interior = document.getElementById("houseInterior");
-      const reserve = document.getElementById("houseReserve");
-      if (interior && !String(interior.value || "").trim()) interior.value = won(150000000);
-      if (reserve && !String(reserve.value || "").trim()) reserve.value = won(50000000);
+      setHouseMoneyDefault("housePrice", 1600000000);
+      setHouseMoneyDefault("houseInterior", 150000000);
+      setHouseMoneyDefault("houseReserve", 50000000);
+      normalizeHousePercentInput("houseLtv", 60);
+      updateHouseReadableHints();
     }
 
     function acquisitionBaseRate(price) {
@@ -4510,6 +4570,7 @@
 
     function renderHousePlan() {
       if (!document.getElementById("housePlanPanel")) return;
+      updateHouseReadableHints();
       const { p, assets, labels, sell, keep } = housePlanRoadmap();
       const selectedRows = p.scenario === "keep" ? keep : sell;
       const current = selectedRows.at(-1);
@@ -4517,19 +4578,19 @@
       const ltvLabel = `${Math.round(p.ltv * 100)}%`;
       houseSetText("housePlanStatus", `구매 가능 여부 기준: ${basisLabel}${p.costs.warning ? ` · ${p.costs.warning}` : ""}`);
       houseSetText("houseCanBuy", current.canBuy ? `${basisLabel} 기준 구매 가능` : `${basisLabel} 기준 ${current.status}`, current.canBuy ? "loan-ok" : "loan-bad");
-      houseSetText("houseTotalCost", compactWon(current.totalCost));
-      houseSetText("houseAvailableAssets", compactWon(current.available));
-      houseSetText("houseLoanNeeded", compactWon(current.loanNeeded));
-      houseSetText("houseLoanLimit", compactWon(current.loanLimit));
-      houseSetText("houseShortage", compactWon(current.shortage), current.shortage > 0 ? "loan-bad" : "loan-ok");
-      houseSetText("houseSidebarResult", `${basisLabel} 기준 ${current.canBuy ? "구매 가능" : current.status} · 자금 부족액 ${compactWon(current.shortage)}`, current.canBuy ? "loan-ok" : "loan-bad");
-      houseSetText("houseRemainingCash", compactWon(current.remainingCash));
-      houseSetText("houseMonthlyPayment", compactWon(current.monthlyPayment));
-      houseSetText("basisAcquisitionTax", compactWon(p.costs.acquisitionTotal));
-      houseSetText("basisBuyFee", compactWon(p.costs.buyFee));
-      houseSetText("basisSellFee", p.scenario === "sell" ? compactWon(p.costs.sellFee) : "미반영");
-      houseSetText("basisInterior", compactWon(p.interior));
-      houseSetText("basisReserve", compactWon(p.reserve));
+      houseSetText("houseTotalCost", formatKoreanWonReadable(current.totalCost));
+      houseSetText("houseAvailableAssets", formatKoreanWonReadable(current.available));
+      houseSetText("houseLoanNeeded", formatKoreanWonReadable(current.loanNeeded));
+      houseSetText("houseLoanLimit", formatKoreanWonReadable(current.loanLimit));
+      houseSetText("houseShortage", formatKoreanWonReadable(current.shortage), current.shortage > 0 ? "loan-bad" : "loan-ok");
+      houseSetText("houseSidebarResult", `${basisLabel} 기준 ${current.canBuy ? "구매 가능" : current.status} · 자금 부족액 ${formatKoreanWonReadable(current.shortage)}`, current.canBuy ? "loan-ok" : "loan-bad");
+      houseSetText("houseRemainingCash", formatKoreanWonReadable(current.remainingCash));
+      houseSetText("houseMonthlyPayment", formatKoreanWonReadable(current.monthlyPayment));
+      houseSetText("basisAcquisitionTax", formatKoreanWonReadable(p.costs.acquisitionTotal));
+      houseSetText("basisBuyFee", formatKoreanWonReadable(p.costs.buyFee));
+      houseSetText("basisSellFee", p.scenario === "sell" ? formatKoreanWonReadable(p.costs.sellFee) : "미반영");
+      houseSetText("basisInterior", formatKoreanWonReadable(p.interior));
+      houseSetText("basisReserve", formatKoreanWonReadable(p.reserve));
       updateHouseRatioAmounts(assets);
       renderHouseScenarioTable("houseSell", labels, sell, ltvLabel);
       renderHouseScenarioTable("houseKeep", labels, keep, ltvLabel);
@@ -4540,7 +4601,9 @@
     function onHouseInputChanged(event) {
       const input = event.target;
       if (input?.dataset?.houseInput === "money" && event.type === "blur") input.value = won(toNumber(input.value));
-      if (input?.dataset?.houseInput === "percent" && event.type === "blur") input.value = `${toNumber(input.value).toLocaleString("ko-KR", { maximumFractionDigits: 1 })}%`;
+      if (input?.id === "houseLtv" && event.type === "blur") normalizeHousePercentInput("houseLtv", 60);
+      else if (input?.dataset?.houseInput === "percent" && event.type === "blur") input.value = `${toNumber(input.value).toLocaleString("ko-KR", { maximumFractionDigits: 1 })}%`;
+      updateHouseReadableHints();
       renderHousePlan();
     }
 
