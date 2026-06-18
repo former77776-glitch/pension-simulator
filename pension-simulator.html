@@ -1157,6 +1157,13 @@
       display: none;
     }
 
+    .house-subtitle {
+      margin: 12px 0 6px;
+      color: var(--navy);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
     .ratio-item {
       display: grid;
       grid-template-columns: minmax(0, 1fr) 96px 58px;
@@ -1284,14 +1291,15 @@
 
     .house-tables {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: minmax(0, 1fr);
       gap: 10px;
     }
 
     .house-table-card {
       padding: 12px;
       min-width: 0;
-      overflow: auto;
+      overflow-x: auto;
+      overflow-y: hidden;
     }
 
     .house-table-card h3 {
@@ -1635,6 +1643,7 @@
 
             <section class="card house-section">
               <h3>자동 계산 비용</h3>
+              <div class="house-subtitle">자동 계산값</div>
               <div class="house-field"><label for="houseCountType">주택 수 구분</label><select id="houseCountType" data-house-input="text"><option value="one">1주택</option><option value="temporaryTwo">일시적 2주택</option><option value="multi">2주택 이상</option></select><span class="unit"></span></div>
               <div class="house-field"><label for="houseRegulated">조정대상지역 여부</label><select id="houseRegulated" data-house-input="text"><option value="no">아니오</option><option value="yes">예</option></select><span class="unit"></span></div>
               <div class="house-field"><label for="houseAreaOver85">전용면적 85㎡ 초과</label><select id="houseAreaOver85" data-house-input="text"><option value="no">아니오</option><option value="yes">예</option></select><span class="unit"></span></div>
@@ -1645,8 +1654,9 @@
               <div class="house-field"><label for="houseSellFeeAdjustment">매도 중개수수료 보정</label><input id="houseSellFeeAdjustment" data-house-input="money" value="0원"><span class="unit">원</span></div>
               <div class="house-field"><label for="houseBuyFee">매수 중개수수료</label><input id="houseBuyFee" data-house-input="money" value="0원" readonly><span class="unit">원</span></div>
               <div class="house-field"><label for="houseSellFee">매도 중개수수료</label><input id="houseSellFee" data-house-input="money" value="0원" readonly><span class="unit">원</span></div>
+              <div class="house-subtitle">직접 설정 비용</div>
               <div class="house-field"><label for="houseInterior">인테리어비</label><input id="houseInterior" data-house-input="money" value="150,000,000원"><span class="unit">원</span><span class="money-read" id="houseInteriorReadable">1억 5천만</span></div>
-              <div class="house-field"><label for="houseReserve">잔여 여유 자금</label><input id="houseReserve" data-house-input="money" value="50,000,000원"><span class="unit">원</span><span class="money-read" id="houseReserveReadable">5천만</span></div>
+              <div class="house-field"><label for="houseReserve">잔여 여유 자금</label><input id="houseReserve" data-house-input="money" value="50,000,000원"><span class="unit">원</span><span class="money-read" id="houseReserveReadable">5,000만</span></div>
               <p>취득세와 중개보수는 간이 자동 계산값입니다. 실제 금액은 정책, 면적, 주택 수, 협의 결과에 따라 달라질 수 있습니다.</p>
             </section>
 
@@ -1904,7 +1914,7 @@
       const parts = [];
       if (eok) parts.push(`${eok.toLocaleString("ko-KR")}억`);
       if (man) {
-        if (man % 1000 === 0) parts.push(`${man / 1000}천만`);
+        if (eok && man % 1000 === 0) parts.push(`${man / 1000}천만`);
         else parts.push(`${man.toLocaleString("ko-KR")}만`);
       }
       return sign + (parts.join(" ") || won(value));
@@ -4217,11 +4227,12 @@
       return raw <= 1 ? raw : raw / 100;
     }
 
-    function setHouseMoneyDefault(id, value) {
+    function setHouseMoneyDefault(id, value, badValues = []) {
       const input = document.getElementById(id);
       if (!input) return;
       const current = toNumber(input.value);
-      if (!String(input.value || "").trim() || !Number.isFinite(current) || current <= 0) input.value = won(value);
+      const isBadSavedValue = badValues.some((bad) => Math.abs(current - bad) < 1);
+      if (!String(input.value || "").trim() || !Number.isFinite(current) || current <= 0 || isBadSavedValue) input.value = won(value);
     }
 
     function normalizeHousePercentInput(id, defaultPercent) {
@@ -4316,12 +4327,12 @@
       }
     }
 
-    function persistHousePlanInputs() {
+    function persistHousePlanInputs(skipServerAutoSave = false) {
       try {
         const values = {};
         document.querySelectorAll("[data-house-input]").forEach((input) => { values[input.id] = input.value; });
         localStorage.setItem(HOUSE_PLAN_STORAGE_KEY, JSON.stringify({ values, ratios: houseRatios }));
-        scheduleServerAutoSave();
+        if (!skipServerAutoSave) scheduleServerAutoSave();
       } catch (_error) {
         // localStorage 사용이 막힌 환경에서는 저장만 건너뛴다.
       }
@@ -4352,10 +4363,11 @@
         if (input) input.value = won((houseAssetsForPeriod(assetPeriods.at(-1) || latestManagedPeriod()).groups.home) || 0);
       }
       setHouseMoneyDefault("housePrice", 1600000000);
-      setHouseMoneyDefault("houseInterior", HOUSE_DEFAULT_INTERIOR);
-      setHouseMoneyDefault("houseReserve", HOUSE_DEFAULT_RESERVE);
+      setHouseMoneyDefault("houseInterior", HOUSE_DEFAULT_INTERIOR, [12320000, 2024000]);
+      setHouseMoneyDefault("houseReserve", HOUSE_DEFAULT_RESERVE, [12320000, 2024000]);
       normalizeHousePercentInput("houseLtv", 60);
       updateHouseReadableHints();
+      persistHousePlanInputs(true);
     }
 
     function acquisitionBaseRate(price) {
@@ -4502,39 +4514,92 @@
       ensureChartDataLabels();
       const ltvLimit = rows[0]?.loanLimit || 0;
       const lastIndex = Math.max(0, rows.length - 1);
+      const ltvPercent = Math.round((rows[0]?.loanLimit || 0) / Math.max(1, houseInputValue("housePrice")) * 100);
+      const shouldShowHouseAmountLabel = (ctx) => {
+        const value = Number(ctx.raw || 0);
+        const row = rows[ctx.dataIndex] || {};
+        return value > 0 && (ctx.chart.width > 420 || value >= (row.totalCost || value) * 0.08);
+      };
       housePlanChartInstance?.destroy();
       housePlanChartInstance = new Chart(canvas, {
         type: "bar",
         data: {
           labels,
           datasets: [
-            { label: "현금화 가능 자산", data: rows.map((row) => row.available), backgroundColor: "#2563eb", borderRadius: 5 },
+            {
+              label: "현금화 가능 자산",
+              data: rows.map((row) => row.available),
+              backgroundColor: "#2563eb",
+              borderRadius: 5,
+              datalabels: {
+                display: shouldShowHouseAmountLabel,
+                formatter: (value) => compactWon(value),
+                color: "#1d4ed8",
+                anchor: "end",
+                align: "top",
+                offset: 2,
+                clamp: true,
+                font: { weight: "800", size: 10 }
+              }
+            },
             {
               label: "대출 필요 금액",
               data: rows.map((row) => row.loanNeeded),
               backgroundColor: "#f59e0b",
               borderRadius: 5,
               datalabels: {
-                display: (ctx) => rows[ctx.dataIndex]?.shortage > 0,
-                formatter: (_value, ctx) => `자금 부족 ${compactWon(rows[ctx.dataIndex].shortage)}`,
-                color: "#ef4444",
-                anchor: "end",
-                align: "top",
-                offset: 2,
-                font: { weight: "900", size: 11 }
+                labels: {
+                  amount: {
+                    display: shouldShowHouseAmountLabel,
+                    formatter: (value) => compactWon(value),
+                    color: "#92400e",
+                    anchor: "end",
+                    align: "top",
+                    offset: 2,
+                    clamp: true,
+                    font: { weight: "800", size: 10 }
+                  },
+                  shortage: {
+                    display: (ctx) => rows[ctx.dataIndex]?.shortage > 0,
+                    formatter: (_value, ctx) => `자금 부족 ${compactWon(rows[ctx.dataIndex].shortage)}`,
+                    color: "#ef4444",
+                    anchor: "end",
+                    align: "top",
+                    offset: 18,
+                    clamp: true,
+                    font: { weight: "900", size: 11 }
+                  }
+                }
               }
             },
             {
               type: "line",
-              label: `LTV ${Math.round((rows[0]?.loanLimit || 0) / Math.max(1, houseInputValue("housePrice")) * 100)}% 한도`,
-              data: rows.map(() => ltvLimit),
+              label: `LTV ${ltvPercent}% 한도`,
+              data: rows.map((row) => row.loanLimit || ltvLimit),
               borderColor: "#334155",
               backgroundColor: "#334155",
               borderDash: [6, 5],
               pointRadius: 0,
+              pointHoverRadius: 0,
               borderWidth: 2,
               fill: false,
-              datalabels: { display: false }
+              tension: 0,
+              datalabels: {
+                display: (ctx) => ctx.dataIndex === lastIndex && Number(ctx.raw || 0) > 0,
+                formatter: (value) => `LTV ${ltvPercent}% 한도 ${compactWon(value)}`,
+                color: "#334155",
+                backgroundColor: "rgba(255, 255, 255, 0.88)",
+                borderColor: "#cbd5e1",
+                borderWidth: 1,
+                borderRadius: 4,
+                padding: { top: 3, right: 5, bottom: 3, left: 5 },
+                anchor: "end",
+                align: "left",
+                offset: 6,
+                clamp: true,
+                clip: false,
+                font: { weight: "900", size: 10 }
+              }
             }
           ]
         },
@@ -4542,7 +4607,10 @@
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
-            legend: { position: "bottom" },
+            legend: {
+              position: "bottom",
+              labels: { filter: (item) => !String(item.text || "").startsWith("LTV") }
+            },
             datalabels: { display: false },
             tooltip: { callbacks: {
               title: (items) => {
