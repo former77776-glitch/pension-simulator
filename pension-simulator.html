@@ -1594,16 +1594,16 @@
         grid-template-columns: minmax(0, 1fr);
       }
 
-      .asset-charts .asset-chart-card:nth-child(1) {
+      #assetNetChartCard {
         order: 1;
       }
 
-      .asset-charts .asset-chart-card:nth-child(2) {
-        order: 3;
+      #assetMixChartCard {
+        order: 2;
       }
 
-      .asset-charts .asset-chart-card:nth-child(3) {
-        order: 2;
+      #assetCompositionChartCard {
+        order: 3;
       }
 
       .asset-chart-card,
@@ -1744,7 +1744,7 @@
       </div>
 
       <section class="mobile-only mobile-asset-summary">
-        <div class="mobile-summary-grid" id="mobileAssetSummary"></div>
+        <div class="mobile-net-chart-slot" id="mobileNetChartSlot"></div>
         <div class="mobile-category-list" id="mobileAssetCategories"></div>
       </section>
 
@@ -1780,8 +1780,8 @@
               </table>
             </div>
           </details>
-          <div class="asset-charts">
-            <div class="card asset-chart-card">
+          <div class="asset-charts" id="assetCharts">
+            <div class="card asset-chart-card" id="assetNetChartCard">
               <div class="asset-chart-head">
                 <div class="chart-copy">
                   <div class="chart-title">월별 순자산</div>
@@ -1799,7 +1799,7 @@
                 <canvas id="assetNetChart"></canvas>
               </div>
             </div>
-            <div class="card asset-chart-card">
+            <div class="card asset-chart-card" id="assetCompositionChartCard">
               <div class="asset-chart-head">
                 <div class="chart-copy">
                   <div class="chart-title">월별 자산 비중</div>
@@ -1810,7 +1810,7 @@
                 <canvas id="assetCompositionChart"></canvas>
               </div>
             </div>
-            <div class="card asset-chart-card">
+            <div class="card asset-chart-card" id="assetMixChartCard">
               <div class="asset-chart-head">
                 <div class="chart-copy">
                   <div class="chart-title">최근 자산 비중</div>
@@ -3334,23 +3334,10 @@
     }
 
     function renderMobileAssetOverview(period = latestManagedPeriod(), prevPeriod = null) {
-      const summary = document.getElementById("mobileAssetSummary");
       const categoriesWrap = document.getElementById("mobileAssetCategories");
-      if (!summary || !categoriesWrap) return;
+      if (!categoriesWrap) return;
       const totals = assetCategoryTotals(period);
-      const prevNet = prevPeriod ? assetRows.reduce((sum, row) => sum + rowValue(row, prevPeriod), 0) : 0;
-      const net = assetRows.reduce((sum, row) => sum + rowValue(row, period), 0);
-      const prevYearPeriod = assetPeriods.find((item) => periodYear(item) === periodYear(period) - 1) || "";
-      const prevYearNet = prevYearPeriod ? assetRows.reduce((sum, row) => sum + rowValue(row, prevYearPeriod), 0) : 0;
       const gross = ["부동산", "주식", "연금", "금", "현금"].reduce((sum, key) => sum + Math.max(0, totals[key] || 0), 0);
-      const debt = totals["대출/부채"] || 0;
-      const cards = [
-        ["최근 순자산", compactWon(net)],
-        ["전월 대비", prevNet ? compactWon(net - prevNet) : "-"],
-        ["총자산", compactWon(gross)],
-        ["총부채", compactWon(debt)]
-      ];
-      summary.innerHTML = cards.map(([label, value]) => `<div class="card mobile-summary-card"><span>${label}</span><strong>${value}</strong></div>`).join("");
       const keys = ["부동산", "주식", "연금", "금", "현금", "대출/부채"];
       categoriesWrap.innerHTML = keys.map((key) => {
         const value = totals[key] || 0;
@@ -5416,6 +5403,14 @@
       if (assetDetails) assetDetails.open = !isMobile;
       const pensionDetails = document.getElementById("pensionInputDetails");
       if (pensionDetails) pensionDetails.open = !isMobile;
+      const netChartCard = document.getElementById("assetNetChartCard");
+      const mobileSlot = document.getElementById("mobileNetChartSlot");
+      const assetCharts = document.getElementById("assetCharts");
+      if (netChartCard && mobileSlot && assetCharts) {
+        if (isMobile && netChartCard.parentElement !== mobileSlot) mobileSlot.append(netChartCard);
+        if (!isMobile && netChartCard.parentElement !== assetCharts) assetCharts.prepend(netChartCard);
+        assetNetChartInstance?.resize();
+      }
     }
 
     function bindEvents() {
