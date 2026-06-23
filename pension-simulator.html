@@ -5032,6 +5032,48 @@
       };
     }
 
+    function normalizeLoanRatePercent(annualRate) {
+      const raw = Number(annualRate);
+      if (!Number.isFinite(raw) || raw <= 0 || raw > 30) return HOUSE_DEFAULT_LOAN_RATE;
+      return raw <= 1 ? raw * 100 : raw;
+    }
+
+    function normalizePaymentRatePercent(annualRate) {
+      const raw = Number(annualRate);
+      if (!Number.isFinite(raw) || raw < 0 || raw > 30) return HOUSE_DEFAULT_LOAN_RATE;
+      return raw > 0 && raw <= 1 ? raw * 100 : raw;
+    }
+
+    function normalizeLoanYears(years) {
+      const raw = Number(years);
+      return !Number.isFinite(raw) || raw <= 0 || raw > 100 ? HOUSE_DEFAULT_LOAN_YEARS : raw;
+    }
+
+    function calculateMonthlyPayment(principal, annualRate, years) {
+      const loan = Math.max(0, Number(principal) || 0);
+      const rate = normalizePaymentRatePercent(annualRate);
+      const months = Math.max(1, normalizeLoanYears(years) * 12);
+      if (loan <= 0) return 0;
+      const monthlyRate = rate / 100 / 12;
+      if (monthlyRate <= 0) return loan / months;
+      const factor = (1 + monthlyRate) ** months;
+      return loan * monthlyRate * factor / (factor - 1);
+    }
+
+    function calculateFirstMonthInterest(principal, annualRate) {
+      const loan = Math.max(0, Number(principal) || 0);
+      if (loan <= 0) return 0;
+      return loan * normalizePaymentRatePercent(annualRate) / 100 / 12;
+    }
+
+    function formatManWon(value) {
+      return `${Math.round(Math.max(0, Number(value) || 0) / 10000).toLocaleString("ko-KR")}만원`;
+    }
+
+    function formatMonthlyPaymentWithInterest(principal, annualRate, years) {
+      return `${formatManWon(calculateMonthlyPayment(principal, annualRate, years))}(${formatManWon(calculateFirstMonthInterest(principal, annualRate))})`;
+    }
+
     function houseAvailableAmount(groups, _debt, scenario) {
       const liquid = HOUSE_RATIO_GROUPS.filter((item) => item.key !== "home")
         .map((item) => item.key)
@@ -5047,15 +5089,10 @@
       const loanLimit = p.price * p.ltv;
       const shortage = Math.max(0, totalCost - available - loanLimit);
       const canBuy = shortage <= 0;
-      const monthlyInterest = loanNeeded * p.loanRate / 12;
-      const months = Math.max(1, p.loanYears * 12);
-      const monthlyRate = p.loanRate / 12;
       const financedLoan = Math.min(loanNeeded, loanLimit);
-      const monthlyPayment = financedLoan <= 0
-        ? 0
-        : monthlyRate > 0
-          ? financedLoan * monthlyRate * ((1 + monthlyRate) ** months) / (((1 + monthlyRate) ** months) - 1)
-          : financedLoan / months;
+      const loanRatePercent = p.loanRate * 100;
+      const monthlyInterest = calculateFirstMonthInterest(loanNeeded, loanRatePercent);
+      const monthlyPayment = calculateMonthlyPayment(loanNeeded, loanRatePercent, p.loanYears);
       const hardCost = Math.max(0, totalCost - p.reserve);
       const remainingCash = Math.max(0, available + financedLoan - hardCost);
       const status = canBuy ? "구매 가능" : loanNeeded > loanLimit ? "대출 한도 초과" : "자금 부족";
@@ -5088,6 +5125,7 @@
         ["대출 필요 금액", (row) => compactWon(row.loanNeeded)],
         ["LTV 기준 대출 가능액", (row) => compactWon(row.loanLimit)],
         ["자금 부족액", (row) => `<span class="${row.shortage > 0 ? "loan-bad" : "loan-ok"}">${compactWon(row.shortage)}</span>`],
+        ["원리금균등 월 상환액", (row) => formatMonthlyPaymentWithInterest(row.loanNeeded, housePercentValue("houseLoanRate") * 100, houseInputValue("houseLoanYears"))],
         ["구매 후 여유액", (row) => compactWon(row.remainingCash)],
         [`구매 가능 여부, LTV ${ltvLabel}`, (row) => `<span class="status-badge ${row.canBuy ? "" : "bad"}">${row.status}</span>`]
       ];
@@ -5104,8 +5142,19 @@
       const shouldShowHouseAmountLabel = (ctx) => {
         const value = Number(ctx.raw || 0);
         const row = rows[ctx.dataIndex] || {};
-        return value > 0 && (ctx.chart.width > 420 || value >= (row.totalCost || value) * 0.08);
+        return ctx.dataset.type !== "line" && value > 0 && (ctx.chart.width > 420 || value >= (row.totalCost || value) * 0.08);
       };
+      const barDataLabels = (color = "#ffffff") => ({
+        display: shouldShowHouseAmountLabel,
+        formatter: (value) => compactWon(value),
+        color,
+        anchor: "center",
+        align: "center",
+        clamp: true,
+        textStrokeColor: "rgba(15, 23, 42, .28)",
+        textStrokeWidth: 2,
+        font: { weight: "900", size: 10 }
+      });
       housePlanChartInstance?.destroy();
       housePlanChartInstance = new Chart(canvas, {
         type: "bar",
@@ -5117,46 +5166,38 @@
               data: rows.map((row) => row.available),
               backgroundColor: "#2563eb",
               borderRadius: 5,
-              datalabels: {
-                display: shouldShowHouseAmountLabel,
-                formatter: (value) => compactWon(value),
-                color: "#1d4ed8",
-                anchor: "end",
-                align: "top",
-                offset: 2,
-                clamp: true,
-                font: { weight: "800", size: 10 }
-              }
+              yAxisID: "y",
+              datalabels: barDataLabels("#ffffff")
             },
             {
               label: "대출 필요 금액",
               data: rows.map((row) => row.loanNeeded),
               backgroundColor: "#f59e0b",
               borderRadius: 5,
-              datalabels: {
-                labels: {
-                  amount: {
-                    display: shouldShowHouseAmountLabel,
-                    formatter: (value) => compactWon(value),
-                    color: "#92400e",
-                    anchor: "end",
-                    align: "top",
-                    offset: 2,
-                    clamp: true,
-                    font: { weight: "800", size: 10 }
-                  },
-                  shortage: {
-                    display: (ctx) => rows[ctx.dataIndex]?.shortage > 0,
-                    formatter: (_value, ctx) => `자금 부족 ${compactWon(rows[ctx.dataIndex].shortage)}`,
-                    color: "#ef4444",
-                    anchor: "end",
-                    align: "top",
-                    offset: 18,
-                    clamp: true,
-                    font: { weight: "900", size: 11 }
-                  }
-                }
-              }
+              yAxisID: "y",
+              datalabels: barDataLabels("#111827")
+            },
+            {
+              label: "자금 부족액",
+              data: rows.map((row) => row.shortage),
+              backgroundColor: "#ef4444",
+              borderRadius: 5,
+              yAxisID: "y",
+              datalabels: barDataLabels("#ffffff")
+            },
+            {
+              type: "line",
+              label: "월 상환액",
+              data: rows.map((row) => row.monthlyPayment),
+              borderColor: "#7c3aed",
+              backgroundColor: "#7c3aed",
+              yAxisID: "yMonthly",
+              pointRadius: (ctx) => ctx.chart.width < 420 ? 2 : 3,
+              pointHoverRadius: 4,
+              borderWidth: 2.4,
+              tension: 0.24,
+              fill: false,
+              datalabels: { display: false }
             },
             {
               type: "line",
@@ -5164,6 +5205,7 @@
               data: rows.map((row) => row.loanLimit || ltvLimit),
               borderColor: "#334155",
               backgroundColor: "#334155",
+              yAxisID: "y",
               borderDash: [6, 5],
               pointRadius: 0,
               pointHoverRadius: 0,
@@ -5203,7 +5245,11 @@
                 const index = items[0]?.dataIndex || 0;
                 return `${labels[index]}${index === lastIndex ? " · 최종 기준" : ""}`;
               },
-              label: (ctx) => `${ctx.dataset.label}: ${compactWon(ctx.raw)}`,
+              label: (ctx) => {
+                const row = rows[ctx.dataIndex || 0];
+                if (ctx.dataset.label === "월 상환액") return `월 상환액: ${formatManWon(ctx.raw)}/월, 첫 달 이자 ${formatManWon(row.monthlyInterest)}`;
+                return `${ctx.dataset.label}: ${compactWon(ctx.raw)}`;
+              },
               afterBody: (items) => {
                 const row = rows[items[0]?.dataIndex || 0];
                 return [
@@ -5211,14 +5257,22 @@
                   `총 필요 비용: ${compactWon(row.totalCost)}`,
                   `대출 필요 금액: ${compactWon(row.loanNeeded)}`,
                   `LTV 기준 대출 가능액: ${compactWon(row.loanLimit)}`,
-                  `자금 부족액: ${compactWon(row.shortage)}`
+                  `자금 부족액: ${compactWon(row.shortage)}`,
+                  `월 상환액: ${formatManWon(row.monthlyPayment)}/월`,
+                  `첫 달 이자: ${formatManWon(row.monthlyInterest)}`
                 ];
               }
             } }
           },
           scales: {
             x: { grid: { display: false } },
-            y: { ticks: { callback: (value) => compactWon(value) }, grace: "10%" }
+            y: { ticks: { callback: (value) => compactWon(value) }, grace: "10%" },
+            yMonthly: {
+              position: "right",
+              beginAtZero: true,
+              grid: { drawOnChartArea: false },
+              ticks: { callback: (value) => `${Math.round(value / 10000).toLocaleString("ko-KR")}만원/월` }
+            }
           }
         }
       });
