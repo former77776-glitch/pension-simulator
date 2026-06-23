@@ -136,6 +136,110 @@
       margin-top: 10px;
     }
 
+    .mobile-only {
+      display: none;
+    }
+
+    .mobile-asset-summary {
+      margin: 10px 0;
+    }
+
+    .mobile-summary-grid,
+    .mobile-category-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .mobile-summary-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .mobile-summary-card,
+    .mobile-category-card {
+      padding: 12px;
+    }
+
+    .mobile-summary-card span,
+    .mobile-category-card span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .mobile-summary-card strong,
+    .mobile-category-card strong {
+      display: block;
+      margin-top: 4px;
+      color: var(--text);
+      font-size: 18px;
+      line-height: 1.2;
+    }
+
+    .mobile-category-card {
+      border-left: 4px solid var(--accent);
+    }
+
+    .mobile-category-card.debt {
+      border-left-color: var(--red);
+    }
+
+    .mobile-category-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: start;
+    }
+
+    .mobile-category-share {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .mobile-category-items {
+      margin: 10px 0 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 6px;
+    }
+
+    .mobile-category-items li {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .mobile-category-items b {
+      color: var(--text);
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .asset-table-details > summary {
+      display: none;
+      cursor: pointer;
+      padding: 12px;
+      color: var(--navy);
+      font-weight: 900;
+    }
+
+    .mobile-input-details > summary {
+      display: none;
+      cursor: pointer;
+      padding: 12px;
+      color: var(--navy);
+      font-weight: 900;
+    }
+
+    .mobile-bottom-nav {
+      display: none;
+    }
+
     .asset-chart-card.wide {
       grid-column: 1 / -1;
     }
@@ -1358,6 +1462,229 @@
       list-style-position: inside;
     }
 
+    @media (min-width: 769px) {
+      .desktop-only {
+        display: block;
+      }
+
+      .mobile-only {
+        display: none !important;
+      }
+    }
+
+    @media (max-width: 768px) {
+      body {
+        padding-bottom: 70px;
+        overflow-x: hidden;
+      }
+
+      main {
+        width: 100%;
+        padding: 8px 8px 18px;
+      }
+
+      h1 {
+        font-size: 18px;
+      }
+
+      .topbar {
+        align-items: flex-start;
+      }
+
+      .tabs {
+        display: none;
+      }
+
+      .mobile-only {
+        display: block;
+      }
+
+      .desktop-only {
+        display: none !important;
+      }
+
+      .analysis-strip {
+        display: none;
+      }
+
+      .server-sync-card {
+        padding: 10px;
+      }
+
+      .server-sync-head {
+        display: grid;
+        gap: 8px;
+      }
+
+      .server-sync-desc {
+        font-size: 12px;
+      }
+
+      .server-sync-actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .asset-grid,
+      .sim-grid,
+      .house-layout {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .asset-grid > section,
+      .house-main,
+      .content {
+        order: 1;
+      }
+
+      .holdings-card {
+        display: none;
+      }
+
+      .sidebar,
+      .house-sidebar {
+        order: 2;
+        max-height: none;
+      }
+
+      .toolbar {
+        display: grid;
+        gap: 8px;
+        padding: 10px;
+      }
+
+      .toolbar .primary-actions,
+      .toolbar .primary-actions button {
+        width: 100%;
+      }
+
+      #priceStatus {
+        display: none;
+      }
+
+      .asset-table-details {
+        margin-top: 10px;
+      }
+
+      .asset-table-details > summary {
+        display: block;
+      }
+
+      .mobile-input-details {
+        display: block;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: #fff;
+      }
+
+      .mobile-input-details > summary {
+        display: block;
+      }
+
+      .mobile-input-body {
+        padding: 10px;
+      }
+
+      .asset-table-wrap,
+      .sim-table-wrap,
+      .house-table-card {
+        overflow-x: auto;
+        max-width: 100%;
+      }
+
+      .asset-charts {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .asset-charts .asset-chart-card:nth-child(1) {
+        order: 2;
+      }
+
+      .asset-charts .asset-chart-card:nth-child(2) {
+        order: 3;
+      }
+
+      .asset-charts .asset-chart-card:nth-child(3) {
+        order: 1;
+      }
+
+      .asset-chart-card,
+      .chart-card,
+      .house-chart-card {
+        min-width: 0;
+      }
+
+      .asset-chart-box,
+      .house-chart-box {
+        height: 280px;
+        min-height: 240px;
+      }
+
+      .chart-card canvas {
+        width: 100% !important;
+        max-width: 100%;
+        height: 270px !important;
+      }
+
+      .summary,
+      .diagnostics,
+      .house-summary,
+      .chart-kpis {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .sim-grid .content {
+        order: 1;
+      }
+
+      .sim-grid .sidebar {
+        order: 2;
+      }
+
+      .house-plan-head {
+        display: grid;
+        gap: 8px;
+      }
+
+      .house-tables {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .house-field {
+        grid-template-columns: minmax(92px, .8fr) minmax(0, 1fr) auto;
+      }
+
+      .mobile-bottom-nav {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 30;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 6px;
+        min-height: 60px;
+        padding: 8px max(8px, env(safe-area-inset-left)) calc(8px + env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-right));
+        background: rgba(255, 255, 255, .96);
+        border-top: 1px solid var(--border);
+        box-shadow: 0 -8px 24px rgba(23, 32, 51, .08);
+      }
+
+      .mobile-bottom-nav button {
+        min-height: 44px;
+        border-radius: 10px;
+        background: #eef2f7;
+        color: var(--text);
+      }
+
+      .mobile-bottom-nav button.active {
+        background: var(--accent);
+        color: #fff;
+      }
+    }
+
     @media (max-width: 1100px) {
       .asset-grid, .sim-grid, .charts, .summary, .analysis-strip, .chart-kpis, .house-layout, .house-summary, .house-tables, .cost-basis {
         grid-template-columns: 1fr;
@@ -1420,6 +1747,11 @@
         </details>
       </div>
 
+      <section class="mobile-only mobile-asset-summary">
+        <div class="mobile-summary-grid" id="mobileAssetSummary"></div>
+        <div class="mobile-category-list" id="mobileAssetCategories"></div>
+      </section>
+
       <div class="asset-grid">
         <section>
           <div class="card toolbar">
@@ -1442,13 +1774,16 @@
               </div>
             </details>
           </div>
-          <div class="card asset-table-wrap">
-            <table class="asset-table">
-              <colgroup id="assetCols"></colgroup>
-              <thead id="assetHead"></thead>
-              <tbody id="assetBody"></tbody>
-            </table>
-          </div>
+          <details class="asset-table-details" id="assetTableDetails">
+            <summary>상세 자산표 보기</summary>
+            <div class="card asset-table-wrap">
+              <table class="asset-table">
+                <colgroup id="assetCols"></colgroup>
+                <thead id="assetHead"></thead>
+                <tbody id="assetBody"></tbody>
+              </table>
+            </div>
+          </details>
           <div class="asset-charts">
             <div class="card asset-chart-card">
               <div class="asset-chart-head">
@@ -1555,6 +1890,9 @@
     <section id="pensionPanel" class="panel">
       <div class="sim-grid">
         <aside class="sidebar">
+          <details class="mobile-input-details" id="pensionInputDetails">
+            <summary>연금 입력값 수정</summary>
+            <div class="mobile-input-body">
           <h1>연금 수령 설정</h1>
           <form id="inputForm"></form>
           <div class="card guide" id="nationalPensionGuide">
@@ -1576,6 +1914,8 @@
             개인연금은 매년 기본 수령액을 먼저 수령합니다. 목표 실수령액이 부족하면
             IRP 퇴직재원, IRP 과세재원, 개인연금 추가 인출 순서로 보충합니다.
           </div>
+            </div>
+          </details>
         </aside>
 
         <section class="content">
@@ -1723,6 +2063,11 @@
       </div>
     </section>
   </main>
+  <nav class="mobile-bottom-nav" aria-label="모바일 주요 탭">
+    <button type="button" class="mobile-nav-btn active" data-tab="assets">자산</button>
+    <button type="button" class="mobile-nav-btn" data-tab="housePlan">부동산</button>
+    <button type="button" class="mobile-nav-btn" data-tab="pension">연금</button>
+  </nav>
   <div class="tooltip" id="tooltip"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.9/dist/chart.umd.min.js"></script>
@@ -2917,7 +3262,57 @@
         if (stockEl) stockEl.textContent = compactWon(stock);
         if (debtEl) debtEl.textContent = compactWon(debt);
       }
+      renderMobileAssetOverview(period, prevPeriod);
       renderManagedYearUi(period);
+    }
+
+    function renderMobileAssetOverview(period = latestManagedPeriod(), prevPeriod = null) {
+      const summary = document.getElementById("mobileAssetSummary");
+      const categoriesWrap = document.getElementById("mobileAssetCategories");
+      if (!summary || !categoriesWrap) return;
+      const totals = assetCategoryTotals(period);
+      const prevNet = prevPeriod ? assetRows.reduce((sum, row) => sum + rowValue(row, prevPeriod), 0) : 0;
+      const net = assetRows.reduce((sum, row) => sum + rowValue(row, period), 0);
+      const prevYearPeriod = assetPeriods.find((item) => periodYear(item) === periodYear(period) - 1) || "";
+      const prevYearNet = prevYearPeriod ? assetRows.reduce((sum, row) => sum + rowValue(row, prevYearPeriod), 0) : 0;
+      const gross = ["부동산", "주식", "연금", "금", "현금"].reduce((sum, key) => sum + Math.max(0, totals[key] || 0), 0);
+      const debt = totals["대출/부채"] || 0;
+      const cards = [
+        ["최근 순자산", compactWon(net)],
+        ["전월 대비", prevNet ? compactWon(net - prevNet) : "-"],
+        ["전년 대비", prevYearNet ? compactWon(net - prevYearNet) : "-"],
+        ["총자산", compactWon(gross)],
+        ["총부채", compactWon(debt)],
+        ["주식", compactWon(totals["주식"] || 0)],
+        ["연금", compactWon(totals["연금"] || 0)],
+        ["현금", compactWon(totals["현금"] || 0)],
+        ["부동산", compactWon(totals["부동산"] || 0)]
+      ];
+      summary.innerHTML = cards.map(([label, value]) => `<div class="card mobile-summary-card"><span>${label}</span><strong>${value}</strong></div>`).join("");
+      const keys = ["부동산", "주식", "연금", "금", "현금", "대출/부채"];
+      categoriesWrap.innerHTML = keys.map((key) => {
+        const value = totals[key] || 0;
+        const isDebt = key === "대출/부채";
+        const share = !isDebt && gross ? pct(Math.max(0, value) / gross) : "비중 제외";
+        const rows = assetRows
+          .filter((row) => assetCategoryKey(row, period) === key)
+          .map((row) => ({ label: row.label, value: rowValue(row, period) }))
+          .filter((row) => row.value !== 0)
+          .sort((a, b) => Math.abs(b.value) - Math.abs(a.value))
+          .slice(0, 5);
+        const items = rows.length
+          ? rows.map((row) => `<li><span>${escapeHtml(row.label)}</span><b>${compactWon(row.value)}</b></li>`).join("")
+          : `<li><span>표시할 항목 없음</span><b>-</b></li>`;
+        return `
+          <article class="card mobile-category-card ${isDebt ? "debt" : ""}">
+            <div class="mobile-category-head">
+              <div><span>${key}</span><strong>${compactWon(value)}</strong></div>
+              <div class="mobile-category-share">${share}</div>
+            </div>
+            <ul class="mobile-category-items">${items}</ul>
+          </article>
+        `;
+      }).join("");
     }
 
     function renderManagedYearUi(period = latestManagedPeriod()) {
@@ -4938,19 +5333,30 @@
       runPension();
     }
 
+    function activateTab(tabName) {
+      document.querySelectorAll(".tab, .mobile-nav-btn").forEach((item) => item.classList.toggle("active", item.dataset.tab === tabName));
+      document.querySelectorAll(".panel").forEach((item) => item.classList.remove("active"));
+      document.getElementById(`${tabName}Panel`)?.classList.add("active");
+      if (tabName === "pension") renderCharts();
+      if (tabName === "housePlan") renderHousePlan();
+      if (tabName === "assets") renderAssetCharts();
+    }
+
+    function syncResponsiveDetails() {
+      const isMobile = window.matchMedia("(max-width: 768px)").matches;
+      const assetDetails = document.getElementById("assetTableDetails");
+      if (assetDetails) assetDetails.open = !isMobile;
+      const pensionDetails = document.getElementById("pensionInputDetails");
+      if (pensionDetails) pensionDetails.open = !isMobile;
+    }
+
     function bindEvents() {
       const bind = (id, eventName, handler) => {
         const element = document.getElementById(id);
         if (element) element.addEventListener(eventName, handler);
       };
-      document.querySelectorAll(".tab").forEach((tab) => tab.addEventListener("click", () => {
-        document.querySelectorAll(".tab").forEach((item) => item.classList.remove("active"));
-        document.querySelectorAll(".panel").forEach((item) => item.classList.remove("active"));
-        tab.classList.add("active");
-        document.getElementById(`${tab.dataset.tab}Panel`)?.classList.add("active");
-        if (tab.dataset.tab === "pension") renderCharts();
-        if (tab.dataset.tab === "housePlan") renderHousePlan();
-      }));
+      document.querySelectorAll(".tab, .mobile-nav-btn").forEach((tab) => tab.addEventListener("click", () => activateTab(tab.dataset.tab)));
+      window.addEventListener("resize", syncResponsiveDetails);
       bind("rebuildAssetYears", "click", rebuildAssetYears);
       bind("closeCurrentMonth", "click", closeCurrentMonthSnapshot);
       bind("checkProxy", "click", checkLocalProxy);
@@ -4995,6 +5401,7 @@
     loadServerSyncState();
     loadStoredAssetData();
     loadHousePlanInputs();
+    syncResponsiveDetails();
     renderAssetTable();
     renderInvestmentPanel();
     renderHousePlan();
