@@ -150,10 +150,6 @@
       gap: 8px;
     }
 
-    .mobile-summary-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
     .mobile-summary-card,
     .mobile-category-card {
       padding: 12px;
@@ -1599,7 +1595,7 @@
       }
 
       .asset-charts .asset-chart-card:nth-child(1) {
-        order: 2;
+        order: 1;
       }
 
       .asset-charts .asset-chart-card:nth-child(2) {
@@ -1607,7 +1603,7 @@
       }
 
       .asset-charts .asset-chart-card:nth-child(3) {
-        order: 1;
+        order: 2;
       }
 
       .asset-chart-card,
@@ -3351,13 +3347,8 @@
       const cards = [
         ["최근 순자산", compactWon(net)],
         ["전월 대비", prevNet ? compactWon(net - prevNet) : "-"],
-        ["전년 대비", prevYearNet ? compactWon(net - prevYearNet) : "-"],
         ["총자산", compactWon(gross)],
-        ["총부채", compactWon(debt)],
-        ["주식", compactWon(totals["주식"] || 0)],
-        ["연금", compactWon(totals["연금"] || 0)],
-        ["현금", compactWon(totals["현금"] || 0)],
-        ["부동산", compactWon(totals["부동산"] || 0)]
+        ["총부채", compactWon(debt)]
       ];
       summary.innerHTML = cards.map(([label, value]) => `<div class="card mobile-summary-card"><span>${label}</span><strong>${value}</strong></div>`).join("");
       const keys = ["부동산", "주식", "연금", "금", "현금", "대출/부채"];
