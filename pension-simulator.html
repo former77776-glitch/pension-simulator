@@ -5231,6 +5231,7 @@
             }
           ]
         },
+        plugins: hasDataLabels() ? [window.ChartDataLabels] : [],
         options: {
           responsive: true,
           maintainAspectRatio: false,
@@ -5239,7 +5240,17 @@
               position: "bottom",
               labels: { filter: (item) => !String(item.text || "").startsWith("LTV") }
             },
-            datalabels: { display: false },
+            datalabels: {
+              display: shouldShowHouseAmountLabel,
+              formatter: (value) => compactWon(value),
+              color: (ctx) => ctx.dataset.label === "대출 필요 금액" ? "#111827" : "#ffffff",
+              anchor: "center",
+              align: "center",
+              clamp: true,
+              textStrokeColor: "rgba(15, 23, 42, .32)",
+              textStrokeWidth: 2,
+              font: { weight: "900", size: 10 }
+            },
             tooltip: { callbacks: {
               title: (items) => {
                 const index = items[0]?.dataIndex || 0;
