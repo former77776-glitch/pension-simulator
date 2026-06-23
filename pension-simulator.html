@@ -1830,6 +1830,20 @@
     const HOUSE_DEFAULT_LOAN_RATE = 4.5;
     const HOUSE_DEFAULT_LOAN_YEARS = 30;
     const HOUSE_BAD_COST_VALUES = [12320000, 2024000];
+    const HOUSE_USER_INPUT_IDS = [
+      "housePrice",
+      "houseScenarioSelect",
+      "existingHomePrice",
+      "houseLtv",
+      "houseLoanRate",
+      "houseLoanYears",
+      "houseCountType",
+      "houseRegulated",
+      "houseAreaOver85",
+      "houseBrokerVat",
+      "houseInterior",
+      "houseReserve"
+    ];
     const HOUSE_RATIO_GROUPS = [
       { key: "cash", label: "현금", defaultValue: 100 },
       { key: "stock", label: "주식", defaultValue: 100 },
@@ -2021,7 +2035,10 @@
 
     function collectHousePlanForServer() {
       const values = {};
-      document.querySelectorAll("[data-house-input]").forEach((input) => { values[input.id] = input.value; });
+      for (const id of HOUSE_USER_INPUT_IDS) {
+        const input = document.getElementById(id);
+        if (input) values[id] = input.value;
+      }
       return { values, ratios: { ...houseRatios } };
     }
 
@@ -2040,6 +2057,21 @@
       const number = parseServerNumber(value);
       if (!Number.isFinite(number) || number <= 0) return fallback;
       return number <= 1 ? number * 100 : number;
+    }
+
+    function normalizeServerLtv(value) {
+      const percent = normalizeServerPercent(value, HOUSE_DEFAULT_LTV);
+      return percent > 100 ? HOUSE_DEFAULT_LTV : percent;
+    }
+
+    function normalizeServerLoanRate(value) {
+      const percent = normalizeServerPercent(value, HOUSE_DEFAULT_LOAN_RATE);
+      return percent > 30 ? HOUSE_DEFAULT_LOAN_RATE : percent;
+    }
+
+    function normalizeServerLoanYears(value) {
+      const years = parseServerNumber(value);
+      return !Number.isFinite(years) || years <= 0 || years > 100 ? HOUSE_DEFAULT_LOAN_YEARS : years;
     }
 
     function normalizeHouseRatioState(ratios = {}) {
@@ -2063,9 +2095,9 @@
         targetHousePrice: normalizeServerMoney(values.housePrice, HOUSE_DEFAULT_PRICE),
         disposeCurrentHouse: (values.houseScenarioSelect || "sell") !== "keep",
         currentHouseSalePrice: Math.max(0, parseServerNumber(values.existingHomePrice) || 0),
-        ltvRate: normalizeServerPercent(values.houseLtv, HOUSE_DEFAULT_LTV),
-        loanRate: normalizeServerPercent(values.houseLoanRate, HOUSE_DEFAULT_LOAN_RATE),
-        loanYears: normalizeServerMoney(values.houseLoanYears, HOUSE_DEFAULT_LOAN_YEARS),
+        ltvRate: normalizeServerLtv(values.houseLtv),
+        loanRate: normalizeServerLoanRate(values.houseLoanRate),
+        loanYears: normalizeServerLoanYears(values.houseLoanYears),
         interiorCost: normalizeServerMoney(values.houseInterior, HOUSE_DEFAULT_INTERIOR, HOUSE_BAD_COST_VALUES),
         reserveCash: normalizeServerMoney(values.houseReserve, HOUSE_DEFAULT_RESERVE, HOUSE_BAD_COST_VALUES),
         houseCountType: values.houseCountType || "one",
@@ -2080,15 +2112,16 @@
     function realEstatePlanToHousePlan(realEstatePlan, fallbackHousePlan = {}) {
       const fallbackValues = fallbackHousePlan?.values && typeof fallbackHousePlan.values === "object" ? fallbackHousePlan.values : {};
       const plan = realEstatePlan && typeof realEstatePlan === "object" ? realEstatePlan : {};
-      const values = { ...fallbackValues };
+      const values = {};
       values.housePrice = won(normalizeServerMoney(plan.targetHousePrice ?? fallbackValues.housePrice, HOUSE_DEFAULT_PRICE));
       values.houseScenarioSelect = Object.prototype.hasOwnProperty.call(plan, "disposeCurrentHouse")
         ? plan.disposeCurrentHouse === false ? "keep" : "sell"
         : fallbackValues.houseScenarioSelect || "sell";
-      values.existingHomePrice = won(Math.max(0, parseServerNumber(plan.currentHouseSalePrice ?? fallbackValues.existingHomePrice) || 0));
-      values.houseLtv = `${normalizeServerPercent(plan.ltvRate ?? fallbackValues.houseLtv, HOUSE_DEFAULT_LTV).toLocaleString("ko-KR", { maximumFractionDigits: 1 })}%`;
-      values.houseLoanRate = `${normalizeServerPercent(plan.loanRate ?? fallbackValues.houseLoanRate, HOUSE_DEFAULT_LOAN_RATE).toLocaleString("ko-KR", { maximumFractionDigits: 1 })}%`;
-      values.houseLoanYears = String(normalizeServerMoney(plan.loanYears ?? fallbackValues.houseLoanYears, HOUSE_DEFAULT_LOAN_YEARS));
+      const salePrice = parseServerNumber(plan.currentHouseSalePrice ?? fallbackValues.existingHomePrice);
+      if (Number.isFinite(salePrice) && salePrice > 0) values.existingHomePrice = won(salePrice);
+      values.houseLtv = `${normalizeServerLtv(plan.ltvRate ?? fallbackValues.houseLtv).toLocaleString("ko-KR", { maximumFractionDigits: 1 })}%`;
+      values.houseLoanRate = `${normalizeServerLoanRate(plan.loanRate ?? fallbackValues.houseLoanRate).toLocaleString("ko-KR", { maximumFractionDigits: 1 })}%`;
+      values.houseLoanYears = String(normalizeServerLoanYears(plan.loanYears ?? fallbackValues.houseLoanYears));
       values.houseInterior = won(normalizeServerMoney(plan.interiorCost ?? fallbackValues.houseInterior, HOUSE_DEFAULT_INTERIOR, HOUSE_BAD_COST_VALUES));
       values.houseReserve = won(normalizeServerMoney(plan.reserveCash ?? fallbackValues.houseReserve, HOUSE_DEFAULT_RESERVE, HOUSE_BAD_COST_VALUES));
       values.houseCountType = plan.houseCountType || fallbackValues.houseCountType || "one";
@@ -4329,6 +4362,13 @@
       if (!String(input.value || "").trim() || !Number.isFinite(current) || current <= 0 || isBadSavedValue) input.value = won(value);
     }
 
+    function setHouseNumberDefault(id, value, maxValue = Infinity) {
+      const input = document.getElementById(id);
+      if (!input) return;
+      const current = toNumber(input.value);
+      if (!String(input.value || "").trim() || !Number.isFinite(current) || current <= 0 || current > maxValue) input.value = String(value);
+    }
+
     function normalizeHousePercentInput(id, defaultPercent) {
       const input = document.getElementById(id);
       if (!input) return;
@@ -4459,7 +4499,7 @@
       setHouseMoneyDefault("housePrice", HOUSE_DEFAULT_PRICE);
       setHouseMoneyDefault("houseInterior", HOUSE_DEFAULT_INTERIOR, HOUSE_BAD_COST_VALUES);
       setHouseMoneyDefault("houseReserve", HOUSE_DEFAULT_RESERVE, HOUSE_BAD_COST_VALUES);
-      setHouseMoneyDefault("houseLoanYears", HOUSE_DEFAULT_LOAN_YEARS);
+      setHouseNumberDefault("houseLoanYears", HOUSE_DEFAULT_LOAN_YEARS, 100);
       normalizeHousePercentInput("houseLtv", HOUSE_DEFAULT_LTV);
       normalizeHousePercentInput("houseLoanRate", HOUSE_DEFAULT_LOAN_RATE);
       updateHouseReadableHints();
