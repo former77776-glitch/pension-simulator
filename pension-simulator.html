@@ -1825,6 +1825,11 @@
     let suppressServerAutoSave = false;
 
     const HOUSE_PLAN_STORAGE_KEY = "pensionHousePlanInputs";
+    const HOUSE_DEFAULT_PRICE = 1600000000;
+    const HOUSE_DEFAULT_LTV = 60;
+    const HOUSE_DEFAULT_LOAN_RATE = 4.5;
+    const HOUSE_DEFAULT_LOAN_YEARS = 30;
+    const HOUSE_BAD_COST_VALUES = [12320000, 2024000];
     const HOUSE_RATIO_GROUPS = [
       { key: "cash", label: "현금", defaultValue: 100 },
       { key: "stock", label: "주식", defaultValue: 100 },
@@ -2020,9 +2025,94 @@
       return { values, ratios: { ...houseRatios } };
     }
 
-    function collectAppStateForServer() {
+    function parseServerNumber(value) {
+      const number = typeof value === "number" ? value : toNumber(value);
+      return Number.isFinite(number) ? number : NaN;
+    }
+
+    function normalizeServerMoney(value, fallback, badValues = []) {
+      const number = parseServerNumber(value);
+      const isBad = badValues.some((bad) => Math.abs(number - bad) < 1);
+      return !Number.isFinite(number) || number <= 0 || isBad ? fallback : number;
+    }
+
+    function normalizeServerPercent(value, fallback) {
+      const number = parseServerNumber(value);
+      if (!Number.isFinite(number) || number <= 0) return fallback;
+      return number <= 1 ? number * 100 : number;
+    }
+
+    function normalizeHouseRatioState(ratios = {}) {
+      const normalized = {};
+      for (const item of HOUSE_RATIO_GROUPS) {
+        const value = Number(ratios[item.key]);
+        normalized[item.key] = Number.isFinite(value) ? Math.max(0, Math.min(100, value)) : item.defaultValue;
+      }
+      for (const [key, value] of Object.entries(ratios || {})) {
+        if (Object.prototype.hasOwnProperty.call(normalized, key)) continue;
+        const next = Number(value);
+        if (Number.isFinite(next)) normalized[key] = Math.max(0, Math.min(100, next));
+      }
+      return normalized;
+    }
+
+    function housePlanToRealEstatePlan(housePlan = collectHousePlanForServer()) {
+      const values = housePlan?.values && typeof housePlan.values === "object" ? housePlan.values : {};
+      const ratios = normalizeHouseRatioState(housePlan?.ratios);
       return {
-        schemaVersion: 1,
+        targetHousePrice: normalizeServerMoney(values.housePrice, HOUSE_DEFAULT_PRICE),
+        disposeCurrentHouse: (values.houseScenarioSelect || "sell") !== "keep",
+        currentHouseSalePrice: Math.max(0, parseServerNumber(values.existingHomePrice) || 0),
+        ltvRate: normalizeServerPercent(values.houseLtv, HOUSE_DEFAULT_LTV),
+        loanRate: normalizeServerPercent(values.houseLoanRate, HOUSE_DEFAULT_LOAN_RATE),
+        loanYears: normalizeServerMoney(values.houseLoanYears, HOUSE_DEFAULT_LOAN_YEARS),
+        interiorCost: normalizeServerMoney(values.houseInterior, HOUSE_DEFAULT_INTERIOR, HOUSE_BAD_COST_VALUES),
+        reserveCash: normalizeServerMoney(values.houseReserve, HOUSE_DEFAULT_RESERVE, HOUSE_BAD_COST_VALUES),
+        houseCountType: values.houseCountType || "one",
+        regulatedArea: values.houseRegulated || "no",
+        over85sqm: values.houseAreaOver85 || "no",
+        brokerageVatIncluded: (values.houseBrokerVat || "yes") !== "no",
+        liquidationRates: ratios,
+        updatedAt: new Date().toISOString()
+      };
+    }
+
+    function realEstatePlanToHousePlan(realEstatePlan, fallbackHousePlan = {}) {
+      const fallbackValues = fallbackHousePlan?.values && typeof fallbackHousePlan.values === "object" ? fallbackHousePlan.values : {};
+      const plan = realEstatePlan && typeof realEstatePlan === "object" ? realEstatePlan : {};
+      const values = { ...fallbackValues };
+      values.housePrice = won(normalizeServerMoney(plan.targetHousePrice ?? fallbackValues.housePrice, HOUSE_DEFAULT_PRICE));
+      values.houseScenarioSelect = Object.prototype.hasOwnProperty.call(plan, "disposeCurrentHouse")
+        ? plan.disposeCurrentHouse === false ? "keep" : "sell"
+        : fallbackValues.houseScenarioSelect || "sell";
+      values.existingHomePrice = won(Math.max(0, parseServerNumber(plan.currentHouseSalePrice ?? fallbackValues.existingHomePrice) || 0));
+      values.houseLtv = `${normalizeServerPercent(plan.ltvRate ?? fallbackValues.houseLtv, HOUSE_DEFAULT_LTV).toLocaleString("ko-KR", { maximumFractionDigits: 1 })}%`;
+      values.houseLoanRate = `${normalizeServerPercent(plan.loanRate ?? fallbackValues.houseLoanRate, HOUSE_DEFAULT_LOAN_RATE).toLocaleString("ko-KR", { maximumFractionDigits: 1 })}%`;
+      values.houseLoanYears = String(normalizeServerMoney(plan.loanYears ?? fallbackValues.houseLoanYears, HOUSE_DEFAULT_LOAN_YEARS));
+      values.houseInterior = won(normalizeServerMoney(plan.interiorCost ?? fallbackValues.houseInterior, HOUSE_DEFAULT_INTERIOR, HOUSE_BAD_COST_VALUES));
+      values.houseReserve = won(normalizeServerMoney(plan.reserveCash ?? fallbackValues.houseReserve, HOUSE_DEFAULT_RESERVE, HOUSE_BAD_COST_VALUES));
+      values.houseCountType = plan.houseCountType || fallbackValues.houseCountType || "one";
+      values.houseRegulated = plan.regulatedArea || fallbackValues.houseRegulated || "no";
+      values.houseAreaOver85 = plan.over85sqm || fallbackValues.houseAreaOver85 || "no";
+      values.houseBrokerVat = Object.prototype.hasOwnProperty.call(plan, "brokerageVatIncluded")
+        ? plan.brokerageVatIncluded === false ? "no" : "yes"
+        : fallbackValues.houseBrokerVat || "yes";
+      const ratios = normalizeHouseRatioState(plan.liquidationRates || fallbackHousePlan?.ratios);
+      return { values, ratios };
+    }
+
+    function resolveServerHousePlan(data) {
+      const fallbackHousePlan = data?.housePlan && typeof data.housePlan === "object" ? data.housePlan : {};
+      if (data?.realEstatePlan && typeof data.realEstatePlan === "object") return realEstatePlanToHousePlan(data.realEstatePlan, fallbackHousePlan);
+      if (fallbackHousePlan.values || fallbackHousePlan.ratios) return realEstatePlanToHousePlan(housePlanToRealEstatePlan(fallbackHousePlan), fallbackHousePlan);
+      return null;
+    }
+
+    function collectAppStateForServer() {
+      const housePlan = collectHousePlanForServer();
+      return {
+        schemaVersion: 2,
+        serverStateVersion: 2,
         savedAt: new Date().toISOString(),
         assetRows,
         assetPeriods,
@@ -2030,7 +2120,8 @@
         assetArchivedPeriods,
         investmentData,
         pension: collectPensionInputsForServer(),
-        housePlan: collectHousePlanForServer()
+        housePlan,
+        realEstatePlan: housePlanToRealEstatePlan(housePlan)
       };
     }
 
@@ -2041,7 +2132,8 @@
       if (Array.isArray(data.assetPeriods)) localStorage.setItem("pensionAssetPeriods", JSON.stringify(data.assetPeriods));
       if (data.assetFutureBackup && typeof data.assetFutureBackup === "object") localStorage.setItem("pensionAssetFutureBackup", JSON.stringify(data.assetFutureBackup));
       if (data.assetArchivedPeriods && typeof data.assetArchivedPeriods === "object") localStorage.setItem("pensionAssetArchivedPeriods", JSON.stringify(data.assetArchivedPeriods));
-      if (data.housePlan && typeof data.housePlan === "object") localStorage.setItem(HOUSE_PLAN_STORAGE_KEY, JSON.stringify(data.housePlan));
+      const serverHousePlan = resolveServerHousePlan(data);
+      if (serverHousePlan) localStorage.setItem(HOUSE_PLAN_STORAGE_KEY, JSON.stringify(serverHousePlan));
     }
 
     function applyServerState(data) {
@@ -2063,7 +2155,9 @@
         const auto = document.getElementById("autoRunPension");
         if (auto) auto.checked = data.pension.autoRun !== false;
       }
-      if (data.housePlan && typeof data.housePlan === "object") {
+      const serverHousePlan = resolveServerHousePlan(data);
+      if (serverHousePlan) {
+        localStorage.setItem(HOUSE_PLAN_STORAGE_KEY, JSON.stringify(serverHousePlan));
         loadHousePlanInputs();
         renderHouseRatioControls();
       }
@@ -4362,10 +4456,12 @@
         const input = document.getElementById("existingHomePrice");
         if (input) input.value = won((houseAssetsForPeriod(assetPeriods.at(-1) || latestManagedPeriod()).groups.home) || 0);
       }
-      setHouseMoneyDefault("housePrice", 1600000000);
-      setHouseMoneyDefault("houseInterior", HOUSE_DEFAULT_INTERIOR, [12320000, 2024000]);
-      setHouseMoneyDefault("houseReserve", HOUSE_DEFAULT_RESERVE, [12320000, 2024000]);
-      normalizeHousePercentInput("houseLtv", 60);
+      setHouseMoneyDefault("housePrice", HOUSE_DEFAULT_PRICE);
+      setHouseMoneyDefault("houseInterior", HOUSE_DEFAULT_INTERIOR, HOUSE_BAD_COST_VALUES);
+      setHouseMoneyDefault("houseReserve", HOUSE_DEFAULT_RESERVE, HOUSE_BAD_COST_VALUES);
+      setHouseMoneyDefault("houseLoanYears", HOUSE_DEFAULT_LOAN_YEARS);
+      normalizeHousePercentInput("houseLtv", HOUSE_DEFAULT_LTV);
+      normalizeHousePercentInput("houseLoanRate", HOUSE_DEFAULT_LOAN_RATE);
       updateHouseReadableHints();
       persistHousePlanInputs(true);
     }
