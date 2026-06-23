@@ -2174,7 +2174,7 @@
     const HOUSE_DEFAULT_LTV = 60;
     const HOUSE_DEFAULT_LOAN_RATE = 4.5;
     const HOUSE_DEFAULT_LOAN_YEARS = 30;
-    const HOUSE_BAD_COST_VALUES = [12320000, 2024000];
+    const HOUSE_BAD_COST_VALUES = [12320000, 2024000, 2046000];
     const HOUSE_USER_INPUT_IDS = [
       "housePrice",
       "houseScenarioSelect",
@@ -2419,6 +2419,10 @@
       return !Number.isFinite(years) || years <= 0 || years > 100 ? HOUSE_DEFAULT_LOAN_YEARS : years;
     }
 
+    function normalizeServerChoice(value, allowed, fallback) {
+      return allowed.includes(value) ? value : fallback;
+    }
+
     function normalizeHouseRatioState(ratios = {}) {
       const normalized = {};
       for (const item of HOUSE_RATIO_GROUPS) {
@@ -2433,50 +2437,113 @@
       return normalized;
     }
 
+    function collectRealEstatePlanFromInputs() {
+      return {
+        targetHousePrice: document.getElementById("housePrice")?.value,
+        disposeCurrentHouse: document.getElementById("houseScenarioSelect")?.value !== "keep",
+        currentHouseSalePrice: document.getElementById("existingHomePrice")?.value,
+        ltvRate: document.getElementById("houseLtv")?.value,
+        loanRate: document.getElementById("houseLoanRate")?.value,
+        loanYears: document.getElementById("houseLoanYears")?.value,
+        interiorCost: document.getElementById("houseInterior")?.value,
+        reserveCash: document.getElementById("houseReserve")?.value,
+        houseCountType: document.getElementById("houseCountType")?.value,
+        regulatedArea: document.getElementById("houseRegulated")?.value,
+        over85sqm: document.getElementById("houseAreaOver85")?.value,
+        brokerageVatIncluded: document.getElementById("houseBrokerVat")?.value !== "no",
+        liquidationRates: { ...houseRatios }
+      };
+    }
+
     function housePlanToRealEstatePlan(housePlan = collectHousePlanForServer()) {
       const values = housePlan?.values && typeof housePlan.values === "object" ? housePlan.values : {};
-      const ratios = normalizeHouseRatioState(housePlan?.ratios);
-      return {
-        targetHousePrice: normalizeServerMoney(values.housePrice, HOUSE_DEFAULT_PRICE),
+      return normalizeRealEstatePlan({
+        targetHousePrice: values.housePrice,
         disposeCurrentHouse: (values.houseScenarioSelect || "sell") !== "keep",
-        currentHouseSalePrice: Math.max(0, parseServerNumber(values.existingHomePrice) || 0),
-        ltvRate: normalizeServerLtv(values.houseLtv),
-        loanRate: normalizeServerLoanRate(values.houseLoanRate),
-        loanYears: normalizeServerLoanYears(values.houseLoanYears),
-        interiorCost: normalizeServerMoney(values.houseInterior, HOUSE_DEFAULT_INTERIOR, HOUSE_BAD_COST_VALUES),
-        reserveCash: normalizeServerMoney(values.houseReserve, HOUSE_DEFAULT_RESERVE, HOUSE_BAD_COST_VALUES),
-        houseCountType: values.houseCountType || "one",
-        regulatedArea: values.houseRegulated || "no",
-        over85sqm: values.houseAreaOver85 || "no",
+        currentHouseSalePrice: values.existingHomePrice,
+        ltvRate: values.houseLtv,
+        loanRate: values.houseLoanRate,
+        loanYears: values.houseLoanYears,
+        interiorCost: values.houseInterior,
+        reserveCash: values.houseReserve,
+        houseCountType: values.houseCountType,
+        regulatedArea: values.houseRegulated,
+        over85sqm: values.houseAreaOver85,
         brokerageVatIncluded: (values.houseBrokerVat || "yes") !== "no",
-        liquidationRates: ratios,
-        updatedAt: new Date().toISOString()
+        liquidationRates: housePlan?.ratios
+      });
+    }
+
+    function normalizeRealEstatePlan(realEstatePlan = {}) {
+      const plan = realEstatePlan && typeof realEstatePlan === "object" ? realEstatePlan : {};
+      return {
+        targetHousePrice: normalizeServerMoney(plan.targetHousePrice, HOUSE_DEFAULT_PRICE),
+        currentHouseSalePrice: normalizeServerMoney(plan.currentHouseSalePrice, 465000000),
+        ltvRate: normalizeServerLtv(plan.ltvRate),
+        loanRate: normalizeServerLoanRate(plan.loanRate),
+        loanYears: normalizeServerLoanYears(plan.loanYears),
+        interiorCost: normalizeServerMoney(plan.interiorCost, HOUSE_DEFAULT_INTERIOR, HOUSE_BAD_COST_VALUES),
+        reserveCash: normalizeServerMoney(plan.reserveCash, HOUSE_DEFAULT_RESERVE, HOUSE_BAD_COST_VALUES),
+        disposeCurrentHouse: typeof plan.disposeCurrentHouse === "boolean" ? plan.disposeCurrentHouse : true,
+        houseCountType: normalizeServerChoice(plan.houseCountType, ["one", "temporaryTwo", "multi"], "one"),
+        regulatedArea: normalizeServerChoice(plan.regulatedArea, ["no", "yes"], "no"),
+        over85sqm: normalizeServerChoice(plan.over85sqm, ["no", "yes"], "no"),
+        brokerageVatIncluded: typeof plan.brokerageVatIncluded === "boolean" ? plan.brokerageVatIncluded : true,
+        liquidationRates: normalizeHouseRatioState(plan.liquidationRates),
+        updatedAt: plan.updatedAt || new Date().toISOString()
       };
     }
 
     function realEstatePlanToHousePlan(realEstatePlan, fallbackHousePlan = {}) {
       const fallbackValues = fallbackHousePlan?.values && typeof fallbackHousePlan.values === "object" ? fallbackHousePlan.values : {};
-      const plan = realEstatePlan && typeof realEstatePlan === "object" ? realEstatePlan : {};
-      const values = {};
-      values.housePrice = won(normalizeServerMoney(plan.targetHousePrice ?? fallbackValues.housePrice, HOUSE_DEFAULT_PRICE));
-      values.houseScenarioSelect = Object.prototype.hasOwnProperty.call(plan, "disposeCurrentHouse")
-        ? plan.disposeCurrentHouse === false ? "keep" : "sell"
-        : fallbackValues.houseScenarioSelect || "sell";
-      const salePrice = parseServerNumber(plan.currentHouseSalePrice ?? fallbackValues.existingHomePrice);
-      if (Number.isFinite(salePrice) && salePrice > 0) values.existingHomePrice = won(salePrice);
-      values.houseLtv = `${normalizeServerLtv(plan.ltvRate ?? fallbackValues.houseLtv).toLocaleString("ko-KR", { maximumFractionDigits: 1 })}%`;
-      values.houseLoanRate = `${normalizeServerLoanRate(plan.loanRate ?? fallbackValues.houseLoanRate).toLocaleString("ko-KR", { maximumFractionDigits: 1 })}%`;
-      values.houseLoanYears = String(normalizeServerLoanYears(plan.loanYears ?? fallbackValues.houseLoanYears));
-      values.houseInterior = won(normalizeServerMoney(plan.interiorCost ?? fallbackValues.houseInterior, HOUSE_DEFAULT_INTERIOR, HOUSE_BAD_COST_VALUES));
-      values.houseReserve = won(normalizeServerMoney(plan.reserveCash ?? fallbackValues.houseReserve, HOUSE_DEFAULT_RESERVE, HOUSE_BAD_COST_VALUES));
-      values.houseCountType = plan.houseCountType || fallbackValues.houseCountType || "one";
-      values.houseRegulated = plan.regulatedArea || fallbackValues.houseRegulated || "no";
-      values.houseAreaOver85 = plan.over85sqm || fallbackValues.houseAreaOver85 || "no";
-      values.houseBrokerVat = Object.prototype.hasOwnProperty.call(plan, "brokerageVatIncluded")
-        ? plan.brokerageVatIncluded === false ? "no" : "yes"
-        : fallbackValues.houseBrokerVat || "yes";
-      const ratios = normalizeHouseRatioState(plan.liquidationRates || fallbackHousePlan?.ratios);
-      return { values, ratios };
+      const fallbackPlan = fallbackValues
+        ? {
+            targetHousePrice: fallbackValues.housePrice,
+            disposeCurrentHouse: (fallbackValues.houseScenarioSelect || "sell") !== "keep",
+            currentHouseSalePrice: fallbackValues.existingHomePrice,
+            ltvRate: fallbackValues.houseLtv,
+            loanRate: fallbackValues.houseLoanRate,
+            loanYears: fallbackValues.houseLoanYears,
+            interiorCost: fallbackValues.houseInterior,
+            reserveCash: fallbackValues.houseReserve,
+            houseCountType: fallbackValues.houseCountType,
+            regulatedArea: fallbackValues.houseRegulated,
+            over85sqm: fallbackValues.houseAreaOver85,
+            brokerageVatIncluded: (fallbackValues.houseBrokerVat || "yes") !== "no",
+            liquidationRates: fallbackHousePlan?.ratios
+          }
+        : {};
+      const clean = normalizeRealEstatePlan({ ...fallbackPlan, ...(realEstatePlan || {}) });
+      return {
+        values: {
+          housePrice: won(clean.targetHousePrice),
+          houseScenarioSelect: clean.disposeCurrentHouse ? "sell" : "keep",
+          existingHomePrice: won(clean.currentHouseSalePrice),
+          houseLtv: `${clean.ltvRate.toLocaleString("ko-KR", { maximumFractionDigits: 1 })}%`,
+          houseLoanRate: `${clean.loanRate.toLocaleString("ko-KR", { maximumFractionDigits: 1 })}%`,
+          houseLoanYears: String(clean.loanYears),
+          houseInterior: won(clean.interiorCost),
+          houseReserve: won(clean.reserveCash),
+          houseCountType: clean.houseCountType,
+          houseRegulated: clean.regulatedArea,
+          houseAreaOver85: clean.over85sqm,
+          houseBrokerVat: clean.brokerageVatIncluded ? "yes" : "no"
+        },
+        ratios: clean.liquidationRates
+      };
+    }
+
+    function applyRealEstatePlanToInputs(realEstatePlan) {
+      const housePlan = realEstatePlanToHousePlan(realEstatePlan);
+      for (const [id, value] of Object.entries(housePlan.values)) {
+        const input = document.getElementById(id);
+        if (input) input.value = value;
+      }
+      Object.assign(houseRatios, normalizeHouseRatioState(housePlan.ratios));
+      renderHouseRatioControls();
+      updateHouseReadableHints();
+      persistHousePlanInputs(true);
+      return housePlan;
     }
 
     function resolveServerHousePlan(data) {
@@ -2488,6 +2555,11 @@
 
     function collectAppStateForServer() {
       const housePlan = collectHousePlanForServer();
+      const realEstatePlan = normalizeRealEstatePlan(collectRealEstatePlanFromInputs());
+      if (!collectAppStateForServer.lastRealEstateDebugAt || Date.now() - collectAppStateForServer.lastRealEstateDebugAt > 3000) {
+        console.debug("realEstatePlan before server save", realEstatePlan);
+        collectAppStateForServer.lastRealEstateDebugAt = Date.now();
+      }
       return {
         schemaVersion: 2,
         serverStateVersion: 2,
@@ -2499,7 +2571,7 @@
         investmentData,
         pension: collectPensionInputsForServer(),
         housePlan,
-        realEstatePlan: housePlanToRealEstatePlan(housePlan)
+        realEstatePlan
       };
     }
 
@@ -2536,8 +2608,7 @@
       const serverHousePlan = resolveServerHousePlan(data);
       if (serverHousePlan) {
         localStorage.setItem(HOUSE_PLAN_STORAGE_KEY, JSON.stringify(serverHousePlan));
-        loadHousePlanInputs();
-        renderHouseRatioControls();
+        applyRealEstatePlanToInputs(data?.realEstatePlan && typeof data.realEstatePlan === "object" ? data.realEstatePlan : housePlanToRealEstatePlan(serverHousePlan));
       }
       const startInput = document.getElementById("assetStartYear");
       const endInput = document.getElementById("assetEndYear");
@@ -4858,9 +4929,11 @@
 
     function persistHousePlanInputs(skipServerAutoSave = false) {
       try {
-        const values = {};
-        document.querySelectorAll("[data-house-input]").forEach((input) => { values[input.id] = input.value; });
-        localStorage.setItem(HOUSE_PLAN_STORAGE_KEY, JSON.stringify({ values, ratios: houseRatios }));
+        const housePlan = collectHousePlanForServer();
+        localStorage.setItem(HOUSE_PLAN_STORAGE_KEY, JSON.stringify({
+          ...housePlan,
+          realEstatePlan: normalizeRealEstatePlan(collectRealEstatePlanFromInputs())
+        }));
         if (!skipServerAutoSave) scheduleServerAutoSave();
       } catch (_error) {
         // localStorage 사용이 막힌 환경에서는 저장만 건너뛴다.
@@ -4873,6 +4946,10 @@
         saved = JSON.parse(localStorage.getItem(HOUSE_PLAN_STORAGE_KEY) || "null");
       } catch (_error) {
         saved = null;
+      }
+      if (saved?.realEstatePlan && typeof saved.realEstatePlan === "object") {
+        applyRealEstatePlanToInputs(saved.realEstatePlan);
+        return;
       }
       if (saved?.values && typeof saved.values === "object") {
         for (const [id, value] of Object.entries(saved.values)) {
