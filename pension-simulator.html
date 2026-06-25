@@ -1964,12 +1964,12 @@
           <aside class="house-sidebar">
             <section class="card house-section">
               <h3>구매 조건</h3>
-              <div class="house-field"><label for="housePrice">목표 집값</label><input id="housePrice" data-house-input="money" value="1,600,000,000원"><span class="unit">원</span><span class="money-read" id="housePriceReadable">16억</span></div>
-              <div class="house-field"><label for="houseScenarioSelect">기존 집 처분 여부</label><select id="houseScenarioSelect" data-house-input="text"><option value="sell">처분 시</option><option value="keep">미처분 시</option></select><span class="unit"></span></div>
-              <div class="house-field"><label for="existingHomePrice">기존 집 예상 처분가</label><input id="existingHomePrice" data-house-input="money" value="0원"><span class="unit">원</span></div>
-              <div class="house-field"><label for="houseLtv">LTV 기준</label><input id="houseLtv" data-house-input="percent" value="60%"><span class="unit">%</span></div>
-              <div class="house-field"><label for="houseLoanRate">대출 금리</label><input id="houseLoanRate" data-house-input="percent" value="4.5%"><span class="unit">%</span></div>
-              <div class="house-field"><label for="houseLoanYears">대출 기간</label><input id="houseLoanYears" data-house-input="number" value="30"><span class="unit">년</span></div>
+              <div class="house-field"><label for="housePrice">목표 집값</label><input id="housePrice" data-house-input="money" data-re-field="targetHousePrice" value="1,600,000,000원"><span class="unit">원</span><span class="money-read" id="housePriceReadable">16억</span></div>
+              <div class="house-field"><label for="houseScenarioSelect">기존 집 처분 여부</label><select id="houseScenarioSelect" data-house-input="text" data-re-field="disposeCurrentHouse"><option value="sell">처분 시</option><option value="keep">미처분 시</option></select><span class="unit"></span></div>
+              <div class="house-field"><label for="existingHomePrice">기존 집 예상 처분가</label><input id="existingHomePrice" data-house-input="money" data-re-field="currentHouseSalePrice" value="0원"><span class="unit">원</span></div>
+              <div class="house-field"><label for="houseLtv">LTV 기준</label><input id="houseLtv" data-house-input="percent" data-re-field="ltvRate" value="60%"><span class="unit">%</span></div>
+              <div class="house-field"><label for="houseLoanRate">대출 금리</label><input id="houseLoanRate" data-house-input="percent" data-re-field="loanRate" value="4.5%"><span class="unit">%</span></div>
+              <div class="house-field"><label for="houseLoanYears">대출 기간</label><input id="houseLoanYears" data-house-input="number" data-re-field="loanYears" value="30"><span class="unit">년</span></div>
             </section>
 
             <section class="card ratio-list">
@@ -1980,19 +1980,19 @@
             <section class="card house-section">
               <h3>자동 계산 비용</h3>
               <div class="house-subtitle">자동 계산값</div>
-              <div class="house-field"><label for="houseCountType">주택 수 구분</label><select id="houseCountType" data-house-input="text"><option value="one">1주택</option><option value="temporaryTwo">일시적 2주택</option><option value="multi">2주택 이상</option></select><span class="unit"></span></div>
-              <div class="house-field"><label for="houseRegulated">조정대상지역 여부</label><select id="houseRegulated" data-house-input="text"><option value="no">아니오</option><option value="yes">예</option></select><span class="unit"></span></div>
-              <div class="house-field"><label for="houseAreaOver85">전용면적 85㎡ 초과</label><select id="houseAreaOver85" data-house-input="text"><option value="no">아니오</option><option value="yes">예</option></select><span class="unit"></span></div>
+              <div class="house-field"><label for="houseCountType">주택 수 구분</label><select id="houseCountType" data-house-input="text" data-re-field="houseCountType"><option value="one">1주택</option><option value="temporaryTwo">일시적 2주택</option><option value="multi">2주택 이상</option></select><span class="unit"></span></div>
+              <div class="house-field"><label for="houseRegulated">조정대상지역 여부</label><select id="houseRegulated" data-house-input="text" data-re-field="regulatedArea"><option value="no">아니오</option><option value="yes">예</option></select><span class="unit"></span></div>
+              <div class="house-field"><label for="houseAreaOver85">전용면적 85㎡ 초과</label><select id="houseAreaOver85" data-house-input="text" data-re-field="over85sqm"><option value="no">아니오</option><option value="yes">예</option></select><span class="unit"></span></div>
               <div class="house-field"><label for="houseAcqAdjustment">취득세 수동 보정</label><input id="houseAcqAdjustment" data-house-input="money" value="0원"><span class="unit">원</span></div>
               <div class="house-field"><label for="houseAcquisitionTax">취득 관련 세금</label><input id="houseAcquisitionTax" data-house-input="money" value="0원" readonly><span class="unit">원</span></div>
-              <div class="house-field"><label for="houseBrokerVat">중개수수료 부가세</label><select id="houseBrokerVat" data-house-input="text"><option value="yes">포함</option><option value="no">미포함</option></select><span class="unit"></span></div>
+              <div class="house-field"><label for="houseBrokerVat">중개수수료 부가세</label><select id="houseBrokerVat" data-house-input="text" data-re-field="brokerageVatIncluded"><option value="yes">포함</option><option value="no">미포함</option></select><span class="unit"></span></div>
               <div class="house-field"><label for="houseBuyFeeAdjustment">매수 중개수수료 보정</label><input id="houseBuyFeeAdjustment" data-house-input="money" value="0원"><span class="unit">원</span></div>
               <div class="house-field"><label for="houseSellFeeAdjustment">매도 중개수수료 보정</label><input id="houseSellFeeAdjustment" data-house-input="money" value="0원"><span class="unit">원</span></div>
               <div class="house-field"><label for="houseBuyFee">매수 중개수수료</label><input id="houseBuyFee" data-house-input="money" value="0원" readonly><span class="unit">원</span></div>
               <div class="house-field"><label for="houseSellFee">매도 중개수수료</label><input id="houseSellFee" data-house-input="money" value="0원" readonly><span class="unit">원</span></div>
               <div class="house-subtitle">직접 설정 비용</div>
-              <div class="house-field"><label for="houseInterior">인테리어비</label><input id="houseInterior" data-house-input="money" value="150,000,000원"><span class="unit">원</span><span class="money-read" id="houseInteriorReadable">1억 5천만</span></div>
-              <div class="house-field"><label for="houseReserve">잔여 여유 자금</label><input id="houseReserve" data-house-input="money" value="50,000,000원"><span class="unit">원</span><span class="money-read" id="houseReserveReadable">5,000만</span></div>
+              <div class="house-field"><label for="houseInterior">인테리어비</label><input id="houseInterior" data-house-input="money" data-re-field="interiorCost" value="150,000,000원"><span class="unit">원</span><span class="money-read" id="houseInteriorReadable">1억 5천만</span></div>
+              <div class="house-field"><label for="houseReserve">잔여 여유 자금</label><input id="houseReserve" data-house-input="money" data-re-field="reserveCash" value="50,000,000원"><span class="unit">원</span><span class="money-read" id="houseReserveReadable">5,000만</span></div>
               <p>취득세와 중개보수는 간이 자동 계산값입니다. 실제 금액은 정책, 면적, 주택 수, 협의 결과에 따라 달라질 수 있습니다.</p>
             </section>
 
@@ -2433,20 +2433,61 @@
       return normalized;
     }
 
+    function isVisibleElement(element) {
+      return Boolean(element && (element.offsetWidth || element.offsetHeight || element.getClientRects().length));
+    }
+
+    function getRealEstateFieldElements(field) {
+      return Array.from(document.querySelectorAll(`[data-re-field="${field}"]`));
+    }
+
+    function getRealEstateFieldValue(field) {
+      const elements = getRealEstateFieldElements(field).filter((element) => !element.disabled);
+      const target = elements.find(isVisibleElement) || elements[0];
+      if (!target) return undefined;
+      if (target.type === "checkbox") return target.checked;
+      return target.value;
+    }
+
+    function setRealEstateFieldValue(field, value) {
+      for (const element of getRealEstateFieldElements(field)) {
+        if (element.type === "checkbox") element.checked = Boolean(value);
+        else element.value = value;
+      }
+    }
+
+    function syncRealEstateFieldPeers(source) {
+      const field = source?.dataset?.reField;
+      if (!field) return;
+      const value = source.type === "checkbox" ? source.checked : source.value;
+      for (const element of getRealEstateFieldElements(field)) {
+        if (element === source) continue;
+        if (element.type === "checkbox") element.checked = Boolean(value);
+        else element.value = value;
+      }
+    }
+
     function collectRealEstatePlanFromInputs() {
+      const fieldValues = {
+        targetHousePrice: getRealEstateFieldValue("targetHousePrice"),
+        currentHouseSalePrice: getRealEstateFieldValue("currentHouseSalePrice"),
+        ltvRate: getRealEstateFieldValue("ltvRate"),
+        loanRate: getRealEstateFieldValue("loanRate"),
+        loanYears: getRealEstateFieldValue("loanYears"),
+        interiorCost: getRealEstateFieldValue("interiorCost"),
+        reserveCash: getRealEstateFieldValue("reserveCash")
+      };
+      if (!collectRealEstatePlanFromInputs.lastDebugAt || Date.now() - collectRealEstatePlanFromInputs.lastDebugAt > 1000) {
+        console.debug("realEstate mobile/desktop field values", fieldValues);
+        collectRealEstatePlanFromInputs.lastDebugAt = Date.now();
+      }
       return {
-        targetHousePrice: document.getElementById("housePrice")?.value,
-        disposeCurrentHouse: document.getElementById("houseScenarioSelect")?.value !== "keep",
-        currentHouseSalePrice: document.getElementById("existingHomePrice")?.value,
-        ltvRate: document.getElementById("houseLtv")?.value,
-        loanRate: document.getElementById("houseLoanRate")?.value,
-        loanYears: document.getElementById("houseLoanYears")?.value,
-        interiorCost: document.getElementById("houseInterior")?.value,
-        reserveCash: document.getElementById("houseReserve")?.value,
-        houseCountType: document.getElementById("houseCountType")?.value,
-        regulatedArea: document.getElementById("houseRegulated")?.value,
-        over85sqm: document.getElementById("houseAreaOver85")?.value,
-        brokerageVatIncluded: document.getElementById("houseBrokerVat")?.value !== "no",
+        ...fieldValues,
+        disposeCurrentHouse: getRealEstateFieldValue("disposeCurrentHouse") !== "keep",
+        houseCountType: getRealEstateFieldValue("houseCountType"),
+        regulatedArea: getRealEstateFieldValue("regulatedArea"),
+        over85sqm: getRealEstateFieldValue("over85sqm"),
+        brokerageVatIncluded: getRealEstateFieldValue("brokerageVatIncluded") !== "no",
         liquidationRates: { ...houseRatios }
       };
     }
@@ -2530,11 +2571,20 @@
     }
 
     function applyRealEstatePlanToInputs(realEstatePlan) {
-      const housePlan = realEstatePlanToHousePlan(realEstatePlan);
-      for (const [id, value] of Object.entries(housePlan.values)) {
-        const input = document.getElementById(id);
-        if (input) input.value = value;
-      }
+      const clean = normalizeRealEstatePlan(realEstatePlan);
+      const housePlan = realEstatePlanToHousePlan(clean);
+      setRealEstateFieldValue("targetHousePrice", won(clean.targetHousePrice));
+      setRealEstateFieldValue("disposeCurrentHouse", clean.disposeCurrentHouse ? "sell" : "keep");
+      setRealEstateFieldValue("currentHouseSalePrice", won(clean.currentHouseSalePrice));
+      setRealEstateFieldValue("ltvRate", `${clean.ltvRate.toLocaleString("ko-KR", { maximumFractionDigits: 1 })}%`);
+      setRealEstateFieldValue("loanRate", `${clean.loanRate.toLocaleString("ko-KR", { maximumFractionDigits: 1 })}%`);
+      setRealEstateFieldValue("loanYears", String(clean.loanYears));
+      setRealEstateFieldValue("interiorCost", won(clean.interiorCost));
+      setRealEstateFieldValue("reserveCash", won(clean.reserveCash));
+      setRealEstateFieldValue("houseCountType", clean.houseCountType);
+      setRealEstateFieldValue("regulatedArea", clean.regulatedArea);
+      setRealEstateFieldValue("over85sqm", clean.over85sqm);
+      setRealEstateFieldValue("brokerageVatIncluded", clean.brokerageVatIncluded ? "yes" : "no");
       Object.assign(houseRatios, normalizeHouseRatioState(housePlan.ratios));
       renderHouseRatioControls();
       updateHouseReadableHints();
@@ -4885,8 +4935,8 @@
       wrap.innerHTML = HOUSE_RATIO_GROUPS.map((item) => `
         <div class="ratio-item">
           <label for="houseRatio_${item.key}">${item.label}</label>
-          <input id="houseRatio_${item.key}" type="range" min="0" max="100" step="5" value="${houseRatios[item.key]}" data-house-ratio="${item.key}">
-          <input type="number" min="0" max="100" step="5" value="${houseRatios[item.key]}" aria-label="${item.label} 비율" data-house-ratio-number="${item.key}">
+          <input id="houseRatio_${item.key}" type="range" min="0" max="100" step="5" value="${houseRatios[item.key]}" data-house-ratio="${item.key}" data-re-field="liquidationRates.${item.key}">
+          <input type="number" min="0" max="100" step="5" value="${houseRatios[item.key]}" aria-label="${item.label} 비율" data-house-ratio-number="${item.key}" data-re-field="liquidationRates.${item.key}">
           <span class="ratio-amount" id="houseRatioAmount_${item.key}">-</span>
         </div>
       `).join("");
@@ -5321,9 +5371,11 @@
 
     function onHouseInputChanged(event) {
       const input = event.target;
+      syncRealEstateFieldPeers(input);
       if (input?.dataset?.houseInput === "money" && event.type === "blur") input.value = won(toNumber(input.value));
       if (input?.id === "houseLtv" && event.type === "blur") normalizeHousePercentInput("houseLtv", 60);
       else if (input?.dataset?.houseInput === "percent" && event.type === "blur") input.value = `${toNumber(input.value).toLocaleString("ko-KR", { maximumFractionDigits: 1 })}%`;
+      syncRealEstateFieldPeers(input);
       updateHouseReadableHints();
       renderHousePlan();
     }
@@ -5465,9 +5517,9 @@
     function syncResponsiveDetails() {
       const isMobile = window.matchMedia("(max-width: 768px)").matches;
       const assetDetails = document.getElementById("assetTableDetails");
-      if (assetDetails) assetDetails.open = !isMobile;
+      if (assetDetails && syncResponsiveDetails.lastIsMobile !== isMobile) assetDetails.open = !isMobile;
       const pensionDetails = document.getElementById("pensionInputDetails");
-      if (pensionDetails) pensionDetails.open = !isMobile;
+      if (pensionDetails && syncResponsiveDetails.lastIsMobile !== isMobile) pensionDetails.open = !isMobile;
       const netChartCard = document.getElementById("assetNetChartCard");
       const mobileSlot = document.getElementById("mobileNetChartSlot");
       const assetCharts = document.getElementById("assetCharts");
@@ -5475,6 +5527,19 @@
         if (isMobile && netChartCard.parentElement !== mobileSlot) mobileSlot.append(netChartCard);
         if (!isMobile && netChartCard.parentElement !== assetCharts) assetCharts.prepend(netChartCard);
         assetNetChartInstance?.resize();
+      }
+      syncResponsiveDetails.lastIsMobile = isMobile;
+    }
+
+    function protectMobileAssetDetailEditing() {
+      const details = document.getElementById("assetTableDetails");
+      if (!details) return;
+      const editableSelector = "input, select, textarea, button, [contenteditable='true']";
+      for (const eventName of ["click", "touchstart", "pointerdown"]) {
+        details.addEventListener(eventName, (event) => {
+          if (!window.matchMedia("(max-width: 768px)").matches) return;
+          if (event.target.closest(editableSelector)) event.stopPropagation();
+        });
       }
     }
 
@@ -5521,6 +5586,7 @@
       });
       document.getElementById("houseRatioList")?.addEventListener("input", onHouseRatioInput);
       document.getElementById("houseRatioList")?.addEventListener("change", onHouseRatioInput);
+      protectMobileAssetDetailEditing();
     }
 
     renderSimInputs();
