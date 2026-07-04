@@ -2164,6 +2164,7 @@
     let serverSaveInFlight = false;
     let appBootstrapped = false;
     let suppressServerAutoSave = false;
+    let pendingServerAutoSaveAfterBoot = false;
 
     const HOUSE_PLAN_STORAGE_KEY = "pensionHousePlanInputs";
     const HOUSE_DEFAULT_PRICE = 1600000000;
@@ -2814,9 +2815,13 @@
     }
 
     function scheduleServerAutoSave() {
-      if (!appBootstrapped || suppressServerAutoSave) return;
+      if (suppressServerAutoSave) return;
       markLocalUpdated();
       if (!serverSyncEnabled()) return;
+      if (!appBootstrapped) {
+        pendingServerAutoSaveAfterBoot = true;
+        return;
+      }
       window.clearTimeout(serverSaveTimer);
       serverSaveTimer = window.setTimeout(() => saveToServer({ silent: true }), SERVER_SYNC_DEBOUNCE_MS);
     }
@@ -3153,19 +3158,36 @@
       };
     }
 
-    function snapshotPeriod(sourcePeriod, targetPeriod) {
+    function snapshotPeriod(sourcePeriod, targetPeriod, { overwrite = true, markCopied = false } = {}) {
       if (!sourcePeriod || !targetPeriod) return false;
+      let changed = false;
       for (const row of assetRows) {
         row.values = row.values || {};
+        if (!overwrite && Object.prototype.hasOwnProperty.call(row.values, targetPeriod)) continue;
         row.values[targetPeriod] = rowValue(row, sourcePeriod);
+        changed = true;
       }
       const copiedInvestment = {};
+      const copiedAt = new Date().toISOString();
       for (const [key, data] of Object.entries(investmentData)) {
         const [rowId, period] = key.split(":");
-        if (period === sourcePeriod) copiedInvestment[investmentKey(rowId, targetPeriod)] = structuredClone(data);
+        const targetKey = investmentKey(rowId, targetPeriod);
+        if (period !== sourcePeriod || (!overwrite && Object.prototype.hasOwnProperty.call(investmentData, targetKey))) continue;
+        copiedInvestment[targetKey] = structuredClone(data);
+        if (markCopied && copiedInvestment[targetKey] && typeof copiedInvestment[targetKey] === "object") {
+          copiedInvestment[targetKey].updatedAt = copiedAt;
+          copiedInvestment[targetKey].copiedFrom = sourcePeriod;
+        }
       }
       investmentData = { ...investmentData, ...copiedInvestment };
-      return true;
+      return changed || Object.keys(copiedInvestment).length > 0;
+    }
+
+    function latestVisibleSourcePeriod(targetPeriod, preferredPeriod = previousMonthPeriod(targetPeriod)) {
+      const visiblePeriods = assetPeriods
+        .filter((period) => isValidPeriod(period) && comparePeriods(period, targetPeriod) < 0)
+        .sort(comparePeriods);
+      return visiblePeriods.includes(preferredPeriod) ? preferredPeriod : visiblePeriods.at(-1);
     }
 
     function ensureMonthlySnapshots() {
@@ -3182,9 +3204,9 @@
         if (source) changed = snapshotPeriod(source, previous) || changed;
       }
       const hasCurrentSnapshot = assetRows.some((row) => Object.prototype.hasOwnProperty.call(row.values || {}, current));
-      if (isCurrentMonthEnd() && !hasCurrentSnapshot) {
-        const source = latestPeriodWithAnyData(previous) || latestPeriodWithAnyData(current);
-        if (source) changed = snapshotPeriod(source, current) || changed;
+      if (assetPeriods.includes(current) && !hasCurrentSnapshot) {
+        const source = latestVisibleSourcePeriod(current, previous);
+        if (source) changed = snapshotPeriod(source, current, { overwrite: false, markCopied: true }) || changed;
       }
       return changed;
     }
@@ -4383,6 +4405,7 @@
     function rebuildAssetYears() {
       const start = Math.round(toNumber(document.getElementById("assetStartYear").value));
       assetPeriods = buildAssetPeriods(start || 2024);
+      ensureMonthlySnapshots();
       if (selectedInvestment && !assetPeriods.includes(selectedInvestment.period)) selectedInvestment = null;
       renderAssetTable();
       renderInvestmentPanel();
@@ -5601,6 +5624,10 @@
     renderHousePlan();
     runPension();
     appBootstrapped = true;
+    if (pendingServerAutoSaveAfterBoot) {
+      pendingServerAutoSaveAfterBoot = false;
+      scheduleServerAutoSave();
+    }
     autoConnectPriceApi();
   </script>
 </body>
