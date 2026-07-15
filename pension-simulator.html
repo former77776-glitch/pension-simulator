@@ -5296,7 +5296,7 @@
         return hasDataLabels() && ctx.dataset.type !== "line" && value > 0;
       };
       const barDataLabels = (color = "#ffffff") => ({
-        display: shouldShowHouseAmountLabel,
+        display: false,
         formatter: (value) => compactWon(value),
         color,
         anchor: "center",
@@ -5306,6 +5306,46 @@
         textStrokeWidth: 2,
         font: { weight: "900", size: 10 }
       });
+      const housePlanValueLabels = {
+        id: "housePlanValueLabels",
+        afterDatasetsDraw(chart) {
+          const { ctx, chartArea } = chart;
+          ctx.save();
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.font = "900 10px Malgun Gothic, sans-serif";
+          [0, 1, 2].forEach((datasetIndex) => {
+            const dataset = chart.data.datasets[datasetIndex];
+            const meta = chart.getDatasetMeta(datasetIndex);
+            meta.data.forEach((element, index) => {
+              const value = Number(dataset.data[index] || 0);
+              if (value <= 0) return;
+              const point = element.getCenterPoint();
+              ctx.fillStyle = datasetIndex === 1 ? "#111827" : "#ffffff";
+              ctx.fillText(compactWon(value), point.x, point.y);
+            });
+          });
+
+          const monthlyDataset = chart.data.datasets[3];
+          const monthlyMeta = chart.getDatasetMeta(3);
+          monthlyMeta.data.forEach((element, index) => {
+            const value = Number(monthlyDataset.data[index] || 0);
+            if (value <= 0) return;
+            const { x, y } = element.getCenterPoint();
+            const label = `${formatManWon(value)}/월`;
+            const width = ctx.measureText(label).width + 8;
+            const labelY = Math.max(chartArea.top + 8, y - 13);
+            ctx.fillStyle = "rgba(255, 255, 255, .94)";
+            ctx.strokeStyle = "#c4b5fd";
+            ctx.lineWidth = 1;
+            ctx.fillRect(x - width / 2, labelY - 8, width, 16);
+            ctx.strokeRect(x - width / 2, labelY - 8, width, 16);
+            ctx.fillStyle = "#5b21b6";
+            ctx.fillText(label, x, labelY);
+          });
+          ctx.restore();
+        }
+      };
       housePlanChartInstance?.destroy();
       housePlanChartInstance = new Chart(canvas, {
         type: "bar",
@@ -5348,21 +5388,7 @@
               borderWidth: 2.4,
               tension: 0.24,
               fill: false,
-              datalabels: {
-                display: (ctx) => hasDataLabels() && Number(ctx.raw || 0) > 0,
-                formatter: (value) => `${formatManWon(value)}/월`,
-                color: "#5b21b6",
-                backgroundColor: "rgba(255, 255, 255, 0.9)",
-                borderColor: "#c4b5fd",
-                borderWidth: 1,
-                borderRadius: 4,
-                padding: { top: 2, right: 4, bottom: 2, left: 4 },
-                anchor: "end",
-                align: "top",
-                offset: 3,
-                clamp: true,
-                font: { weight: "900", size: 9 }
-              }
+              datalabels: { display: false }
             },
             {
               type: "line",
@@ -5377,26 +5403,11 @@
               borderWidth: 2,
               fill: false,
               tension: 0,
-              datalabels: {
-                display: (ctx) => ctx.dataIndex === lastIndex && Number(ctx.raw || 0) > 0,
-                formatter: (value) => `LTV ${ltvPercent}% 한도 ${compactWon(value)}`,
-                color: "#334155",
-                backgroundColor: "rgba(255, 255, 255, 0.88)",
-                borderColor: "#cbd5e1",
-                borderWidth: 1,
-                borderRadius: 4,
-                padding: { top: 3, right: 5, bottom: 3, left: 5 },
-                anchor: "end",
-                align: "left",
-                offset: 6,
-                clamp: true,
-                clip: false,
-                font: { weight: "900", size: 10 }
-              }
+              datalabels: { display: false }
             }
           ]
         },
-        plugins: hasDataLabels() ? [window.ChartDataLabels] : [],
+        plugins: [housePlanValueLabels],
         options: {
           responsive: true,
           maintainAspectRatio: false,
@@ -5406,7 +5417,7 @@
               labels: { filter: (item) => !String(item.text || "").startsWith("LTV") }
             },
             datalabels: {
-              display: shouldShowHouseAmountLabel,
+              display: false,
               formatter: (value) => compactWon(value),
               color: (ctx) => ctx.dataset.label === "대출 필요 금액" ? "#111827" : "#ffffff",
               anchor: "center",
