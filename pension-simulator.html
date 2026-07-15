@@ -2837,6 +2837,10 @@
         if (!skipConflictCheck) {
           const row = await fetchServerAssetRow();
           if (row?.updated_at && (!serverSync.lastSyncAt || new Date(row.updated_at) > new Date(serverSync.lastSyncAt))) {
+            if (silent) {
+              setServerSyncStatus("서버에 더 최신 데이터가 있어 자동 저장을 건너뛰었습니다.");
+              return;
+            }
             const ok = confirm("서버에 더 최신 데이터가 있습니다. 현재 기기 데이터로 서버를 덮어쓸까요?");
             if (!ok) {
               setServerSyncStatus("서버 저장을 취소했습니다.");
