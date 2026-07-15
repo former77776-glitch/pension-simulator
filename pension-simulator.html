@@ -2010,7 +2010,7 @@
             <section class="card house-section">
               <h3>구매 조건</h3>
               <div class="house-field"><label for="housePrice">목표 집값</label><input id="housePrice" data-house-input="money" data-re-field="targetHousePrice" value="1,600,000,000원"><span class="unit">원</span><span class="money-read" id="housePriceReadable">16억</span></div>
-              <div class="house-field"><label for="houseScenarioSelect">기존 집 처분 여부</label><select id="houseScenarioSelect" data-house-input="text" data-re-field="disposeCurrentHouse"><option value="sell">처분 시</option><option value="keep">미처분 시</option></select><span class="unit"></span></div>
+              <div class="house-field"><label for="houseScenarioSelect">기존 집 처분 여부</label><select id="houseScenarioSelect" data-house-input="text" data-re-field="disposeCurrentHouse"><option value="sell">처분 시</option><option value="keep" selected>미처분 시</option></select><span class="unit"></span></div>
               <div class="house-field"><label for="existingHomePrice">기존 집 예상 처분가</label><input id="existingHomePrice" data-house-input="money" data-re-field="currentHouseSalePrice" value="0원"><span class="unit">원</span></div>
               <div class="house-field"><label for="houseLtv">LTV 기준</label><input id="houseLtv" data-house-input="percent" data-re-field="ltvRate" value="60%"><span class="unit">%</span></div>
               <div class="house-field"><label for="houseLoanRate">대출 금리</label><input id="houseLoanRate" data-house-input="percent" data-re-field="loanRate" value="4.5%"><span class="unit">%</span></div>
@@ -2027,7 +2027,7 @@
               <div class="house-subtitle">자동 계산값</div>
               <div class="house-field"><label for="houseCountType">주택 수 구분</label><select id="houseCountType" data-house-input="text" data-re-field="houseCountType"><option value="one">1주택</option><option value="temporaryTwo">일시적 2주택</option><option value="multi">2주택 이상</option></select><span class="unit"></span></div>
               <div class="house-field"><label for="houseRegulated">조정대상지역 여부</label><select id="houseRegulated" data-house-input="text" data-re-field="regulatedArea"><option value="no">아니오</option><option value="yes">예</option></select><span class="unit"></span></div>
-              <div class="house-field"><label for="houseAreaOver85">전용면적 85㎡ 초과</label><select id="houseAreaOver85" data-house-input="text" data-re-field="over85sqm"><option value="no">아니오</option><option value="yes">예</option></select><span class="unit"></span></div>
+              <div class="house-field"><label for="houseAreaOver85">전용면적 84㎡ 초과</label><select id="houseAreaOver85" data-house-input="text" data-re-field="over85sqm"><option value="no">아니오</option><option value="yes" selected>예</option></select><span class="unit"></span></div>
               <div class="house-field"><label for="houseAcqAdjustment">취득세 수동 보정</label><input id="houseAcqAdjustment" data-house-input="money" value="0원"><span class="unit">원</span></div>
               <div class="house-field"><label for="houseAcquisitionTax">취득 관련 세금</label><input id="houseAcquisitionTax" data-house-input="money" value="0원" readonly><span class="unit">원</span></div>
               <div class="house-field"><label for="houseBrokerVat">중개수수료 부가세</label><select id="houseBrokerVat" data-house-input="text" data-re-field="brokerageVatIncluded"><option value="yes">포함</option><option value="no">미포함</option></select><span class="unit"></span></div>
@@ -2542,7 +2542,7 @@
       const values = housePlan?.values && typeof housePlan.values === "object" ? housePlan.values : {};
       return normalizeRealEstatePlan({
         targetHousePrice: values.housePrice,
-        disposeCurrentHouse: (values.houseScenarioSelect || "sell") !== "keep",
+        disposeCurrentHouse: (values.houseScenarioSelect || "keep") !== "keep",
         currentHouseSalePrice: values.existingHomePrice,
         ltvRate: values.houseLtv,
         loanRate: values.houseLoanRate,
@@ -2567,10 +2567,10 @@
         loanYears: normalizeServerLoanYears(plan.loanYears),
         interiorCost: normalizeServerMoney(plan.interiorCost, HOUSE_DEFAULT_INTERIOR, HOUSE_BAD_COST_VALUES),
         reserveCash: normalizeServerMoney(plan.reserveCash, HOUSE_DEFAULT_RESERVE, HOUSE_BAD_COST_VALUES),
-        disposeCurrentHouse: typeof plan.disposeCurrentHouse === "boolean" ? plan.disposeCurrentHouse : true,
+        disposeCurrentHouse: typeof plan.disposeCurrentHouse === "boolean" ? plan.disposeCurrentHouse : false,
         houseCountType: normalizeServerChoice(plan.houseCountType, ["one", "temporaryTwo", "multi"], "one"),
         regulatedArea: normalizeServerChoice(plan.regulatedArea, ["no", "yes"], "no"),
-        over85sqm: normalizeServerChoice(plan.over85sqm, ["no", "yes"], "no"),
+        over85sqm: normalizeServerChoice(plan.over85sqm, ["no", "yes"], "yes"),
         brokerageVatIncluded: typeof plan.brokerageVatIncluded === "boolean" ? plan.brokerageVatIncluded : true,
         liquidationRates: normalizeHouseRatioState(plan.liquidationRates),
         updatedAt: plan.updatedAt || new Date().toISOString()
@@ -2582,7 +2582,7 @@
       const fallbackPlan = fallbackValues
         ? {
             targetHousePrice: fallbackValues.housePrice,
-            disposeCurrentHouse: (fallbackValues.houseScenarioSelect || "sell") !== "keep",
+            disposeCurrentHouse: (fallbackValues.houseScenarioSelect || "keep") !== "keep",
             currentHouseSalePrice: fallbackValues.existingHomePrice,
             ltvRate: fallbackValues.houseLtv,
             loanRate: fallbackValues.houseLoanRate,
@@ -3495,13 +3495,13 @@
         const detailId = `mobile-category-detail-${encodeURIComponent(key)}`;
         return `
           <article class="card mobile-category-card ${isDebt ? "debt" : ""}">
-            <button type="button" class="mobile-category-toggle" aria-expanded="false" aria-controls="${detailId}">
+            <button type="button" class="mobile-category-toggle" aria-expanded="true" aria-controls="${detailId}">
               <div class="mobile-category-head">
                 <div><span>${key}</span><strong>${compactWon(value)}</strong></div>
                 <div class="mobile-category-share">${share}</div>
               </div>
             </button>
-            <ul class="mobile-category-items" id="${detailId}" hidden>${items}</ul>
+            <ul class="mobile-category-items" id="${detailId}">${items}</ul>
           </article>
         `;
       }).join("");
@@ -5293,8 +5293,7 @@
       const ltvPercent = Math.round((rows[0]?.loanLimit || 0) / Math.max(1, houseInputValue("housePrice")) * 100);
       const shouldShowHouseAmountLabel = (ctx) => {
         const value = Number(ctx.raw || 0);
-        const row = rows[ctx.dataIndex] || {};
-        return ctx.dataset.type !== "line" && value > 0 && (ctx.chart.width > 420 || value >= (row.totalCost || value) * 0.08);
+        return hasDataLabels() && ctx.dataset.type !== "line" && value > 0;
       };
       const barDataLabels = (color = "#ffffff") => ({
         display: shouldShowHouseAmountLabel,
@@ -5349,7 +5348,21 @@
               borderWidth: 2.4,
               tension: 0.24,
               fill: false,
-              datalabels: { display: false }
+              datalabels: {
+                display: (ctx) => hasDataLabels() && Number(ctx.raw || 0) > 0,
+                formatter: (value) => `${formatManWon(value)}/월`,
+                color: "#5b21b6",
+                backgroundColor: "rgba(255, 255, 255, 0.9)",
+                borderColor: "#c4b5fd",
+                borderWidth: 1,
+                borderRadius: 4,
+                padding: { top: 2, right: 4, bottom: 2, left: 4 },
+                anchor: "end",
+                align: "top",
+                offset: 3,
+                clamp: true,
+                font: { weight: "900", size: 9 }
+              }
             },
             {
               type: "line",
