@@ -176,6 +176,28 @@
       border-left: 4px solid var(--accent);
     }
 
+    .mobile-category-toggle {
+      width: 100%;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: inherit;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .mobile-category-toggle .mobile-category-head::after {
+      content: "펼치기";
+      flex: 0 0 auto;
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .mobile-category-toggle[aria-expanded="true"] .mobile-category-head::after {
+      content: "접기";
+    }
+
     .mobile-category-card.debt {
       border-left-color: var(--red);
     }
@@ -200,6 +222,29 @@
       list-style: none;
       display: grid;
       gap: 6px;
+    }
+
+    .mobile-category-items[hidden] {
+      display: none;
+    }
+
+    .mobile-category-detail {
+      align-items: flex-start !important;
+      padding-top: 7px;
+      border-top: 1px solid var(--line);
+    }
+
+    .mobile-category-detail span {
+      min-width: 0;
+      line-height: 1.45;
+    }
+
+    .mobile-category-detail small {
+      display: block;
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
     }
 
     .mobile-category-items li {
@@ -3408,6 +3453,27 @@
     function renderMobileAssetOverview(period = latestManagedPeriod(), prevPeriod = null) {
       const categoriesWrap = document.getElementById("mobileAssetCategories");
       if (!categoriesWrap) return;
+      const detailRows = (row) => {
+        const data = getInvestment(row.id, period);
+        if (data?.type === "stock" && Array.isArray(data.holdings) && data.holdings.length) {
+          return data.holdings.map((holding) => {
+            const shares = toNumber(holding.shares);
+            const price = toNumber(holding.price);
+            const meta = `${shares.toLocaleString("ko-KR", { maximumFractionDigits: 4 })}주 · 현재가 ${won(price)}`;
+            return `<li class="mobile-category-detail"><span>${escapeHtml(holding.name || row.label)}<small>${meta}</small></span><b>${compactWon(shares * price)}</b></li>`;
+          });
+        }
+        const items = goldItems(data);
+        if (items.length) {
+          return items.map((item) => {
+            const quantity = toNumber(item.quantity);
+            const price = toNumber(item.price);
+            const meta = `${quantity.toLocaleString("ko-KR", { maximumFractionDigits: 4 })}g · 현재가 ${won(price)}/g`;
+            return `<li class="mobile-category-detail"><span>${escapeHtml(item.kind || row.label)}<small>${meta}</small></span><b>${compactWon(quantity * price)}</b></li>`;
+          });
+        }
+        return [`<li class="mobile-category-detail"><span>${escapeHtml(row.label)}</span><b>${compactWon(rowValue(row, period))}</b></li>`];
+      };
       const totals = assetCategoryTotals(period);
       const gross = ["부동산", "주식", "연금", "금", "현금"].reduce((sum, key) => sum + Math.max(0, totals[key] || 0), 0);
       const keys = ["부동산", "주식", "연금", "금", "현금", "대출/부채"];
@@ -3417,23 +3483,32 @@
         const share = !isDebt && gross ? pct(Math.max(0, value) / gross) : "비중 제외";
         const rows = assetRows
           .filter((row) => assetCategoryKey(row, period) === key)
-          .map((row) => ({ label: row.label, value: rowValue(row, period) }))
-          .filter((row) => row.value !== 0)
-          .sort((a, b) => Math.abs(b.value) - Math.abs(a.value))
-          .slice(0, 5);
+          .filter((row) => rowValue(row, period) !== 0)
+          .sort((a, b) => Math.abs(rowValue(b, period)) - Math.abs(rowValue(a, period)));
         const items = rows.length
-          ? rows.map((row) => `<li><span>${escapeHtml(row.label)}</span><b>${compactWon(row.value)}</b></li>`).join("")
+          ? rows.flatMap(detailRows).join("")
           : `<li><span>표시할 항목 없음</span><b>-</b></li>`;
+        const detailId = `mobile-category-detail-${encodeURIComponent(key)}`;
         return `
           <article class="card mobile-category-card ${isDebt ? "debt" : ""}">
-            <div class="mobile-category-head">
-              <div><span>${key}</span><strong>${compactWon(value)}</strong></div>
-              <div class="mobile-category-share">${share}</div>
-            </div>
-            <ul class="mobile-category-items">${items}</ul>
+            <button type="button" class="mobile-category-toggle" aria-expanded="false" aria-controls="${detailId}">
+              <div class="mobile-category-head">
+                <div><span>${key}</span><strong>${compactWon(value)}</strong></div>
+                <div class="mobile-category-share">${share}</div>
+              </div>
+            </button>
+            <ul class="mobile-category-items" id="${detailId}" hidden>${items}</ul>
           </article>
         `;
       }).join("");
+      categoriesWrap.querySelectorAll(".mobile-category-toggle").forEach((button) => {
+        button.addEventListener("click", () => {
+          const expanded = button.getAttribute("aria-expanded") === "true";
+          button.setAttribute("aria-expanded", String(!expanded));
+          const details = document.getElementById(button.getAttribute("aria-controls"));
+          if (details) details.hidden = expanded;
+        });
+      });
     }
 
     function renderManagedYearUi(period = latestManagedPeriod()) {
