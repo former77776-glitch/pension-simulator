@@ -363,7 +363,7 @@
       houseSetText("houseTotalCost", formatKoreanWonReadable(current.totalCost));
       houseSetText("houseAvailableAssets", formatKoreanWonReadable(current.available));
       houseSetText("houseLoanNeeded", formatKoreanWonReadable(current.loanNeeded));
-      houseSetText("houseLoanLimit", formatKoreanWonReadable(current.loanLimit));
+      houseSetText("houseMonthlyPaymentSummary", formatManWon(current.monthlyPayment), "loan-bad");
       houseSetText("houseShortage", formatKoreanWonReadable(current.shortage), current.shortage > 0 ? "loan-bad" : "loan-ok");
       houseSetText("houseSidebarResult", `${basisLabel} 기준 ${current.canBuy ? "구매 가능" : current.status} · 자금 부족액 ${formatKoreanWonReadable(current.shortage)}`, current.canBuy ? "loan-ok" : "loan-bad");
       houseSetText("houseRemainingCash", formatKoreanWonReadable(current.remainingCash));
