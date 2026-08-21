@@ -465,6 +465,43 @@
     function renderMobileAssetOverview(period = latestManagedPeriod(), prevPeriod = null) {
       const categoriesWrap = document.getElementById("mobileAssetCategories");
       if (!categoriesWrap) return;
+      const totals = assetCategoryTotals(period);
+      const net = Object.values(totals).reduce((sum, value) => sum + value, 0);
+      const exactPreviousMonth = previousMonthPeriod(period);
+      const monthComparisonPeriod = assetPeriods.includes(exactPreviousMonth) ? exactPreviousMonth : null;
+      const previousYearPeriods = assetPeriods.filter((item) => periodYear(item) === periodYear(period) - 1);
+      const yearComparisonPeriod = previousYearPeriods.at(-1) || null;
+      const netAt = (targetPeriod) => targetPeriod
+        ? Object.values(assetCategoryTotals(targetPeriod)).reduce((sum, value) => sum + value, 0)
+        : 0;
+      const setDelta = (id, label, comparisonPeriod) => {
+        const element = document.getElementById(id);
+        if (!element) return;
+        element.hidden = !comparisonPeriod;
+        if (!comparisonPeriod) return;
+        const delta = net - netAt(comparisonPeriod);
+        element.textContent = `${label} ${delta > 0 ? "+" : ""}${compactWon(delta)}`;
+        element.classList.toggle("positive", delta > 0);
+        element.classList.toggle("negative", delta < 0);
+      };
+      const homePeriod = document.getElementById("mobileHomePeriod");
+      const homeNet = document.getElementById("mobileHomeNetWorth");
+      const assetPeriod = document.getElementById("mobileAssetPeriod");
+      if (homePeriod) homePeriod.textContent = `${periodLabel(period)} 기준`;
+      if (homeNet) homeNet.textContent = compactWon(net);
+      if (assetPeriod) assetPeriod.textContent = `${periodLabel(period)} 기준`;
+      setDelta("mobileHomeMonthDelta", "전월 대비", monthComparisonPeriod);
+      setDelta("mobileHomeYearDelta", "전년 대비", yearComparisonPeriod);
+      const homeCards = document.getElementById("mobileHomeAssetCards");
+      if (homeCards) {
+        const homeKeys = ["주식", "부동산", "현금", "연금", "대출/부채"];
+        homeCards.innerHTML = homeKeys.map((key) => `
+          <div class="card mobile-home-asset ${key === "대출/부채" ? "debt" : ""}">
+            <span>${key === "대출/부채" ? "대출" : key}</span>
+            <strong>${compactWon(totals[key] || 0)}</strong>
+          </div>
+        `).join("");
+      }
       const detailRows = (row) => {
         const data = getInvestment(row.id, period);
         if (data?.type === "stock" && Array.isArray(data.holdings) && data.holdings.length) {
@@ -486,7 +523,6 @@
         }
         return [`<li class="mobile-category-detail"><span>${escapeHtml(row.label)}</span><b>${compactWon(rowValue(row, period))}</b></li>`];
       };
-      const totals = assetCategoryTotals(period);
       const gross = ["부동산", "주식", "연금", "금", "현금"].reduce((sum, key) => sum + Math.max(0, totals[key] || 0), 0);
       const keys = ["부동산", "주식", "연금", "금", "현금", "대출/부채"];
       categoriesWrap.innerHTML = keys.map((key) => {
@@ -647,7 +683,8 @@
       const detailText = data ? "상세정보 있음" : "상세정보 없음, 기존 표 금액 유지";
       const selectedParts = [periodLabel(selectedInvestment.period), row.category, row.label];
       if (isPastManagedPeriod(selectedInvestment.period)) selectedParts.push("과거 기록");
-      title.textContent = `${periodLabel(selectedInvestment.period)} ${row.category} 자산 편집${isPastManagedPeriod(selectedInvestment.period) ? " · 과거 기록" : ""}`;
+      const mobileReadOnly = window.matchMedia("(max-width: 768px)").matches && !document.body.classList.contains("mobile-edit-mode");
+      title.textContent = `${periodLabel(selectedInvestment.period)} ${row.category} 자산 ${mobileReadOnly ? "조회" : "편집"}${isPastManagedPeriod(selectedInvestment.period) ? " · 과거 기록" : ""}`;
       badge.textContent = selectedParts.join(" · ");
       label.textContent = `${row.label} / 현재 표 금액 ${won(currentValue)} / ${detailText}`;
       renderInvestmentSummary(row, currentValue);

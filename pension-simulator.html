@@ -25,7 +25,34 @@
         <div class="card metric empty"><span>대출 잔액</span><strong id="latestDebt">데이터 입력 후 표시됩니다</strong></div>
       </div>
 
-      <div class="card server-sync-card" id="serverSyncCard">
+      <section class="mobile-only mobile-view-section mobile-home-dashboard" id="mobileHomeDashboard" data-mobile-section="home">
+        <div class="card mobile-home-hero">
+          <div class="mobile-home-eyebrow"><span>순자산</span><span id="mobileHomePeriod">-</span></div>
+          <strong id="mobileHomeNetWorth">-</strong>
+          <div class="mobile-home-deltas">
+            <span id="mobileHomeMonthDelta" hidden></span>
+            <span id="mobileHomeYearDelta" hidden></span>
+          </div>
+        </div>
+        <div class="mobile-home-assets" id="mobileHomeAssetCards"></div>
+        <div class="mobile-net-chart-slot" id="mobileNetChartSlot"></div>
+        <button type="button" class="mobile-house-link" id="mobileOpenHousePlan">부동산 구매 계획 보기</button>
+      </section>
+
+      <section class="mobile-only mobile-view-section mobile-asset-view" id="mobileAssetView" data-mobile-section="assets">
+        <div class="mobile-view-heading">
+          <div><strong>자산 현황</strong><span id="mobileAssetPeriod">최신 월 기준</span></div>
+          <button type="button" class="mobile-edit-toggle" data-mobile-edit-toggle aria-pressed="false">편집</button>
+        </div>
+        <div class="mobile-category-list" id="mobileAssetCategories"></div>
+      </section>
+
+      <div class="mobile-only mobile-view-section mobile-settings-heading" data-mobile-section="settings">
+        <strong>설정 및 데이터 관리</strong>
+        <span>서버 동기화와 가격 업데이트를 관리합니다.</span>
+      </div>
+
+      <div class="card server-sync-card" id="serverSyncCard" data-mobile-section="settings">
         <div class="server-sync-head">
           <div>
             <div class="server-sync-title">가족 서버 동기화</div>
@@ -52,14 +79,9 @@
         </details>
       </div>
 
-      <section class="mobile-only mobile-asset-summary">
-        <div class="mobile-net-chart-slot" id="mobileNetChartSlot"></div>
-        <div class="mobile-category-list" id="mobileAssetCategories"></div>
-      </section>
-
       <div class="asset-grid">
         <section>
-          <div class="card toolbar">
+          <div class="card toolbar" data-mobile-section="settings">
             <span class="managed-year-badge" id="managedYearBadge">관리 월 -</span>
             <div class="primary-actions">
               <button type="button" class="primary" id="updateLatestPrices">최신 월 가격 업데이트</button>
@@ -79,7 +101,7 @@
               </div>
             </details>
           </div>
-          <details class="asset-table-details" id="assetTableDetails">
+          <details class="asset-table-details" id="assetTableDetails" data-mobile-section="assets">
             <summary>상세 자산표 보기</summary>
             <div class="card asset-table-wrap">
               <table class="asset-table">
@@ -134,7 +156,11 @@
           </div>
         </section>
 
-        <aside class="card holdings-card waiting" id="investmentCard">
+        <aside class="card holdings-card waiting" id="investmentCard" data-mobile-section="investment">
+          <div class="mobile-only mobile-investment-tools">
+            <span>최신 월 투자자산</span>
+            <button type="button" class="mobile-edit-toggle" data-mobile-edit-toggle aria-pressed="false">편집</button>
+          </div>
           <h2 id="investmentTitle">투자 자산 정보</h2>
           <div class="investment-empty" id="investmentEmpty">
             주식 또는 금 행의 월 칸을 선택하면 상세 정보를 입력할 수 있습니다.
@@ -369,9 +395,11 @@
     </section>
   </main>
   <nav class="mobile-bottom-nav" aria-label="모바일 주요 탭">
-    <button type="button" class="mobile-nav-btn active" data-tab="assets">자산</button>
-    <button type="button" class="mobile-nav-btn" data-tab="housePlan">부동산</button>
-    <button type="button" class="mobile-nav-btn" data-tab="pension">연금</button>
+    <button type="button" class="mobile-nav-btn active" data-mobile-view="home">홈</button>
+    <button type="button" class="mobile-nav-btn" data-mobile-view="assets">자산</button>
+    <button type="button" class="mobile-nav-btn" data-mobile-view="investment">투자</button>
+    <button type="button" class="mobile-nav-btn" data-mobile-view="pension">연금</button>
+    <button type="button" class="mobile-nav-btn" data-mobile-view="settings">설정</button>
   </nav>
   <div class="tooltip" id="tooltip"></div>
 

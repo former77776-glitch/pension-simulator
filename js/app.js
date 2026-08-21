@@ -3,7 +3,10 @@
         const element = document.getElementById(id);
         if (element) element.addEventListener(eventName, handler);
       };
-      document.querySelectorAll(".tab, .mobile-nav-btn").forEach((tab) => tab.addEventListener("click", () => activateTab(tab.dataset.tab)));
+      document.querySelectorAll(".tab").forEach((tab) => tab.addEventListener("click", () => activateTab(tab.dataset.tab)));
+      document.querySelectorAll(".mobile-nav-btn").forEach((button) => button.addEventListener("click", () => activateMobileView(button.dataset.mobileView)));
+      document.querySelectorAll("[data-mobile-edit-toggle]").forEach((button) => button.addEventListener("click", () => setMobileAssetEditMode(!mobileAssetEditMode)));
+      bind("mobileOpenHousePlan", "click", () => activateMobileView("housePlan"));
       window.addEventListener("resize", syncResponsiveDetails);
       bind("rebuildAssetYears", "click", rebuildAssetYears);
       bind("closeCurrentMonth", "click", closeCurrentMonthSnapshot);

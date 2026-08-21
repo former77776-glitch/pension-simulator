@@ -37,6 +37,7 @@
       const canvas = document.getElementById("assetNetChart");
       if (!canvas || !window.Chart) return;
       ensureChartDataLabels();
+      const isMobile = window.matchMedia("(max-width: 768px)").matches;
       const totals = assetPeriods.map((period) => assetCategoryTotals(period));
       const netValues = totals.map((total) => Object.values(total).reduce((sum, value) => sum + value, 0));
       const assetTotals = totals.map((total) => ["부동산", "연금", "주식", "금", "현금"].reduce((sum, key) => sum + Math.max(0, total[key] || 0), 0));
@@ -94,7 +95,7 @@
               tension: 0,
               order: -9,
               datalabels: {
-                display: hasDataLabels(),
+                display: (ctx) => hasDataLabels() && (!isMobile || ctx.dataIndex === assetTotals.length - 1),
                 color: "#111827",
                 backgroundColor: "rgba(255,255,255,.9)",
                 borderColor: "#d1d5db",
@@ -116,7 +117,8 @@
               backgroundColor: "#111827",
               borderWidth: 3,
               pointRadius: 3,
-              pointHoverRadius: 5,
+              pointHoverRadius: isMobile ? 7 : 5,
+              pointHitRadius: isMobile ? 20 : 8,
               tension: .35,
               stack: "net",
               order: -10,
@@ -137,7 +139,39 @@
             }
           ]
         },
-        options: assetChartOptions({ stacked: true, suggestedMax: maxAssetTotal ? maxAssetTotal * 1.12 : undefined })
+        options: (() => {
+          const options = assetChartOptions({ stacked: true, suggestedMax: maxAssetTotal ? maxAssetTotal * 1.12 : undefined });
+          if (!isMobile) return options;
+          const tooltipOrder = ["순자산", "주식", "부동산", "현금", "연금", "금"];
+          options.interaction = { mode: "index", axis: "x", intersect: false };
+          options.events = ["mousemove", "mouseout", "click", "touchstart", "touchmove"];
+          options.scales.x.ticks = { ...options.scales.x.ticks, autoSkip: true, maxTicksLimit: 6 };
+          options.plugins.tooltip = {
+            enabled: true,
+            mode: "index",
+            intersect: false,
+            position: "nearest",
+            displayColors: true,
+            boxWidth: 10,
+            boxHeight: 10,
+            padding: 12,
+            titleFont: { size: 15, weight: "700" },
+            bodyFont: { size: 13, weight: "600" },
+            bodySpacing: 6,
+            filter: (ctx) => ctx.dataset.label !== "총자산 라벨",
+            itemSort: (a, b) => tooltipOrder.indexOf(a.dataset.label) - tooltipOrder.indexOf(b.dataset.label),
+            callbacks: {
+              title: (items) => items[0]?.label || "",
+              label: (ctx) => `${ctx.dataset.label}: ${compactWon(ctx.raw)}`,
+              afterBody: (items) => {
+                const index = items[0]?.dataIndex;
+                if (!Number.isInteger(index)) return [];
+                return [`대출: ${compactWon(totals[index]?.["대출/부채"] || 0)}`];
+              }
+            }
+          };
+          return options;
+        })()
       });
     }
 

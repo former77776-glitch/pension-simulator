@@ -137,6 +137,137 @@
       margin: 10px 0;
     }
 
+    .mobile-home-dashboard,
+    .mobile-asset-view {
+      margin: 10px 0;
+    }
+
+    .mobile-home-hero {
+      padding: 18px;
+      background: #0f2747;
+      color: #fff;
+    }
+
+    .mobile-home-eyebrow,
+    .mobile-home-deltas,
+    .mobile-view-heading,
+    .mobile-investment-tools {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .mobile-home-eyebrow {
+      color: #cbd5e1;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .mobile-home-hero > strong {
+      display: block;
+      margin-top: 8px;
+      font-size: 34px;
+      line-height: 1.15;
+    }
+
+    .mobile-home-deltas {
+      justify-content: flex-start;
+      flex-wrap: wrap;
+      margin-top: 12px;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .mobile-home-deltas .positive {
+      color: #86efac;
+    }
+
+    .mobile-home-deltas .negative {
+      color: #fca5a5;
+    }
+
+    .mobile-home-assets {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .mobile-home-asset {
+      min-width: 0;
+      padding: 12px;
+    }
+
+    .mobile-home-asset:last-child:nth-child(odd) {
+      grid-column: 1 / -1;
+    }
+
+    .mobile-home-asset span,
+    .mobile-view-heading span,
+    .mobile-settings-heading span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .mobile-home-asset strong {
+      display: block;
+      margin-top: 5px;
+      font-size: 18px;
+      line-height: 1.2;
+    }
+
+    .mobile-home-asset.debt strong {
+      color: var(--red);
+    }
+
+    .mobile-net-chart-slot {
+      width: 100%;
+      min-width: 0;
+      margin-top: 8px;
+    }
+
+    .mobile-house-link {
+      width: 100%;
+      min-height: 44px;
+      margin-top: 8px;
+      background: #e8eef7;
+      color: var(--navy);
+    }
+
+    .mobile-view-heading,
+    .mobile-settings-heading {
+      margin-bottom: 8px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .mobile-view-heading strong,
+    .mobile-settings-heading strong {
+      display: block;
+      margin-bottom: 3px;
+      font-size: 16px;
+    }
+
+    .mobile-edit-toggle {
+      min-width: 64px;
+      min-height: 44px;
+      padding: 8px 12px;
+      color: var(--navy);
+      background: #e8eef7;
+    }
+
+    .mobile-investment-tools {
+      margin-bottom: 10px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
     .mobile-summary-grid,
     .mobile-category-list {
       display: grid;
@@ -1508,7 +1639,7 @@
 
     @media (max-width: 768px) {
       body {
-        padding-bottom: 70px;
+        padding-bottom: calc(78px + env(safe-area-inset-bottom));
         overflow-x: hidden;
       }
 
@@ -1533,12 +1664,30 @@
         display: block;
       }
 
+      .mobile-only.mobile-view-section {
+        display: none;
+      }
+
+      body[data-mobile-view="home"] .mobile-view-section[data-mobile-section="home"],
+      body[data-mobile-view="assets"] .mobile-view-section[data-mobile-section="assets"],
+      body[data-mobile-view="settings"] .mobile-view-section[data-mobile-section="settings"] {
+        display: block;
+      }
+
       .desktop-only {
         display: none !important;
       }
 
       .analysis-strip {
         display: none;
+      }
+
+      #assetsPanel > .server-sync-card {
+        display: none;
+      }
+
+      body[data-mobile-view="settings"] #assetsPanel > .server-sync-card {
+        display: block;
       }
 
       .server-sync-card {
@@ -1560,11 +1709,25 @@
         gap: 8px;
       }
 
+      .asset-grid {
+        display: none;
+      }
+
+      body[data-mobile-view="assets"] .asset-grid,
+      body[data-mobile-view="investment"] .asset-grid,
+      body[data-mobile-view="settings"] .asset-grid {
+        display: flex;
+      }
+
       .asset-grid,
       .sim-grid,
       .house-layout {
-        display: flex;
         flex-direction: column;
+      }
+
+      .sim-grid,
+      .house-layout {
+        display: flex;
       }
 
       .asset-grid > section,
@@ -1577,6 +1740,21 @@
         display: none;
       }
 
+      body[data-mobile-view="investment"] .holdings-card {
+        display: block;
+        width: 100%;
+        order: 1;
+      }
+
+      body[data-mobile-view="investment"] .asset-grid > section {
+        display: none;
+      }
+
+      body[data-mobile-view="settings"] .asset-grid > section,
+      body[data-mobile-view="assets"] .asset-grid > section {
+        display: block;
+      }
+
       .sidebar,
       .house-sidebar {
         order: 2;
@@ -1584,9 +1762,13 @@
       }
 
       .toolbar {
-        display: grid;
+        display: none;
         gap: 8px;
         padding: 10px;
+      }
+
+      body[data-mobile-view="settings"] .toolbar {
+        display: grid;
       }
 
       .toolbar .primary-actions,
@@ -1599,7 +1781,12 @@
       }
 
       .asset-table-details {
+        display: none;
         margin-top: 10px;
+      }
+
+      body[data-mobile-view="assets"].mobile-edit-mode .asset-table-details {
+        display: block;
       }
 
       .asset-table-details > summary {
@@ -1629,7 +1816,16 @@
       }
 
       .asset-charts {
+        display: none;
         grid-template-columns: minmax(0, 1fr);
+      }
+
+      body[data-mobile-view="assets"] .asset-charts {
+        display: grid;
+      }
+
+      body[data-mobile-view="settings"] .asset-charts {
+        display: none;
       }
 
       #assetNetChartCard {
@@ -1654,6 +1850,25 @@
       .house-chart-box {
         height: 280px;
         min-height: 240px;
+      }
+
+      #mobileNetChartSlot .chart-kpis,
+      #mobileNetChartSlot .asset-chart-stat {
+        display: none;
+      }
+
+      #mobileNetChartSlot .asset-chart-box {
+        height: 290px;
+        min-height: 260px;
+        max-height: 320px;
+      }
+
+      body:not(.mobile-edit-mode) #investmentCard .holding-form,
+      body:not(.mobile-edit-mode) #investmentCard .holding-inputs,
+      body:not(.mobile-edit-mode) #investmentCard button[data-delete],
+      body:not(.mobile-edit-mode) #investmentCard button[data-delete-gold],
+      body:not(.mobile-edit-mode) #investmentCard .status {
+        display: none !important;
       }
 
       .chart-card canvas {
@@ -1697,9 +1912,9 @@
         bottom: 0;
         z-index: 30;
         display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 6px;
-        min-height: 60px;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 4px;
+        min-height: 64px;
         padding: 8px max(8px, env(safe-area-inset-left)) calc(8px + env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-right));
         background: rgba(255, 255, 255, .96);
         border-top: 1px solid var(--border);
@@ -1708,9 +1923,12 @@
 
       .mobile-bottom-nav button {
         min-height: 44px;
+        min-width: 0;
+        padding: 8px 4px;
         border-radius: 10px;
         background: #eef2f7;
         color: var(--text);
+        font-size: 12px;
       }
 
       .mobile-bottom-nav button.active {
