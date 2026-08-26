@@ -44,6 +44,7 @@
       });
       document.getElementById("houseRatioList")?.addEventListener("input", onHouseRatioInput);
       document.getElementById("houseRatioList")?.addEventListener("change", onHouseRatioInput);
+      bindRetirementPlanEvents();
       protectMobileAssetDetailEditing();
     }
 
@@ -53,10 +54,12 @@
     loadServerSyncState();
     loadStoredAssetData();
     loadHousePlanInputs();
+    loadRetirementPlanInputs();
     syncResponsiveDetails();
     renderAssetTable();
     renderInvestmentPanel();
     renderHousePlan();
+    renderRetirementPlan();
     runPension();
     appBootstrapped = true;
     if (pendingServerAutoSaveAfterBoot) {

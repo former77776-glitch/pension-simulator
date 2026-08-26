@@ -358,6 +358,7 @@
       renderInvestmentPanel();
       persistAssetData();
       if (document.getElementById("housePlanPanel")?.classList.contains("active")) renderHousePlan();
+      if (document.getElementById("retirementPanel")?.classList.contains("active")) renderRetirementPlan();
     }
 
     function categorySpans() {

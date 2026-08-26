@@ -316,7 +316,8 @@
         investmentData,
         pension: collectPensionInputsForServer(),
         housePlan,
-        realEstatePlan
+        realEstatePlan,
+        retirementPlan: collectRetirementPlanForServer()
       };
     }
 
@@ -329,6 +330,7 @@
       if (data.assetArchivedPeriods && typeof data.assetArchivedPeriods === "object") localStorage.setItem("pensionAssetArchivedPeriods", JSON.stringify(data.assetArchivedPeriods));
       const serverHousePlan = resolveServerHousePlan(data);
       if (serverHousePlan) localStorage.setItem(HOUSE_PLAN_STORAGE_KEY, JSON.stringify(serverHousePlan));
+      localStorage.setItem(RETIREMENT_PLAN_STORAGE_KEY, JSON.stringify(normalizeRetirementPlan(data.retirementPlan || RETIREMENT_PLAN_DEFAULTS)));
     }
 
     function applyServerState(data) {
@@ -355,6 +357,7 @@
         localStorage.setItem(HOUSE_PLAN_STORAGE_KEY, JSON.stringify(serverHousePlan));
         applyRealEstatePlanToInputs(data?.realEstatePlan && typeof data.realEstatePlan === "object" ? data.realEstatePlan : housePlanToRealEstatePlan(serverHousePlan));
       }
+      applyRetirementPlanState(data.retirementPlan || RETIREMENT_PLAN_DEFAULTS, { persist: true, render: false });
       const startInput = document.getElementById("assetStartYear");
       const endInput = document.getElementById("assetEndYear");
       if (startInput) startInput.value = periodYear(assetPeriods[0] || currentPeriod());
@@ -367,6 +370,7 @@
         updateSimCompactHints();
         runPension();
         renderHousePlan();
+        renderRetirementPlan();
       } finally {
         suppressServerAutoSave = false;
       }

@@ -10,6 +10,7 @@
       document.getElementById(`${tabName}Panel`)?.classList.add("active");
       if (tabName === "pension") renderCharts();
       if (tabName === "housePlan") renderHousePlan();
+      if (tabName === "retirement") renderRetirementPlan();
       if (tabName === "assets") renderAssetCharts();
     }
 
@@ -42,6 +43,7 @@
       });
       if (viewName === "pension") activateTab("pension");
       else if (viewName === "housePlan") activateTab("housePlan");
+      else if (viewName === "retirement") activateTab("retirement");
       else {
         activateTab("assets");
         if (viewName === "investment") ensureMobileInvestmentSelection();
