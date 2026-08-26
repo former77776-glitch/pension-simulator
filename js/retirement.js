@@ -1,5 +1,5 @@
     const RETIREMENT_PLAN_STORAGE_KEY = "pensionRetirementPlan";
-    const RETIREMENT_PLAN_DEFAULTS = Object.freeze({ monthlyTarget: 10000000, jepiWeight: 60 });
+    const RETIREMENT_PLAN_DEFAULTS = Object.freeze({ monthlyTarget: 10000000, jepiWeight: 50 });
     const RETIREMENT_TAX_RATE = 0.154;
     const RETIREMENT_JEPI_YIELD = 0.075;
     const RETIREMENT_SP500_YIELD = 0.011;
