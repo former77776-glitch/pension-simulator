@@ -317,7 +317,8 @@
         pension: collectPensionInputsForServer(),
         housePlan,
         realEstatePlan,
-        retirementPlan: collectRetirementPlanForServer()
+        retirementPlan: collectRetirementPlanForServer(),
+        retirementPlanDefaultVersion: RETIREMENT_PLAN_DEFAULT_VERSION
       };
     }
 
@@ -330,7 +331,9 @@
       if (data.assetArchivedPeriods && typeof data.assetArchivedPeriods === "object") localStorage.setItem("pensionAssetArchivedPeriods", JSON.stringify(data.assetArchivedPeriods));
       const serverHousePlan = resolveServerHousePlan(data);
       if (serverHousePlan) localStorage.setItem(HOUSE_PLAN_STORAGE_KEY, JSON.stringify(serverHousePlan));
-      localStorage.setItem(RETIREMENT_PLAN_STORAGE_KEY, JSON.stringify(normalizeRetirementPlan(data.retirementPlan || RETIREMENT_PLAN_DEFAULTS)));
+      const serverRetirementPlan = resolveRetirementPlanDefaults(data.retirementPlan || RETIREMENT_PLAN_DEFAULTS, data.retirementPlanDefaultVersion);
+      localStorage.setItem(RETIREMENT_PLAN_STORAGE_KEY, JSON.stringify(serverRetirementPlan));
+      localStorage.setItem(RETIREMENT_PLAN_DEFAULT_VERSION_STORAGE_KEY, String(RETIREMENT_PLAN_DEFAULT_VERSION));
     }
 
     function applyServerState(data) {
@@ -357,7 +360,7 @@
         localStorage.setItem(HOUSE_PLAN_STORAGE_KEY, JSON.stringify(serverHousePlan));
         applyRealEstatePlanToInputs(data?.realEstatePlan && typeof data.realEstatePlan === "object" ? data.realEstatePlan : housePlanToRealEstatePlan(serverHousePlan));
       }
-      applyRetirementPlanState(data.retirementPlan || RETIREMENT_PLAN_DEFAULTS, { persist: true, render: false });
+      applyRetirementPlanState(resolveRetirementPlanDefaults(data.retirementPlan || RETIREMENT_PLAN_DEFAULTS, data.retirementPlanDefaultVersion), { persist: true, render: false });
       const startInput = document.getElementById("assetStartYear");
       const endInput = document.getElementById("assetEndYear");
       if (startInput) startInput.value = periodYear(assetPeriods[0] || currentPeriod());

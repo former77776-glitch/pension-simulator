@@ -1,4 +1,6 @@
     const RETIREMENT_PLAN_STORAGE_KEY = "pensionRetirementPlan";
+    const RETIREMENT_PLAN_DEFAULT_VERSION_STORAGE_KEY = "pensionRetirementPlanDefaultVersion";
+    const RETIREMENT_PLAN_DEFAULT_VERSION = 2;
     const RETIREMENT_PLAN_DEFAULTS = Object.freeze({ monthlyTarget: 10000000, jepiWeight: 50 });
     const RETIREMENT_TAX_RATE = 0.154;
     const RETIREMENT_JEPI_YIELD = 0.075;
@@ -14,6 +16,12 @@
         monthlyTarget: Number.isFinite(monthlyTarget) && monthlyTarget > 0 ? Math.round(monthlyTarget) : RETIREMENT_PLAN_DEFAULTS.monthlyTarget,
         jepiWeight: Number.isFinite(jepiWeight) ? Math.min(100, Math.max(0, Math.round(jepiWeight))) : RETIREMENT_PLAN_DEFAULTS.jepiWeight
       };
+    }
+
+    function resolveRetirementPlanDefaults(value, version = RETIREMENT_PLAN_DEFAULT_VERSION) {
+      const clean = normalizeRetirementPlan(value);
+      if (Number(version || 0) < RETIREMENT_PLAN_DEFAULT_VERSION && Number(value?.jepiWeight) === 60) clean.jepiWeight = 50;
+      return clean;
     }
 
     function retirementInvestableAssets() {
@@ -126,6 +134,7 @@
 
     function storeRetirementPlan({ scheduleServer = true } = {}) {
       localStorage.setItem(RETIREMENT_PLAN_STORAGE_KEY, JSON.stringify(retirementPlanState));
+      localStorage.setItem(RETIREMENT_PLAN_DEFAULT_VERSION_STORAGE_KEY, String(RETIREMENT_PLAN_DEFAULT_VERSION));
       if (scheduleServer) scheduleServerAutoSave();
     }
 
@@ -153,7 +162,9 @@
       } catch (error) {
         console.warn("은퇴 계획 설정을 불러오지 못해 기본값을 사용합니다.", error);
       }
-      applyRetirementPlanState(stored || RETIREMENT_PLAN_DEFAULTS, { persist: true, render: true });
+      const storedVersion = Number(localStorage.getItem(RETIREMENT_PLAN_DEFAULT_VERSION_STORAGE_KEY) || 0);
+      applyRetirementPlanState(resolveRetirementPlanDefaults(stored || RETIREMENT_PLAN_DEFAULTS, storedVersion), { persist: true, render: true });
+      localStorage.setItem(RETIREMENT_PLAN_DEFAULT_VERSION_STORAGE_KEY, String(RETIREMENT_PLAN_DEFAULT_VERSION));
     }
 
     function onRetirementPlanInput(event) {
