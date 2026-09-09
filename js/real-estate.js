@@ -288,7 +288,8 @@
     }
 
     function formatMonthlyPaymentWithInterest(principal, annualRate, years) {
-      return `${formatManWon(calculateMonthlyPayment(principal, annualRate, years))}(${formatManWon(calculateFirstMonthInterest(principal, annualRate))})`;
+      const firstMonthInterestMan = Math.round(calculateFirstMonthInterest(principal, annualRate) / 10000).toLocaleString("ko-KR");
+      return `${formatManWon(calculateMonthlyPayment(principal, annualRate, years))} (${firstMonthInterestMan}만)`;
     }
 
     function houseAvailableAmount(groups, _debt, scenario) {
@@ -363,11 +364,11 @@
       houseSetText("houseTotalCost", formatKoreanWonReadable(current.totalCost));
       houseSetText("houseAvailableAssets", formatKoreanWonReadable(current.available));
       houseSetText("houseLoanNeeded", formatKoreanWonReadable(current.loanNeeded));
-      houseSetText("houseMonthlyPaymentSummary", formatManWon(current.monthlyPayment), "loan-bad");
+      houseSetText("houseMonthlyPaymentSummary", formatMonthlyPaymentWithInterest(current.loanNeeded, p.loanRate * 100, p.loanYears), "loan-bad");
       houseSetText("houseShortage", formatKoreanWonReadable(current.shortage), current.shortage > 0 ? "loan-bad" : "loan-ok");
       houseSetText("houseSidebarResult", `${basisLabel} 기준 ${current.canBuy ? "구매 가능" : current.status} · 자금 부족액 ${formatKoreanWonReadable(current.shortage)}`, current.canBuy ? "loan-ok" : "loan-bad");
       houseSetText("houseRemainingCash", formatKoreanWonReadable(current.remainingCash));
-      houseSetText("houseMonthlyPayment", formatKoreanWonReadable(current.monthlyPayment));
+      houseSetText("houseMonthlyPayment", formatMonthlyPaymentWithInterest(current.loanNeeded, p.loanRate * 100, p.loanYears));
       houseSetText("basisAcquisitionTax", formatKoreanWonReadable(p.costs.acquisitionTotal));
       houseSetText("basisBuyFee", formatKoreanWonReadable(p.costs.buyFee));
       houseSetText("basisSellFee", p.scenario === "sell" ? formatKoreanWonReadable(p.costs.sellFee) : "미반영");
