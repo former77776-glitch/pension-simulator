@@ -384,8 +384,86 @@
       });
     }
 
+    let assetLongTermChartInstance = null;
+
+    function longTermNetWorthData() {
+      return recordedAssetPeriods().map((period) => ({
+        x: Date.UTC(periodYear(period), periodMonth(period), 0),
+        y: Object.values(assetCategoryTotals(period)).reduce((sum, value) => sum + value, 0),
+        period
+      }));
+    }
+
+    function drawAssetLongTermChart() {
+      const canvas = document.getElementById("assetLongTermChart");
+      if (!canvas || !window.Chart) return;
+      const data = longTermNetWorthData();
+      if (assetLongTermChartInstance) {
+        assetLongTermChartInstance.data.datasets[0].data = data;
+        assetLongTermChartInstance.update("none");
+        return;
+      }
+      assetLongTermChartInstance = new Chart(canvas, {
+        type: "line",
+        data: { datasets: [{
+          label: "순자산",
+          data,
+          borderColor: "#2563eb",
+          backgroundColor: "#2563eb",
+          borderWidth: 2,
+          pointRadius: 2,
+          pointHoverRadius: 5,
+          pointHitRadius: 12,
+          tension: 0,
+          fill: false
+        }] },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: false,
+          parsing: false,
+          interaction: { mode: "nearest", axis: "x", intersect: false },
+          events: ["mousemove", "mouseout", "click", "touchstart", "touchmove"],
+          layout: { padding: { top: 8, right: 8 } },
+          plugins: {
+            legend: { display: false },
+            datalabels: { display: false },
+            decimation: { enabled: false },
+            tooltip: { callbacks: {
+              title: (items) => items[0]?.raw?.period?.replace("-", ".") || "",
+              label: (context) => `순자산: ${won(context.parsed.y)}`
+            } }
+          },
+          scales: {
+            x: {
+              type: "linear",
+              bounds: "data",
+              grid: { display: false },
+              afterBuildTicks: (axis) => {
+                const points = axis.chart.data.datasets[0].data;
+                if (!points.length) { axis.ticks = []; return; }
+                const first = new Date(points[0].x).getUTCFullYear();
+                const last = new Date(points.at(-1).x).getUTCFullYear();
+                const step = Math.max(1, Math.ceil((last - first + 1) / 5));
+                const ticks = [{ value: points[0].x }];
+                for (let year = first + step; year <= last; year += step) ticks.push({ value: Date.UTC(year, 0, 1) });
+                axis.ticks = ticks;
+              },
+              ticks: { autoSkip: true, maxTicksLimit: 5, maxRotation: 0, padding: 6, font: { size: 11 }, callback: (value) => String(new Date(value).getUTCFullYear()) }
+            },
+            y: {
+              title: { display: true, text: "순자산 (억원)" },
+              grace: "8%",
+              ticks: { maxTicksLimit: 5, font: { size: 11 }, callback: (value) => `${Number((value / 100000000).toFixed(2))}억` }
+            }
+          }
+        }
+      });
+    }
+
     function renderAssetCharts() {
       drawAssetNetChart();
+      drawAssetLongTermChart();
       drawAssetCompositionChart();
       drawAssetMixChart();
     }

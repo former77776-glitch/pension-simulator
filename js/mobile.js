@@ -65,12 +65,15 @@
       const pensionDetails = document.getElementById("pensionInputDetails");
       if (pensionDetails && syncResponsiveDetails.lastIsMobile !== isMobile) pensionDetails.open = !isMobile;
       const netChartCard = document.getElementById("assetNetChartCard");
+      const longTermChartCard = document.getElementById("assetLongTermChartCard");
       const mobileSlot = document.getElementById("mobileNetChartSlot");
       const assetCharts = document.getElementById("assetCharts");
       if (netChartCard && mobileSlot && assetCharts) {
         if (isMobile && netChartCard.parentElement !== mobileSlot) mobileSlot.append(netChartCard);
         if (!isMobile && netChartCard.parentElement !== assetCharts) assetCharts.prepend(netChartCard);
+        if (longTermChartCard && netChartCard.nextElementSibling !== longTermChartCard) netChartCard.after(longTermChartCard);
         assetNetChartInstance?.resize();
+        assetLongTermChartInstance?.resize();
       }
       if (!isMobile) {
         document.body.classList.remove("mobile-edit-mode");

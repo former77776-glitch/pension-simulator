@@ -134,6 +134,10 @@
       margin-top: 10px;
     }
 
+    #assetNetChartCard, #assetLongTermChartCard { grid-column: 1 / -1; }
+    #assetLongTermChartCard { min-width: 0; max-width: 100%; }
+    #mobileNetChartSlot #assetLongTermChartCard { margin-top: 10px; }
+
     .mobile-only {
       display: none;
     }
@@ -2097,6 +2101,8 @@
       #assetNetChartCard {
         order: 1;
       }
+
+      #assetLongTermChartCard { order: 1; }
 
       #assetMixChartCard {
         order: 2;
