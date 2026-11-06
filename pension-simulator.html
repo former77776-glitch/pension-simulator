@@ -19,6 +19,10 @@
     </div>
 
     <section id="assetsPanel" class="panel active">
+      <div class="period-view-toggle" role="group" aria-label="자산 기록 표시 기간">
+        <button type="button" class="active" data-period-view="summary" aria-pressed="true">요약 보기</button>
+        <button type="button" data-period-view="all" aria-pressed="false">전체 보기</button>
+      </div>
       <div class="analysis-strip">
         <div class="card metric empty"><span>최근 순자산</span><strong id="latestNetWorth">아직 입력된 데이터 없음</strong></div>
         <div class="card metric empty"><span>최근 증가율</span><strong id="latestGrowth">데이터 입력 후 표시됩니다</strong></div>
@@ -357,6 +361,10 @@
     </section>
 
     <section id="housePlanPanel" class="panel">
+      <div class="period-view-toggle" role="group" aria-label="부동산 표시 기간">
+        <button type="button" class="active" data-period-view="summary" aria-pressed="true">요약 보기</button>
+        <button type="button" data-period-view="all" aria-pressed="false">전체 보기</button>
+      </div>
       <div class="house-plan">
         <div class="card house-plan-head">
           <div>

@@ -1,5 +1,5 @@
     function rowValue(row, period) {
-      return Number(row?.values?.[period] || 0);
+      return Number(row?.values?.[period] ?? assetArchivedPeriods.rows?.[row?.id]?.[period] ?? 0);
     }
 
     function investmentKey(rowId, period) {
@@ -7,7 +7,7 @@
     }
 
     function getInvestment(rowId, period) {
-      return investmentData[investmentKey(rowId, period)] || null;
+      return investmentData[investmentKey(rowId, period)] || assetArchivedPeriods.investmentData?.[rowId]?.[period] || null;
     }
 
     function setInvestment(rowId, period, data) {
@@ -119,7 +119,7 @@
 
     function isInvestmentCell(rowId, period) {
       const row = assetRows.find((item) => item.id === rowId);
-      return isInvestmentRow(row) && assetPeriods.includes(period);
+      return isInvestmentRow(row) && displayedAssetPeriods().includes(period);
     }
 
     function normalizeAssetRowPeriods(rows) {
@@ -368,14 +368,16 @@
     }
 
     function renderAssetTable({ charts = true } = {}) {
+      const periods = displayedAssetPeriods();
       updateStockRowsFromHoldings();
       normalizeAssetCategories();
       const cols = document.getElementById("assetCols");
       const head = document.getElementById("assetHead");
       const body = document.getElementById("assetBody");
       if (!cols || !head || !body) return;
-      cols.innerHTML = `<col style="width:70px"><col style="width:178px">${assetPeriods.map(() => "<col>").join("")}`;
-      head.innerHTML = `<tr><th>대분류</th><th>소분류</th>${assetPeriods.map((period) => `<th title="${periodTitle(period)}">${periodLabel(period)}</th>`).join("")}</tr>`;
+      body.closest("table").style.minWidth = `${248 + periods.length * 124}px`;
+      cols.innerHTML = `<col style="width:70px"><col style="width:178px">${periods.map(() => "<col>").join("")}`;
+      head.innerHTML = `<tr><th>대분류</th><th>소분류</th>${periods.map((period) => `<th title="${periodTitle(period)}">${periodLabel(period)}</th>`).join("")}</tr>`;
       const spans = categorySpans();
       const used = new Set();
       const html = [];
@@ -386,7 +388,7 @@
           used.add(row.category);
         }
         cells.push(`<td class="label">${row.label}</td>`);
-        for (const period of assetPeriods) {
+        for (const period of periods) {
           const value = rowValue(row, period);
           const neg = value < 0 ? " negative" : "";
           if (isInvestmentRow(row)) {
@@ -400,7 +402,7 @@
         html.push(`<tr>${cells.join("")}</tr>`);
       }
 
-      const netByYear = assetPeriods.map((period) => assetRows.reduce((sum, row) => sum + rowValue(row, period), 0));
+      const netByYear = periods.map((period) => assetRows.reduce((sum, row) => sum + rowValue(row, period), 0));
       html.push(`<tr class="net-row"><td></td><td class="label">순자산</td>${netByYear.map((value) => `<td class="value">${won(value)}</td>`).join("")}</tr>`);
       html.push(`<tr class="growth-row"><td></td><td class="label">순자산 증가폭</td>${netByYear.map((value, index) => {
         if (index === 0) return "<td></td>";
@@ -418,6 +420,7 @@
       const input = event.target;
       const row = assetRows.find((item) => item.id === input.dataset.row);
       if (!row) return;
+      row.values = row.values || {};
       row.values[input.dataset.period] = toNumber(input.value);
       input.value = won(row.values[input.dataset.period]);
       renderAssetTable({ charts: true });

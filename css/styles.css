@@ -108,6 +108,11 @@
       display: block;
     }
 
+    .period-view-toggle { display: flex; gap: 4px; margin: 8px 0; }
+    .period-view-toggle button.active { background: var(--accent); color: #fff; }
+    .asset-table-wrap, .house-table-card { max-width: 100%; overflow-x: auto; }
+    .asset-grid > section, .house-main { min-width: 0; }
+
     .card {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -658,7 +663,7 @@
     }
 
     .asset-table-wrap {
-      overflow: hidden;
+      overflow-x: auto;
       padding: 6px;
     }
 

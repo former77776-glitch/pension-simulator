@@ -1,3 +1,32 @@
+    function periodDateAxis(periods) {
+      if (!Chart.registry.getScale("category")) return {};
+      if (!periodDateAxis.registered) {
+        // Preserve numeric dataset values and category labels, but space points by date.
+        class PeriodDateScale extends Chart.registry.getScale("category") {
+          static id = "periodDate";
+          getPixelForValue(value, index) {
+            const position = typeof value === "number" ? value : this.parse(value, index);
+            const dates = this.options.recordDates;
+            if (!dates?.length) return super.getPixelForValue(value, index);
+            const padding = 16 * 86400000;
+            const first = dates[0] - padding;
+            const last = dates.at(-1) + padding;
+            return this.getPixelForDecimal((dates[position] - first) / (last - first));
+          }
+          getValueForPixel(pixel) {
+            const dates = this.options.recordDates;
+            if (!dates?.length) return super.getValueForPixel(pixel);
+            const padding = 16 * 86400000;
+            const date = dates[0] - padding + this.getDecimalForPixel(pixel) * (dates.at(-1) - dates[0] + padding * 2);
+            return dates.reduce((nearest, value, index) => Math.abs(value - date) < Math.abs(dates[nearest] - date) ? index : nearest, 0);
+          }
+        }
+        Chart.register(PeriodDateScale);
+        periodDateAxis.registered = true;
+      }
+      return { type: "periodDate", recordDates: periods.map((period) => Date.UTC(periodYear(period), periodMonth(period), 0)), ticks: { autoSkip: true, maxTicksLimit: 6, maxRotation: 45 }, grid: { display: false } };
+    }
+
     function ensureChartDataLabels() {
       if (!window.Chart || !window.ChartDataLabels || ensureChartDataLabels.registered) return;
       window.Chart.register(window.ChartDataLabels);
@@ -34,19 +63,20 @@
     }
 
     function drawAssetNetChart() {
+      const periods = displayedAssetPeriods();
       const canvas = document.getElementById("assetNetChart");
       if (!canvas || !window.Chart) return;
       ensureChartDataLabels();
       const isMobile = window.matchMedia("(max-width: 768px)").matches;
-      const totals = assetPeriods.map((period) => assetCategoryTotals(period));
+      const totals = periods.map((period) => assetCategoryTotals(period));
       const netValues = totals.map((total) => Object.values(total).reduce((sum, value) => sum + value, 0));
       const assetTotals = totals.map((total) => ["부동산", "연금", "주식", "금", "현금"].reduce((sum, key) => sum + Math.max(0, total[key] || 0), 0));
       const maxAssetTotal = Math.max(0, ...assetTotals);
-      const labels = assetPeriods.map(periodLabel);
-      const managedIndex = Math.max(0, assetPeriods.indexOf(latestManagedPeriod()));
-      const latestNet = netValues[managedIndex] ?? netValues.at(-1) ?? 0;
-      const latestTotals = totals[managedIndex] || {};
-      const prevNet = managedIndex > 0 ? netValues[managedIndex - 1] : 0;
+      const labels = periods.map(periodLabel);
+      const latestTotals = assetCategoryTotals(latestManagedPeriod());
+      const latestNet = Object.values(latestTotals).reduce((sum, value) => sum + value, 0);
+      const previousPeriod = assetPeriods[assetPeriods.indexOf(latestManagedPeriod()) - 1];
+      const prevNet = previousPeriod ? Object.values(assetCategoryTotals(previousPeriod)).reduce((sum, value) => sum + value, 0) : 0;
       const positiveTotal = ["부동산", "연금", "주식", "금", "현금"].reduce((sum, key) => sum + Math.max(0, latestTotals[key] || 0), 0);
       const stockShare = positiveTotal ? Math.max(0, latestTotals["주식"] || 0) / positiveTotal : null;
       const realEstateShare = positiveTotal ? Math.max(0, latestTotals["부동산"] || 0) / positiveTotal : null;
@@ -119,7 +149,7 @@
               pointRadius: 3,
               pointHoverRadius: isMobile ? 7 : 5,
               pointHitRadius: isMobile ? 20 : 8,
-              tension: .35,
+              tension: 0,
               stack: "net",
               order: -10,
               datalabels: {
@@ -141,6 +171,7 @@
         },
         options: (() => {
           const options = assetChartOptions({ stacked: true, suggestedMax: maxAssetTotal ? maxAssetTotal * 1.12 : undefined });
+          options.scales.x = { ...options.scales.x, ...periodDateAxis(periods) };
           if (!isMobile) return options;
           const tooltipOrder = ["순자산", "주식", "부동산", "현금", "연금", "금"];
           options.interaction = { mode: "index", axis: "x", intersect: false };
@@ -197,6 +228,7 @@
     };
 
     function drawAssetCompositionChart() {
+      const periods = displayedAssetPeriods();
       const canvas = document.getElementById("assetCompositionChart");
       if (!canvas || !window.Chart) return;
       ensureChartDataLabels();
@@ -207,8 +239,8 @@
         { key: "현금", color: "#64748b" },
         { key: "연금", color: "#7c3aed" }
       ];
-      const labels = assetPeriods.map(periodLabel);
-      const totalsByPeriod = assetPeriods.map((period) => assetCategoryTotals(period));
+      const labels = periods.map(periodLabel);
+      const totalsByPeriod = periods.map((period) => assetCategoryTotals(period));
       const grossTotals = totalsByPeriod.map((totals) => categories.reduce((sum, item) => sum + Math.max(0, totals[item.key] || 0), 0));
       const percentData = categories.map((item) => totalsByPeriod.map((totals, index) => {
         const gross = grossTotals[index] || 0;
@@ -278,7 +310,7 @@
             x: {
               stacked: true,
               grid: { display: false },
-              ticks: { color: "#667085", maxRotation: 45, minRotation: assetPeriods.length > 8 ? 35 : 0, autoSkip: true }
+              ticks: { color: "#667085", maxRotation: 45, minRotation: periods.length > 8 ? 35 : 0, autoSkip: true }
             },
             y: {
               stacked: true,
@@ -400,6 +432,7 @@
               const value = Number(dataset.data[index] || 0);
               if (value <= 0) return;
               const point = element.getCenterPoint();
+              if (element.width < ctx.measureText(compactWon(value)).width + 4 || Math.abs(element.base - element.y) < 16) return;
               ctx.fillStyle = datasetIndex === 1 ? "#111827" : "#ffffff";
               ctx.fillText(compactWon(value), point.x, point.y);
             });
@@ -413,6 +446,7 @@
             const { x, y } = element.getCenterPoint();
             const label = `${formatManWon(value)}/월`;
             const width = ctx.measureText(label).width + 8;
+            if (index < monthlyMeta.data.length - 1 && Math.abs(monthlyMeta.data[index + 1].x - x) < width + 8) return;
             const labelY = Math.max(chartArea.top + 8, y - 13);
             ctx.fillStyle = "rgba(255, 255, 255, .94)";
             ctx.strokeStyle = "#c4b5fd";
@@ -465,7 +499,7 @@
               pointRadius: (ctx) => ctx.chart.width < 420 ? 2 : 3,
               pointHoverRadius: 4,
               borderWidth: 2.4,
-              tension: 0.24,
+              tension: 0,
               fill: false,
               datalabels: { display: false }
             },
@@ -531,7 +565,7 @@
             } }
           },
           scales: {
-            x: { grid: { display: false } },
+            x: periodDateAxis(displayedAssetPeriods()),
             y: { ticks: { callback: (value) => compactWon(value) }, grace: "10%" },
             yMonthly: {
               position: "right",

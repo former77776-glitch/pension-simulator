@@ -326,6 +326,40 @@
       return assetPeriods.includes(period) ? period : (assetPeriods.at(-1) || period);
     }
 
+    let periodViewMode = "summary";
+
+    function recordedAssetPeriods() {
+      const periods = new Set();
+      for (const row of assetRows) Object.keys(row.values || {}).forEach((period) => periods.add(period));
+      Object.keys(investmentData).forEach((key) => periods.add(key.split(":")[1]));
+      for (const values of Object.values(assetArchivedPeriods.rows || {})) Object.keys(values).forEach((period) => periods.add(period));
+      for (const values of Object.values(assetArchivedPeriods.investmentData || {})) Object.keys(values).forEach((period) => periods.add(period));
+      return [...periods].filter((period) => isValidPeriod(period) && periodMonth(period) >= 1 && periodMonth(period) <= 12 && comparePeriods(period, currentPeriod()) <= 0).sort(comparePeriods);
+    }
+
+    function selectSummaryPeriods(periods, year = new Date().getFullYear()) {
+      const sorted = [...new Set(periods)].sort(comparePeriods);
+      const annual = [year - 3, year - 2, year - 1].map((completedYear) => sorted.filter((period) => periodYear(period) === completedYear).at(-1)).filter(Boolean);
+      return [...new Set([...annual, ...sorted.slice(-3)])].sort(comparePeriods);
+    }
+
+    function displayedAssetPeriods() {
+      const periods = recordedAssetPeriods();
+      if (!periods.length) return [latestManagedPeriod()];
+      return periodViewMode === "all" ? periods : selectSummaryPeriods(periods);
+    }
+
+    function setPeriodViewMode(mode) {
+      periodViewMode = mode === "all" ? "all" : "summary";
+      document.querySelectorAll("[data-period-view]").forEach((button) => {
+        const active = button.dataset.periodView === periodViewMode;
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-pressed", String(active));
+      });
+      renderAssetTable();
+      renderHousePlan();
+    }
+
     function isPastManagedPeriod(period) {
       return comparePeriods(period, latestManagedPeriod()) < 0;
     }

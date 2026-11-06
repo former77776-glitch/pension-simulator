@@ -319,7 +319,7 @@
 
     function housePlanRoadmap() {
       const p = readHousePlanInputs();
-      const periods = assetPeriods.length ? [...assetPeriods] : [latestManagedPeriod()];
+      const periods = displayedAssetPeriods();
       const labels = periods.map(periodLabel);
       const assetsByPeriod = periods.map((period) => {
         const assets = houseAssetsForPeriod(period);
@@ -335,6 +335,7 @@
       const head = document.getElementById(`${prefix}Head`);
       const body = document.getElementById(`${prefix}Body`);
       if (!head || !body) return;
+      body.closest("table").style.minWidth = `${180 + labels.length * 150}px`;
       const lastIndex = Math.max(0, labels.length - 1);
       head.innerHTML = `<tr><th>항목</th>${labels.map((label, index) => `<th class="${index === lastIndex ? "final-period" : ""}">${label}${index === lastIndex ? " · 최종 기준" : ""}</th>`).join("")}</tr>`;
       const tableRows = [

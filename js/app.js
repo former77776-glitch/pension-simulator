@@ -1,4 +1,5 @@
     function bindEvents() {
+      document.querySelectorAll("[data-period-view]").forEach((button) => button.addEventListener("click", () => setPeriodViewMode(button.dataset.periodView)));
       const bind = (id, eventName, handler) => {
         const element = document.getElementById(id);
         if (element) element.addEventListener(eventName, handler);
