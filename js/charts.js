@@ -1,30 +1,26 @@
-    function periodDateAxis(periods) {
-      if (!Chart.registry.getScale("category")) return {};
-      if (!periodDateAxis.registered) {
-        // Preserve numeric dataset values and category labels, but space points by date.
-        class PeriodDateScale extends Chart.registry.getScale("category") {
-          static id = "periodDate";
-          getPixelForValue(value, index) {
-            const position = typeof value === "number" ? value : this.parse(value, index);
-            const dates = this.options.recordDates;
-            if (!dates?.length) return super.getPixelForValue(value, index);
-            const padding = 16 * 86400000;
-            const first = dates[0] - padding;
-            const last = dates.at(-1) + padding;
-            return this.getPixelForDecimal((dates[position] - first) / (last - first));
-          }
-          getValueForPixel(pixel) {
-            const dates = this.options.recordDates;
-            if (!dates?.length) return super.getValueForPixel(pixel);
-            const padding = 16 * 86400000;
-            const date = dates[0] - padding + this.getDecimalForPixel(pixel) * (dates.at(-1) - dates[0] + padding * 2);
-            return dates.reduce((nearest, value, index) => Math.abs(value - date) < Math.abs(dates[nearest] - date) ? index : nearest, 0);
+    function periodCategoryAxis(periods) {
+      document.querySelectorAll("[data-period-spacing-note]").forEach((note) => { note.hidden = periodViewMode !== "summary"; });
+      return {
+        type: "category",
+        offset: true,
+        grid: { display: false },
+        ticks: {
+          autoSkip: true,
+          maxTicksLimit: 6,
+          font: { size: 11 },
+          padding: 6,
+          minRotation: 0,
+          maxRotation: 45,
+          callback: (value) => {
+            const period = periods[value];
+            if (!period) return "";
+            const label = periodLabel(period);
+            const annualRepresentative = periodViewMode === "summary" && periodYear(period) < new Date().getFullYear() && period === periods.filter((item) => periodYear(item) === periodYear(period)).at(-1);
+            if (label.length === 4 || annualRepresentative) return String(periodYear(period));
+            return period.slice(2).replace("-", ".");
           }
         }
-        Chart.register(PeriodDateScale);
-        periodDateAxis.registered = true;
-      }
-      return { type: "periodDate", recordDates: periods.map((period) => Date.UTC(periodYear(period), periodMonth(period), 0)), ticks: { autoSkip: true, maxTicksLimit: 6, maxRotation: 45 }, grid: { display: false } };
+      };
     }
 
     function ensureChartDataLabels() {
@@ -171,7 +167,7 @@
         },
         options: (() => {
           const options = assetChartOptions({ stacked: true, suggestedMax: maxAssetTotal ? maxAssetTotal * 1.12 : undefined });
-          options.scales.x = { ...options.scales.x, ...periodDateAxis(periods) };
+          options.scales.x = { ...options.scales.x, ...periodCategoryAxis(periods) };
           if (!isMobile) return options;
           const tooltipOrder = ["순자산", "주식", "부동산", "현금", "연금", "금"];
           options.interaction = { mode: "index", axis: "x", intersect: false };
@@ -565,7 +561,7 @@
             } }
           },
           scales: {
-            x: periodDateAxis(displayedAssetPeriods()),
+            x: periodCategoryAxis(displayedAssetPeriods()),
             y: { ticks: { callback: (value) => compactWon(value) }, grace: "10%" },
             yMonthly: {
               position: "right",
