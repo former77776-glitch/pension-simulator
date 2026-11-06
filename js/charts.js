@@ -1,4 +1,10 @@
     function periodCategoryAxis(periods) {
+      const isAnnual = (index) => {
+        const period = periods[index];
+        return !!period && periodYear(period) < new Date().getFullYear() &&
+          (periodViewMode === "summary" || periodLabel(period).length === 4) &&
+          period === periods.filter((item) => periodYear(item) === periodYear(period)).at(-1);
+      };
       document.querySelectorAll("[data-period-spacing-note]").forEach((note) => { note.hidden = periodViewMode !== "summary"; });
       return {
         type: "category",
@@ -7,16 +13,15 @@
         ticks: {
           autoSkip: true,
           maxTicksLimit: 6,
-          font: { size: 11 },
+          font: (context) => ({ size: 11, weight: isAnnual(context.tick?.value) ? "700" : "400" }),
+          color: (context) => isAnnual(context.tick?.value) ? "#1e3a8a" : "#667085",
           padding: 6,
           minRotation: 0,
           maxRotation: 45,
           callback: (value) => {
             const period = periods[value];
             if (!period) return "";
-            const label = periodLabel(period);
-            const annualRepresentative = periodViewMode === "summary" && periodYear(period) < new Date().getFullYear() && period === periods.filter((item) => periodYear(item) === periodYear(period)).at(-1);
-            if (label.length === 4 || annualRepresentative) return String(periodYear(period));
+            if (isAnnual(value)) return `${periodYear(period)} 최종`;
             return period.slice(2).replace("-", ".");
           }
         }
@@ -444,9 +449,14 @@
                 if (!points.length) { axis.ticks = []; return; }
                 const first = new Date(points[0].x).getUTCFullYear();
                 const last = new Date(points.at(-1).x).getUTCFullYear();
-                const step = Math.max(1, Math.ceil((last - first + 1) / 5));
-                const ticks = [{ value: points[0].x }];
-                for (let year = first + step; year <= last; year += step) ticks.push({ value: Date.UTC(year, 0, 1) });
+                const limit = Math.max(2, Math.min(5, Math.floor(axis.chart.width / 75)));
+                const step = Math.max(1, Math.ceil((last - first + 1) / limit));
+                const ticks = [];
+                for (let year = first; year <= last; year += step) {
+                  const value = Date.UTC(year, 0, 1);
+                  if (value >= points[0].x && value <= points.at(-1).x) ticks.push({ value });
+                }
+                if (!ticks.length) ticks.push({ value: points[0].x });
                 axis.ticks = ticks;
               },
               ticks: { autoSkip: true, maxTicksLimit: 5, maxRotation: 0, padding: 6, font: { size: 11 }, callback: (value) => String(new Date(value).getUTCFullYear()) }

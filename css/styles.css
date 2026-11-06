@@ -135,8 +135,7 @@
     }
 
     #assetNetChartCard, #assetLongTermChartCard { grid-column: 1 / -1; }
-    #assetLongTermChartCard { min-width: 0; max-width: 100%; }
-    #mobileNetChartSlot #assetLongTermChartCard { margin-top: 10px; }
+    #assetLongTermChartCard { min-width: 0; max-width: 100%; margin-top: 14px; }
 
     .mobile-only {
       display: none;
@@ -2102,7 +2101,7 @@
         order: 1;
       }
 
-      #assetLongTermChartCard { order: 1; }
+      body:not([data-mobile-view="home"]):not([data-mobile-view="assets"]) #assetLongTermChartCard { display: none; }
 
       #assetMixChartCard {
         order: 2;
