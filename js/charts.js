@@ -392,8 +392,8 @@
     let assetLongTermChartInstance = null;
 
     function longTermNetWorthData() {
-      return recordedAssetPeriods().map((period) => ({
-        x: Date.UTC(periodYear(period), periodMonth(period), 0),
+      return recordedAssetPeriods().map((period, index) => ({
+        x: index,
         y: Object.values(assetCategoryTotals(period)).reduce((sum, value) => sum + value, 0),
         period
       }));
@@ -403,14 +403,16 @@
       const canvas = document.getElementById("assetLongTermChart");
       if (!canvas || !window.Chart) return;
       const data = longTermNetWorthData();
+      const labels = data.map((point) => point.period);
       if (assetLongTermChartInstance) {
+        assetLongTermChartInstance.data.labels = labels;
         assetLongTermChartInstance.data.datasets[0].data = data;
         assetLongTermChartInstance.update("none");
         return;
       }
       assetLongTermChartInstance = new Chart(canvas, {
         type: "line",
-        data: { datasets: [{
+        data: { labels, datasets: [{
           label: "순자산",
           data,
           borderColor: "#2563eb",
@@ -441,25 +443,17 @@
           },
           scales: {
             x: {
-              type: "linear",
+              type: "category",
               bounds: "data",
               grid: { display: false },
-              afterBuildTicks: (axis) => {
-                const points = axis.chart.data.datasets[0].data;
-                if (!points.length) { axis.ticks = []; return; }
-                // Match year labels to that year's last record, not the following January.
-                const annual = new Map();
-                points.forEach((point) => annual.set(new Date(point.x).getUTCFullYear(), point.x));
-                const width = Math.max(1, axis.maxWidth - 80);
-                const span = axis.max - axis.min;
-                const minimumGap = span * 64 / width;
-                const ticks = [];
-                for (const value of [...annual.values()].reverse()) {
-                  if (!ticks.length || ticks.at(-1).value - value >= minimumGap) ticks.push({ value });
+              ticks: {
+                autoSkip: true, autoSkipPadding: 12, maxRotation: 0, padding: 6, font: { size: 11 },
+                callback: function(value) {
+                  const period = this.getLabelForValue(value);
+                  if (!period) return "";
+                  return periodLabel(period).length === 4 ? period.slice(0, 4) : period.slice(2).replace("-", ".");
                 }
-                axis.ticks = ticks.reverse();
-              },
-              ticks: { autoSkip: false, maxRotation: 0, padding: 6, font: { size: 11 }, callback: (value) => String(new Date(value).getUTCFullYear()) }
+              }
             },
             y: {
               title: { display: true, text: "순자산 (억원)" },
