@@ -447,19 +447,19 @@
               afterBuildTicks: (axis) => {
                 const points = axis.chart.data.datasets[0].data;
                 if (!points.length) { axis.ticks = []; return; }
-                const first = new Date(points[0].x).getUTCFullYear();
-                const last = new Date(points.at(-1).x).getUTCFullYear();
-                const limit = Math.max(2, Math.min(5, Math.floor(axis.chart.width / 75)));
-                const step = Math.max(1, Math.ceil((last - first + 1) / limit));
+                // Match year labels to that year's last record, not the following January.
+                const annual = new Map();
+                points.forEach((point) => annual.set(new Date(point.x).getUTCFullYear(), point.x));
+                const width = Math.max(1, axis.maxWidth - 80);
+                const span = axis.max - axis.min;
+                const minimumGap = span * 64 / width;
                 const ticks = [];
-                for (let year = first; year <= last; year += step) {
-                  const value = Date.UTC(year, 0, 1);
-                  if (value >= points[0].x && value <= points.at(-1).x) ticks.push({ value });
+                for (const value of [...annual.values()].reverse()) {
+                  if (!ticks.length || ticks.at(-1).value - value >= minimumGap) ticks.push({ value });
                 }
-                if (!ticks.length) ticks.push({ value: points[0].x });
-                axis.ticks = ticks;
+                axis.ticks = ticks.reverse();
               },
-              ticks: { autoSkip: true, maxTicksLimit: 5, maxRotation: 0, padding: 6, font: { size: 11 }, callback: (value) => String(new Date(value).getUTCFullYear()) }
+              ticks: { autoSkip: false, maxRotation: 0, padding: 6, font: { size: 11 }, callback: (value) => String(new Date(value).getUTCFullYear()) }
             },
             y: {
               title: { display: true, text: "순자산 (억원)" },
