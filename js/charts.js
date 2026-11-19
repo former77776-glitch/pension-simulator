@@ -360,7 +360,7 @@
             legend: { position: "bottom", labels: { boxWidth: 10, boxHeight: 10, usePointStyle: true } },
             assetMixCenterText: { text: rawTotal ? compactWon(rawTotal) : "데이터 없음" },
             datalabels: {
-              display: hasDataLabels(),
+              display: (ctx) => hasDataLabels() && rawTotal > 0 && values[ctx.dataIndex] / rawTotal >= 0.05,
               color: "#111827",
               backgroundColor: "rgba(255,255,255,.88)",
               borderColor: "#e5e7eb",
@@ -368,9 +368,9 @@
               borderRadius: 6,
               padding: { top: 3, right: 5, bottom: 3, left: 5 },
               font: { size: 11, weight: "900" },
-              anchor: "end",
-              align: "end",
-              offset: 4,
+              anchor: "center",
+              align: "center",
+              offset: 0,
               clamp: true,
               formatter: (value, ctx) => {
                 const ratio = total ? value / total : 0;

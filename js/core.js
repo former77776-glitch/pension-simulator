@@ -340,7 +340,7 @@
     function selectSummaryPeriods(periods, year = new Date().getFullYear()) {
       const sorted = [...new Set(periods)].sort(comparePeriods);
       const annual = [year - 3, year - 2, year - 1].map((completedYear) => sorted.filter((period) => periodYear(period) === completedYear).at(-1)).filter(Boolean);
-      return [...new Set([...annual, ...sorted.slice(-3)])].sort(comparePeriods);
+      return [...new Set([...annual, ...sorted.slice(-5)])].sort(comparePeriods);
     }
 
     function displayedAssetPeriods() {
