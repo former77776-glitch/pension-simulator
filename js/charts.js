@@ -1,4 +1,4 @@
-    function periodCategoryAxis(periods) {
+    function periodCategoryAxis(periods, { showAllLabels = false } = {}) {
       const isAnnual = (index) => {
         const period = periods[index];
         return !!period && periodYear(period) < new Date().getFullYear() &&
@@ -11,13 +11,13 @@
         offset: true,
         grid: { display: false },
         ticks: {
-          autoSkip: true,
-          maxTicksLimit: 6,
+          autoSkip: !showAllLabels,
+          ...(showAllLabels ? {} : { maxTicksLimit: 6 }),
           font: (context) => ({ size: 11, weight: isAnnual(context.tick?.value) ? "700" : "400" }),
           color: (context) => isAnnual(context.tick?.value) ? "#1e3a8a" : "#667085",
           padding: 6,
           minRotation: 0,
-          maxRotation: 45,
+          maxRotation: showAllLabels ? 90 : 45,
           callback: (value) => {
             const period = periods[value];
             if (!period) return "";
@@ -172,12 +172,11 @@
         },
         options: (() => {
           const options = assetChartOptions({ stacked: true, suggestedMax: maxAssetTotal ? maxAssetTotal * 1.12 : undefined });
-          options.scales.x = { ...options.scales.x, ...periodCategoryAxis(periods) };
+          options.scales.x = { ...options.scales.x, ...periodCategoryAxis(periods, { showAllLabels: true }) };
           if (!isMobile) return options;
           const tooltipOrder = ["순자산", "주식", "부동산", "현금", "연금", "금"];
           options.interaction = { mode: "index", axis: "x", intersect: false };
           options.events = ["mousemove", "mouseout", "click", "touchstart", "touchmove"];
-          options.scales.x.ticks = { ...options.scales.x.ticks, autoSkip: true, maxTicksLimit: 6 };
           options.plugins.tooltip = {
             enabled: true,
             mode: "index",
@@ -309,9 +308,8 @@
           },
           scales: {
             x: {
+              ...periodCategoryAxis(periods, { showAllLabels: true }),
               stacked: true,
-              grid: { display: false },
-              ticks: { color: "#667085", maxRotation: 45, minRotation: periods.length > 8 ? 35 : 0, autoSkip: true }
             },
             y: {
               stacked: true,
