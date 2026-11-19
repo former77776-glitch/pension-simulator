@@ -28,6 +28,39 @@
       };
     }
 
+    function summaryPeriodBackground(periods) {
+      return {
+        id: "summaryPeriodBackground",
+        beforeDraw(chart) {
+          if (periodViewMode !== "summary" || !periods.length) return;
+          const recent = new Set(recordedAssetPeriods().slice(-5));
+          const year = new Date().getFullYear();
+          const lastAnnualIndex = periods.reduce((last, period, index) =>
+            periodYear(period) < year && period === periods.filter((item) => periodYear(item) === periodYear(period)).at(-1) ? index : last, -1);
+          const start = periods.findIndex((period, index) => index > lastAnnualIndex && recent.has(period));
+          if (start < 0) return;
+          const { ctx, chartArea: area, scales: { x } } = chart;
+          const left = start ? (x.getPixelForValue(start - 1) + x.getPixelForValue(start)) / 2 : area.left;
+          ctx.save();
+          ctx.beginPath();
+          ctx.rect(area.left, area.top, area.right - area.left, area.bottom - area.top);
+          ctx.clip();
+          ctx.fillStyle = "rgba(37, 99, 235, 0.06)";
+          ctx.fillRect(left, area.top, area.right - left, area.bottom - area.top);
+          if (start > 0) {
+            ctx.strokeStyle = "#9ca3af";
+            ctx.lineWidth = 1;
+            ctx.setLineDash([3, 4]);
+            ctx.beginPath();
+            ctx.moveTo(left, area.top);
+            ctx.lineTo(left, area.bottom);
+            ctx.stroke();
+          }
+          ctx.restore();
+        }
+      };
+    }
+
     function ensureChartDataLabels() {
       if (!window.Chart || !window.ChartDataLabels || ensureChartDataLabels.registered) return;
       window.Chart.register(window.ChartDataLabels);
@@ -100,6 +133,7 @@
         { key: "연금", color: "#7c3aed" }
       ];
       assetNetChartInstance = new Chart(canvas, {
+        plugins: [summaryPeriodBackground(periods)],
         data: {
           labels,
           datasets: [
@@ -261,7 +295,7 @@
             stack: "composition"
           }))
         },
-        plugins: hasDataLabels() ? [window.ChartDataLabels] : [],
+        plugins: [summaryPeriodBackground(periods), ...(hasDataLabels() ? [window.ChartDataLabels] : [])],
         options: {
           responsive: true,
           maintainAspectRatio: false,
@@ -585,7 +619,7 @@
             }
           ]
         },
-        plugins: [housePlanValueLabels],
+        plugins: [summaryPeriodBackground(displayedAssetPeriods()), housePlanValueLabels],
         options: {
           responsive: true,
           maintainAspectRatio: false,
