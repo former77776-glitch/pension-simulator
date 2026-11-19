@@ -28,16 +28,17 @@
       };
     }
 
-    function summaryPeriodBackground(periods) {
+    function summaryPeriodBackground(initialPeriods, { fullHistory = false } = {}) {
       return {
         id: "summaryPeriodBackground",
         beforeDraw(chart) {
-          if (periodViewMode !== "summary" || !periods.length) return;
+          const periods = fullHistory ? chart.data.labels : initialPeriods;
+          if ((!fullHistory && periodViewMode !== "summary") || !periods.length) return;
           const recent = new Set(recordedAssetPeriods().slice(-5));
           const year = new Date().getFullYear();
           const lastAnnualIndex = periods.reduce((last, period, index) =>
             periodYear(period) < year && period === periods.filter((item) => periodYear(item) === periodYear(period)).at(-1) ? index : last, -1);
-          const start = periods.findIndex((period, index) => index > lastAnnualIndex && recent.has(period));
+          const start = fullHistory ? Math.max(0, periods.length - 5) : periods.findIndex((period, index) => index > lastAnnualIndex && recent.has(period));
           if (start < 0) return;
           const { ctx, chartArea: area, scales: { x } } = chart;
           const left = start ? (x.getPixelForValue(start - 1) + x.getPixelForValue(start)) / 2 : area.left;
@@ -445,6 +446,7 @@
       }
       assetLongTermChartInstance = new Chart(canvas, {
         type: "line",
+        plugins: [summaryPeriodBackground(labels, { fullHistory: true })],
         data: { labels, datasets: [{
           label: "순자산",
           data,
