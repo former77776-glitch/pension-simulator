@@ -405,6 +405,7 @@
       if (assetLongTermChartInstance) {
         assetLongTermChartInstance.data.labels = labels;
         assetLongTermChartInstance.data.datasets[0].data = data;
+        assetLongTermChartInstance.options.scales.x = periodCategoryAxis(labels, { showAllLabels: true });
         assetLongTermChartInstance.update("none");
         return;
       }
@@ -440,19 +441,7 @@
             } }
           },
           scales: {
-            x: {
-              type: "category",
-              bounds: "data",
-              grid: { display: false },
-              ticks: {
-                autoSkip: true, autoSkipPadding: 12, maxRotation: 0, padding: 6, font: { size: 11 },
-                callback: function(value) {
-                  const period = this.getLabelForValue(value);
-                  if (!period) return "";
-                  return periodLabel(period).length === 4 ? period.slice(0, 4) : period.slice(2).replace("-", ".");
-                }
-              }
-            },
+            x: periodCategoryAxis(labels, { showAllLabels: true }),
             y: {
               title: { display: true, text: "순자산 (억원)" },
               grace: "8%",
@@ -641,7 +630,7 @@
             } }
           },
           scales: {
-            x: periodCategoryAxis(displayedAssetPeriods()),
+            x: periodCategoryAxis(displayedAssetPeriods(), { showAllLabels: true }),
             y: { ticks: { callback: (value) => compactWon(value) }, grace: "10%" },
             yMonthly: {
               position: "right",
