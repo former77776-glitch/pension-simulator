@@ -28,17 +28,17 @@
       };
     }
 
-    function summaryPeriodBackground(initialPeriods, { fullHistory = false } = {}) {
+    function summaryPeriodBackground(initialPeriods, { liveLabels = false } = {}) {
       return {
         id: "summaryPeriodBackground",
         beforeDraw(chart) {
-          const periods = fullHistory ? chart.data.labels : initialPeriods;
-          if ((!fullHistory && periodViewMode !== "summary") || !periods.length) return;
+          const periods = liveLabels ? chart.data.labels : initialPeriods;
+          if (periodViewMode !== "summary" || !periods.length) return;
           const recent = new Set(recordedAssetPeriods().slice(-5));
           const year = new Date().getFullYear();
           const lastAnnualIndex = periods.reduce((last, period, index) =>
             periodYear(period) < year && period === periods.filter((item) => periodYear(item) === periodYear(period)).at(-1) ? index : last, -1);
-          const start = fullHistory ? Math.max(0, periods.length - 5) : periods.findIndex((period, index) => index > lastAnnualIndex && recent.has(period));
+          const start = periods.findIndex((period, index) => index > lastAnnualIndex && recent.has(period));
           if (start < 0) return;
           const { ctx, chartArea: area, scales: { x } } = chart;
           const left = start ? (x.getPixelForValue(start - 1) + x.getPixelForValue(start)) / 2 : area.left;
@@ -425,7 +425,7 @@
     let assetLongTermChartInstance = null;
 
     function longTermNetWorthData() {
-      return recordedAssetPeriods().map((period, index) => ({
+      return displayedAssetPeriods().map((period, index) => ({
         x: index,
         y: Object.values(assetCategoryTotals(period)).reduce((sum, value) => sum + value, 0),
         period
@@ -446,7 +446,7 @@
       }
       assetLongTermChartInstance = new Chart(canvas, {
         type: "line",
-        plugins: [summaryPeriodBackground(labels, { fullHistory: true })],
+        plugins: [summaryPeriodBackground(labels, { liveLabels: true })],
         data: { labels, datasets: [{
           label: "순자산",
           data,
