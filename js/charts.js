@@ -1,7 +1,26 @@
-    if (window.Chart) {
-      Chart.defaults.color = "#c2ced7";
-      Chart.defaults.borderColor = "#39434b";
+    const chartPalettes = {
+      dark: {
+        text: "#c2ced7", muted: "#b2bec7", grid: "#39434b", annual: "#abd3fa", recent: "rgba(100,160,220,.10)",
+        surface: "#222527", strong: "#f1f4f7", labelFill: "rgba(29,36,42,.96)", labelBorder: "#56636e",
+        blue: "#79baff", teal: "#6ad9c6", violet: "#c3a2ef", violetText: "#dfcaf8", reference: "#9cabb9",
+        gapFill: "#413222", gapText: "#ffcb87", warning: "#ff989c"
+      },
+      light: {
+        text: "#415166", muted: "#526477", grid: "#dce5ee", annual: "#234d78", recent: "rgba(37,99,235,.06)",
+        surface: "#fff", strong: "#172033", labelFill: "rgba(255,255,255,.96)", labelBorder: "#bccada",
+        blue: "#2563eb", teal: "#087567", violet: "#7342b2", violetText: "#5c2a92", reference: "#526477",
+        gapFill: "#fff0d7", gapText: "#8a4d14", warning: "#b4232b"
+      }
+    };
+    let chartColors;
+    function refreshChartTheme() {
+      chartColors = chartPalettes[document.documentElement.dataset.theme] || chartPalettes.dark;
+      if (window.Chart) {
+        Chart.defaults.color = chartColors.text;
+        Chart.defaults.borderColor = chartColors.grid;
+      }
     }
+    refreshChartTheme();
 
     function periodCategoryAxis(periods, { showAllLabels = false } = {}) {
       const isAnnual = (index) => {
@@ -19,7 +38,7 @@
           autoSkip: !showAllLabels,
           ...(showAllLabels ? {} : { maxTicksLimit: 6 }),
           font: (context) => ({ size: 11, weight: isAnnual(context.tick?.value) ? "700" : "400" }),
-          color: (context) => isAnnual(context.tick?.value) ? "#abd3fa" : "#b2bec7",
+          color: (context) => isAnnual(context.tick?.value) ? chartColors.annual : chartColors.muted,
           padding: 6,
           minRotation: 0,
           maxRotation: showAllLabels ? 90 : 45,
@@ -51,7 +70,7 @@
           ctx.beginPath();
           ctx.rect(area.left, area.top, area.right - area.left, area.bottom - area.top);
           ctx.clip();
-          ctx.fillStyle = "rgba(100, 160, 220, 0.10)";
+          ctx.fillStyle = chartColors.recent;
           ctx.fillRect(left, area.top, area.right - left, area.bottom - area.top);
           if (start > 0) {
             ctx.strokeStyle = "#9ca3af";
@@ -89,14 +108,14 @@
           datalabels: { display: false }
         },
         scales: {
-          x: { stacked, grid: { display: false }, ticks: { color: "#b2bec7", maxRotation: 0 } },
+          x: { stacked, grid: { display: false }, ticks: { color: chartColors.muted, maxRotation: 0 } },
           y: {
             stacked,
             beginAtZero: true,
             grace: "12%",
             suggestedMax,
-            grid: { color: "#39434b" },
-            ticks: { color: "#b2bec7", callback: (value) => compactWon(value) }
+            grid: { color: chartColors.grid },
+            ticks: { color: chartColors.muted, callback: (value) => compactWon(value) }
           }
         }
       };
@@ -148,7 +167,7 @@
               label: item.key,
               data: totals.map((total) => Math.max(0, total[item.key] || 0)),
               backgroundColor: item.color,
-              borderColor: "#222527",
+              borderColor: chartColors.surface,
               borderWidth: 1,
               borderRadius: 6,
               stack: "assets",
@@ -167,9 +186,9 @@
               order: -9,
               datalabels: {
                 display: (ctx) => hasDataLabels() && (!isMobile || ctx.dataIndex === assetTotals.length - 1),
-                color: "#f1f4f7",
-                backgroundColor: "rgba(29,36,42,.96)",
-                borderColor: "#56636e",
+                color: chartColors.strong,
+                backgroundColor: chartColors.labelFill,
+                borderColor: chartColors.labelBorder,
                 borderWidth: 1,
                 borderRadius: 6,
                 padding: { top: 3, right: 5, bottom: 3, left: 5 },
@@ -184,8 +203,8 @@
               type: "line",
               label: "순자산",
               data: netValues,
-              borderColor: "#f1f4f7",
-              backgroundColor: "#f1f4f7",
+              borderColor: chartColors.strong,
+              backgroundColor: chartColors.strong,
               borderWidth: 3,
               pointRadius: 3,
               pointHoverRadius: isMobile ? 7 : 5,
@@ -195,9 +214,9 @@
               order: -10,
               datalabels: {
                 display: (ctx) => hasDataLabels() && ctx.dataIndex === netValues.length - 1,
-                color: "#f1f4f7",
-                backgroundColor: "rgba(29,36,42,.96)",
-                borderColor: "#56636e",
+                color: chartColors.strong,
+                backgroundColor: chartColors.labelFill,
+                borderColor: chartColors.labelBorder,
                 borderWidth: 1,
                 borderRadius: 6,
                 padding: { top: 3, right: 5, bottom: 3, left: 5 },
@@ -257,10 +276,10 @@
         ctx.save();
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.fillStyle = "#b2bec7";
+        ctx.fillStyle = chartColors.muted;
         ctx.font = "700 11px sans-serif";
         ctx.fillText("총자산", arc.x, arc.y - 9);
-        ctx.fillStyle = "#f1f4f7";
+        ctx.fillStyle = chartColors.strong;
         ctx.font = "900 15px sans-serif";
         ctx.fillText(options.text, arc.x, arc.y + 10);
         ctx.restore();
@@ -295,7 +314,7 @@
             label: item.key,
             data: percentData[index],
             backgroundColor: item.color,
-            borderColor: "#222527",
+            borderColor: chartColors.surface,
             borderWidth: 1,
             borderRadius: 4,
             stack: "composition"
@@ -355,8 +374,8 @@
               stacked: true,
               min: 0,
               max: 100,
-              grid: { color: "#39434b" },
-              ticks: { color: "#b2bec7", callback: (value) => `${value}%` }
+              grid: { color: chartColors.grid },
+              ticks: { color: chartColors.muted, callback: (value) => `${value}%` }
             }
           }
         }
@@ -385,7 +404,7 @@
           datasets: [{
             data: values,
             backgroundColor: ["#2563eb", "#7c3aed", "#0f766e", "#f59e0b", "#64748b"],
-            borderColor: "#222527",
+            borderColor: chartColors.surface,
             borderWidth: 3,
             hoverOffset: 6
           }]
@@ -399,9 +418,9 @@
             assetMixCenterText: { text: rawTotal ? compactWon(rawTotal) : "데이터 없음" },
             datalabels: {
               display: (ctx) => hasDataLabels() && rawTotal > 0 && values[ctx.dataIndex] / rawTotal >= 0.05,
-              color: "#f1f4f7",
-              backgroundColor: "rgba(29,36,42,.96)",
-              borderColor: "#e5e7eb",
+              color: chartColors.strong,
+              backgroundColor: chartColors.labelFill,
+              borderColor: chartColors.labelBorder,
               borderWidth: 1,
               borderRadius: 6,
               padding: { top: 3, right: 5, bottom: 3, left: 5 },
@@ -445,6 +464,8 @@
       if (assetLongTermChartInstance) {
         assetLongTermChartInstance.data.labels = labels;
         assetLongTermChartInstance.data.datasets[0].data = data;
+        assetLongTermChartInstance.data.datasets[0].borderColor = chartColors.blue;
+        assetLongTermChartInstance.data.datasets[0].backgroundColor = chartColors.blue;
         assetLongTermChartInstance.options.scales.x = periodCategoryAxis(labels, { showAllLabels: true });
         assetLongTermChartInstance.update("none");
         return;
@@ -455,8 +476,8 @@
         data: { labels, datasets: [{
           label: "순자산",
           data,
-          borderColor: "#79baff",
-          backgroundColor: "#79baff",
+          borderColor: chartColors.blue,
+          backgroundColor: chartColors.blue,
           borderWidth: 2,
           pointRadius: 2,
           pointHoverRadius: 5,
@@ -554,12 +575,12 @@
             const width = ctx.measureText(label).width + 8;
             if (index < monthlyMeta.data.length - 1 && Math.abs(monthlyMeta.data[index + 1].x - x) < width + 8) return;
             const labelY = Math.max(chartArea.top + 8, y - 13);
-            ctx.fillStyle = "rgba(29,36,42,.96)";
+            ctx.fillStyle = chartColors.labelFill;
             ctx.strokeStyle = "#c4b5fd";
             ctx.lineWidth = 1;
             ctx.fillRect(x - width / 2, labelY - 8, width, 16);
             ctx.strokeRect(x - width / 2, labelY - 8, width, 16);
-            ctx.fillStyle = "#dfcaf8";
+            ctx.fillStyle = chartColors.violetText;
             ctx.fillText(label, x, labelY);
           });
           ctx.restore();
@@ -599,8 +620,8 @@
               type: "line",
               label: "월 상환액",
               data: rows.map((row) => row.monthlyPayment),
-              borderColor: "#c3a2ef",
-              backgroundColor: "#c3a2ef",
+              borderColor: chartColors.violet,
+              backgroundColor: chartColors.violet,
               yAxisID: "yMonthly",
               pointRadius: (ctx) => ctx.chart.width < 420 ? 2 : 3,
               pointHoverRadius: 4,
@@ -613,8 +634,8 @@
               type: "line",
               label: `LTV ${ltvPercent}% 한도`,
               data: rows.map((row) => row.loanLimit || ltvLimit),
-              borderColor: "#9cabb9",
-              backgroundColor: "#9cabb9",
+              borderColor: chartColors.reference,
+              backgroundColor: chartColors.reference,
               yAxisID: "y",
               borderDash: [6, 5],
               pointRadius: 0,
@@ -702,8 +723,8 @@
       const maxStack = Math.max(...pensionRows.map((r) => series.reduce((s, item) => s + Math.max(0, r[item.key]), 0)), 1) / 100000000;
       const maxLine = Math.max(...lineSeries.map((line) => Math.max(...pensionRows.map((r) => Math.max(0, r[line.key]) / 100000000))), 0);
       const yMax = Math.max(maxStack, maxLine, 1) * 1.12;
-      ctx.strokeStyle = "#39434b";
-      ctx.fillStyle = "#b2bec7";
+      ctx.strokeStyle = chartColors.grid;
+      ctx.fillStyle = chartColors.muted;
       ctx.font = "12px Malgun Gothic, sans-serif";
       for (let i = 0; i <= 5; i += 1) {
         const y = area.bottom - area.height * i / 5;
@@ -719,11 +740,11 @@
       if (gapStartIndex >= 0 && gapEndIndex > gapStartIndex) {
         const startX = area.left + gapStartIndex * (barW + gap);
         const endX = area.left + gapEndIndex * (barW + gap);
-        ctx.fillStyle = "#413222";
+        ctx.fillStyle = chartColors.gapFill;
         ctx.globalAlpha = .72;
         ctx.fillRect(startX, area.top, Math.max(barW, endX - startX), area.height);
         ctx.globalAlpha = 1;
-        ctx.fillStyle = "#ffcb87";
+        ctx.fillStyle = chartColors.gapText;
         ctx.font = "11px Malgun Gothic, sans-serif";
         ctx.fillText("국민연금 전 소득공백", startX + 4, area.top + 14);
       }
@@ -753,7 +774,7 @@
         ctx.stroke();
         ctx.setLineDash([]);
       }
-      ctx.fillStyle = "#b2bec7";
+      ctx.fillStyle = chartColors.muted;
       ctx.font = "12px Malgun Gothic, sans-serif";
       ctx.textAlign = "center";
       const labelGap = 34;
@@ -772,13 +793,13 @@
         { key: "개인연금 잔액", color: "#34a853" },
         { key: "IRP(과세재원) 잔액", color: "#f59e0b" },
         { key: "IRP(퇴직재원) 잔액", color: "#ef4444" }
-      ], [{ key: "총 잔액", color: "#abd3fa" }]);
+      ], [{ key: "총 잔액", color: chartColors.annual }]);
       drawChart(document.getElementById("incomeChart"), [
         { key: "국민연금", color: "#3b82f6" },
         { key: "IRP(퇴직재원)", color: "#ef4444" },
         { key: "IRP(과세재원)", color: "#f59e0b" },
         { key: "개인연금", color: "#34a853" }
-      ], [{ key: "총 과세", color: "#abd3fa" }, { key: "그해 목표 실수령액", color: "#ff989c", dash: true }]);
+      ], [{ key: "총 과세", color: chartColors.annual }, { key: "그해 목표 실수령액", color: chartColors.warning, dash: true }]);
     }
 
     const pensionChartResize = new ResizeObserver(() => renderCharts());

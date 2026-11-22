@@ -98,9 +98,9 @@
       const data = {
         labels,
         datasets: [
-          { label: "목표 투자자산", data: targetAssets, borderColor: "#79baff", borderWidth: 2, pointRadius: 0, tension: 0.15, fill: false },
-          { label: `현재 선택 ${result.jepiWeight}%`, data: selectedPoint, borderColor: "#6ad9c6", backgroundColor: "#6ad9c6", pointRadius: 6, pointHoverRadius: 7, showLine: false },
-          { label: "현재 투자 가능 자산", data: labels.map(() => currentAssets), borderColor: "#b2bec7", borderWidth: 2, borderDash: [7, 5], pointRadius: 0, fill: false }
+          { label: "목표 투자자산", data: targetAssets, borderColor: chartColors.blue, borderWidth: 2, pointRadius: 0, tension: 0.15, fill: false },
+          { label: `현재 선택 ${result.jepiWeight}%`, data: selectedPoint, borderColor: chartColors.teal, backgroundColor: chartColors.teal, pointRadius: 6, pointHoverRadius: 7, showLine: false },
+          { label: "현재 투자 가능 자산", data: labels.map(() => currentAssets), borderColor: chartColors.muted, borderWidth: 2, borderDash: [7, 5], pointRadius: 0, fill: false }
         ]
       };
       const options = {

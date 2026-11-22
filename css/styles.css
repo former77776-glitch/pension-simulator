@@ -1,23 +1,23 @@
     :root {
-      --bg: #181a1c;
-      --surface: #222527;
-      --border: #383d41;
-      --text: #f1f4f7;
-      --muted: #b2bec7;
-      --accent: #225565;
-      --accent-text: #78d9c9;
-      --accent-soft: #253940;
+      --bg: light-dark(#f5f7fa, #181a1c);
+      --surface: light-dark(#ffffff, #222527);
+      --border: light-dark(#d5dee8, #383d41);
+      --text: light-dark(#172033, #f1f4f7);
+      --muted: light-dark(#526477, #b2bec7);
+      --accent: light-dark(#155868, #225565);
+      --accent-text: light-dark(#087768, #78d9c9);
+      --accent-soft: light-dark(#e4eef0, #253940);
       --header: #234455;
-      --estimate: #3e3025;
-      --net: #243931;
-      --negative: #ff989c;
-      --green: #7bd6a3;
+      --estimate: light-dark(#f8e7d1, #3e3025);
+      --net: light-dark(#e3f3e8, #243931);
+      --negative: light-dark(#b4232b, #ff989c);
+      --green: light-dark(#166534, #7bd6a3);
       --amber: #f59e0b;
-      --red: #f58c90;
-      --navy: #a9cdf8;
-      --teal: #6ad9c6;
-      --violet: #c5a6f0;
-      --cyan: #78d2e9;
+      --red: light-dark(#b4232b, #f58c90);
+      --navy: light-dark(#234d78, #a9cdf8);
+      --teal: light-dark(#087567, #6ad9c6);
+      --violet: light-dark(#6338a0, #c5a6f0);
+      --cyan: light-dark(#096887, #78d2e9);
       --shadow: 0 14px 34px rgba(23, 32, 51, .08);
       font-family: "Malgun Gothic", "Apple SD Gothic Neo", "Segoe UI", system-ui, sans-serif;
     }
@@ -46,7 +46,7 @@
       border-radius: 7px;
       padding: 0 12px;
       background: var(--accent-soft);
-      color: #a9cdf8;
+      color: light-dark(#234d78, #a9cdf8);
       font-weight: 700;
       cursor: pointer;
       white-space: nowrap;
@@ -63,7 +63,7 @@
       border: 1px solid var(--border);
       border-radius: 6px;
       padding: 0 8px;
-      background: #222527;
+      background: light-dark(#ffffff, #222527);
       color: var(--text);
     }
 
@@ -92,7 +92,7 @@
     }
 
     .tab {
-      background: #29343f;
+      background: light-dark(#edf2f7, #29343f);
       color: var(--text);
     }
 
@@ -242,7 +242,7 @@
       width: 100%;
       min-height: 44px;
       margin-top: 8px;
-      background: #29343f;
+      background: light-dark(#edf2f7, #29343f);
       color: var(--navy);
     }
 
@@ -252,7 +252,7 @@
       padding: 12px;
       border: 1px solid var(--border);
       border-radius: 8px;
-      background: #222527;
+      background: light-dark(#ffffff, #222527);
     }
 
     .mobile-view-heading strong,
@@ -267,7 +267,7 @@
       min-height: 44px;
       padding: 8px 12px;
       color: var(--navy);
-      background: #29343f;
+      background: light-dark(#edf2f7, #29343f);
     }
 
     .mobile-investment-tools {
@@ -457,7 +457,7 @@
       padding: 7px 8px;
       border: 1px solid var(--border);
       border-radius: 8px;
-      background: #272c30;
+      background: light-dark(#f3f6f9, #272c30);
       min-width: 0;
     }
 
@@ -518,8 +518,8 @@
     }
 
     .toolbar .secondary-actions button {
-      background: #243442;
-      color: #b8d5f3;
+      background: light-dark(#e8f2fc, #243442);
+      color: light-dark(#25466a, #b8d5f3);
       font-weight: 700;
     }
 
@@ -636,20 +636,20 @@
       min-height: 24px;
       padding: 0 8px;
       border-radius: 999px;
-      background: #2a3034;
+      background: light-dark(#eef2f5, #2a3034);
       color: var(--muted);
       font-size: 12px;
       font-weight: 900;
     }
 
     .sync-badge.connected {
-      background: #233a30;
-      color: #9ae6ba;
+      background: light-dark(#dcfce7, #233a30);
+      color: light-dark(#166534, #9ae6ba);
     }
 
     .sync-badge.pending {
-      background: #3b2c24;
-      color: #ffc19d;
+      background: light-dark(#fff0e4, #3b2c24);
+      color: light-dark(#8a3a1c, #ffc19d);
     }
 
     .managed-year-badge {
@@ -657,10 +657,10 @@
       align-items: center;
       min-height: 34px;
       padding: 0 10px;
-      border: 1px solid #425c77;
+      border: 1px solid light-dark(#bfd3ea, #425c77);
       border-radius: 8px;
-      background: #243442;
-      color: #8fc7fa;
+      background: light-dark(#e8f2fc, #243442);
+      color: light-dark(#1d4d7f, #8fc7fa);
       font-size: 12px;
       font-weight: 800;
       white-space: nowrap;
@@ -679,21 +679,21 @@
     .asset-table {
       table-layout: fixed;
       font-size: 12px;
-      background: #222527;
+      background: light-dark(#ffffff, #222527);
       border-collapse: separate;
       border-spacing: 0;
     }
 
     th, td {
       border: 0;
-      border-bottom: 1px solid #3a454d;
+      border-bottom: 1px solid light-dark(#dfe7ed, #3a454d);
       padding: 4px 6px;
       white-space: nowrap;
     }
 
     th {
-      background: #272c30;
-      color: #bfccd5;
+      background: light-dark(#f3f6f9, #272c30);
+      color: light-dark(#415166, #bfccd5);
       text-align: center;
       font-weight: 800;
       height: 30px;
@@ -706,15 +706,15 @@
     td.category {
       text-align: center;
       font-weight: 700;
-      background: #272c30;
-      color: #c4d1db;
+      background: light-dark(#f3f6f9, #272c30);
+      color: light-dark(#35475a, #c4d1db);
       width: 72px;
     }
 
     td.label {
       text-align: left;
       width: 176px;
-      color: #d8e4ed;
+      color: light-dark(#28384a, #d8e4ed);
     }
 
     td.value {
@@ -735,7 +735,7 @@
 
     td.manual input:focus {
       outline: 2px solid var(--accent);
-      background: #222527;
+      background: light-dark(#ffffff, #222527);
     }
 
     .negative {
@@ -745,12 +745,12 @@
     .net-row td {
       background: var(--net);
       font-weight: 900;
-      border-top: 1px solid #52745a;
+      border-top: 1px solid light-dark(#aacbac, #52745a);
     }
 
     .growth-row td {
       text-align: right;
-      background: #222527;
+      background: light-dark(#ffffff, #222527);
     }
 
     .holdings-card {
@@ -770,7 +770,7 @@
       padding: 12px;
       border: 1px dashed var(--border);
       border-radius: 8px;
-      background: #272c30;
+      background: light-dark(#f3f6f9, #272c30);
       color: var(--muted);
       font-size: 13px;
       line-height: 1.5;
@@ -799,10 +799,10 @@
       max-width: 100%;
       min-width: 0;
       padding: 5px 8px;
-      border: 1px solid #425c77;
+      border: 1px solid light-dark(#bfd3ea, #425c77);
       border-radius: 999px;
-      background: #243442;
-      color: #8fc7fa;
+      background: light-dark(#e8f2fc, #243442);
+      color: light-dark(#1d4d7f, #8fc7fa);
       font-size: 12px;
       font-weight: 900;
       line-height: 1.25;
@@ -816,7 +816,7 @@
       padding: 9px;
       border: 1px solid var(--border);
       border-radius: 8px;
-      background: #272c30;
+      background: light-dark(#f3f6f9, #272c30);
     }
 
     .investment-summary span {
@@ -840,7 +840,7 @@
     td.investment-cell {
       cursor: pointer;
       position: relative;
-      background: #222527;
+      background: light-dark(#ffffff, #222527);
       padding-right: 8px;
     }
 
@@ -860,7 +860,7 @@
     td.investment-cell:hover {
       outline: 2px solid rgba(245, 158, 11, .45);
       outline-offset: -2px;
-      background: #3b3223;
+      background: light-dark(#fff6e0, #3b3223);
     }
 
     td.investment-cell:hover::after {
@@ -870,7 +870,7 @@
     td.investment-cell.selected-investment {
       outline: 1px solid var(--accent);
       outline-offset: -2px;
-      background: #243442;
+      background: light-dark(#e8f2fc, #243442);
       font-weight: 900;
     }
 
@@ -914,7 +914,7 @@
       overflow: auto;
       border: 1px solid var(--border);
       border-radius: 8px;
-      background: #222527;
+      background: light-dark(#ffffff, #222527);
       box-shadow: 0 16px 32px rgba(15, 23, 42, .14);
       padding: 4px;
     }
@@ -935,7 +935,7 @@
 
     .autocomplete-option:hover,
     .autocomplete-option.active {
-      background: #293e48;
+      background: light-dark(#eaf4fc, #293e48);
     }
 
     .autocomplete-option .symbol {
@@ -1001,7 +1001,7 @@
       padding: 9px;
       border: 1px solid var(--border);
       border-radius: 8px;
-      background: #222527;
+      background: light-dark(#ffffff, #222527);
       overflow: hidden;
     }
 
@@ -1072,8 +1072,8 @@
     .holding-list button {
       min-height: 26px;
       padding: 0 7px;
-      border-color: #3d464d;
-      background: #272c30;
+      border-color: light-dark(#d5dee8, #3d464d);
+      background: light-dark(#f3f6f9, #272c30);
       color: var(--muted);
       font-size: 11px;
       font-weight: 800;
@@ -1157,7 +1157,7 @@
 
     .field input {
       text-align: right;
-      background: #272c30;
+      background: light-dark(#f3f6f9, #272c30);
     }
 
     .stepper {
@@ -1284,7 +1284,7 @@
     }
 
     .sim-table th, .sim-table td {
-      border: 1px solid #283238;
+      border: 1px solid light-dark(#e6edf4, #283238);
       padding: 7px 8px;
       text-align: right;
     }
@@ -1293,7 +1293,7 @@
       position: sticky;
       top: 0;
       z-index: 1;
-      background: #2c383e;
+      background: light-dark(#edf3f8, #2c383e);
     }
 
     .sim-table th.main {
@@ -1311,9 +1311,9 @@
       z-index: 10;
       display: none;
       padding: 8px 10px;
-      border: 1px solid #c4d1db;
+      border: 1px solid light-dark(#35475a, #c4d1db);
       border-radius: 7px;
-      background: rgba(28, 34, 39, .98);
+      background: light-dark(rgba(255, 255, 255, .98), rgba(28, 34, 39, .98));
       color: var(--text);
       box-shadow: 0 12px 28px rgba(15, 23, 42, .18);
       font-size: 12px;
@@ -1513,7 +1513,7 @@
       min-height: 28px;
       padding: 0 10px;
       border-radius: 999px;
-      background: #302d43;
+      background: light-dark(#eef2ff, #302d43);
       color: var(--navy);
       font-size: 12px;
       font-weight: 900;
@@ -1526,13 +1526,13 @@
       min-height: 24px;
       padding: 0 8px;
       border-radius: 999px;
-      background: #233a30;
+      background: light-dark(#dcfce7, #233a30);
       color: var(--green);
       font-weight: 900;
     }
 
     .status-badge.bad {
-      background: #432b30;
+      background: light-dark(#fdecee, #432b30);
       color: var(--red);
     }
 
@@ -1602,21 +1602,21 @@
     }
 
     .house-table th {
-      background: #243442;
+      background: light-dark(#e8f2fc, #243442);
       color: var(--navy);
       font-weight: 900;
     }
 
     .house-table th.final-period,
     .house-table td.final-period {
-      background: #3b2c24;
+      background: light-dark(#fff0e4, #3b2c24);
     }
 
     .house-table th:first-child,
     .house-table td:first-child {
       text-align: left;
       width: 130px;
-      background: #272c30;
+      background: light-dark(#f3f6f9, #272c30);
       font-weight: 800;
     }
 
@@ -1625,7 +1625,7 @@
       gap: 8px;
       border: 1px solid var(--border);
       border-radius: 8px;
-      background: #222527;
+      background: light-dark(#ffffff, #222527);
     }
 
     details.house-details > summary {
@@ -1667,7 +1667,7 @@
     .retirement-period {
       padding: 6px 9px;
       border-radius: 6px;
-      background: #283238;
+      background: light-dark(#e6edf4, #283238);
       color: var(--muted);
       font-size: 12px;
       font-weight: 700;
@@ -1738,7 +1738,7 @@
       min-width: 0;
       min-height: 28px;
       padding: 4px 5px;
-      background: #283238;
+      background: light-dark(#e6edf4, #283238);
       color: var(--muted);
       font-size: 11px;
     }
@@ -1746,12 +1746,12 @@
     .retirement-presets button.active {
       background: var(--accent-soft);
       color: var(--navy);
-      box-shadow: inset 0 0 0 1px #5079a5;
+      box-shadow: inset 0 0 0 1px light-dark(#b0cae3, #5079a5);
     }
 
     .retirement-additional-card {
-      border-color: #5079a5;
-      background: #25323f;
+      border-color: light-dark(#b0cae3, #5079a5);
+      background: light-dark(#edf5fd, #25323f);
     }
 
     .retirement-additional-card strong {
@@ -1760,8 +1760,8 @@
     }
 
     .retirement-additional-card.complete {
-      border-color: #548568;
-      background: #23382e;
+      border-color: light-dark(#a7cbae, #548568);
+      background: light-dark(#edf7ef, #23382e);
     }
 
     .retirement-additional-card.complete strong {
@@ -1815,7 +1815,7 @@
       margin-top: 15px;
       overflow: hidden;
       border-radius: 6px;
-      background: #29343f;
+      background: light-dark(#edf2f7, #29343f);
     }
 
     .retirement-progress-track > div {
@@ -1846,7 +1846,7 @@
       padding: 10px 12px;
       border: 1px solid var(--border);
       border-radius: 7px;
-      background: #272c30;
+      background: light-dark(#f3f6f9, #272c30);
       text-align: right;
     }
 
@@ -2067,7 +2067,7 @@
         display: block;
         border: 1px solid var(--border);
         border-radius: 8px;
-        background: #222527;
+        background: light-dark(#ffffff, #222527);
       }
 
       .mobile-input-details > summary {
@@ -2188,7 +2188,7 @@
         gap: 4px;
         min-height: 64px;
         padding: 8px max(8px, env(safe-area-inset-left)) calc(8px + env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-right));
-        background: rgba(25, 33, 40, .97);
+        background: light-dark(rgba(255, 255, 255, .97), rgba(25, 33, 40, .97));
         border-top: 1px solid var(--border);
         box-shadow: 0 -8px 24px rgba(23, 32, 51, .08);
       }
@@ -2198,7 +2198,7 @@
         min-width: 0;
         padding: 8px 4px;
         border-radius: 10px;
-        background: #283238;
+        background: light-dark(#e6edf4, #283238);
         color: var(--text);
         font-size: 12px;
       }

@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>PENSION LAB</title>
+  <script src="./js/theme.js"></script>
   <link rel="stylesheet" href="./css/styles.css">
   <link rel="stylesheet" href="./css/pension-lab.css">
 </head>
@@ -17,7 +18,16 @@
       <p id="labSignInStatus" role="status"></p>
     </form>
   </div>
-  <header class="lab-header"><strong>PENSION LAB</strong><span>가족 자산 관리</span><a href="#serverSyncCard" id="labSyncLink">동기화 설정</a></header>
+  <header class="lab-header">
+    <strong>PENSION LAB</strong><span>가족 자산 관리</span>
+    <div class="lab-header-actions">
+      <a href="#serverSyncCard" id="labSyncLink">동기화 설정</a>
+      <div class="lab-theme-picker" role="group" aria-label="화면 테마">
+        <button type="button" data-lab-theme="dark" aria-pressed="true">다크</button>
+        <button type="button" data-lab-theme="light" aria-pressed="false">화이트</button>
+      </div>
+    </div>
+  </header>
   <main id="labWorkspace">
     <div class="topbar">
       <h1>자산 기록 기반 연금 시뮬레이터</h1>
