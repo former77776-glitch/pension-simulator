@@ -15,6 +15,7 @@
       <label>이메일<input id="labEmail" type="email" autocomplete="username" required></label>
       <label>비밀번호<input id="familyPasswordInput" type="password" autocomplete="current-password" required></label>
       <button class="primary">로그인</button>
+      <button type="button" data-lab-backup>이 브라우저의 자산 백업</button>
       <p id="labSignInStatus" role="status"></p>
     </form>
   </div>
@@ -113,6 +114,7 @@
         <div class="server-sync-actions">
           <button type="button" id="saveToServer" disabled>서버 저장</button>
           <button type="button" id="loadFromServer" disabled>서버 불러오기</button>
+          <button type="button" data-lab-backup>JSON 백업</button>
         </div>
         <details class="server-sync-details">
           <summary>서버 동기화 설정</summary>
@@ -540,6 +542,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="./js/pension-lab-config.js" defer></script>
+  <script src="/api/sync_config" defer></script>
   <script src="./js/core.js" defer></script>
   <script src="./js/assets.js" defer></script>
   <script src="./js/charts.js" defer></script>

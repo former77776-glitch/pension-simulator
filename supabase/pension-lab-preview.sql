@@ -21,6 +21,12 @@ alter table public.pension_family_members enable row level security;
 alter table public.pension_family_revisions enable row level security;
 revoke all on public.pension_family_members, public.pension_family_revisions from public, anon, authenticated;
 
+-- Retain the existing documents before changing how clients access them.
+insert into public.pension_family_revisions (family_key, updated_at, data_json)
+  select family_key, updated_at, data_json from public.family_assets
+  where updated_at is not null and data_json is not null
+  on conflict do nothing;
+
 create or replace function public.can_access_pension_family(requested_family text)
 returns boolean language sql stable security definer set search_path = ''
 as $$
@@ -72,4 +78,14 @@ revoke all on function public.pension_backup_revision() from public, anon, authe
 drop trigger if exists pension_backup_before_update on public.family_assets;
 create trigger pension_backup_before_update before update on public.family_assets
   for each row execute function public.pension_backup_revision();
+
+create or replace function public.pension_lab_ready(requested_family text)
+returns boolean language sql stable security definer set search_path = ''
+as $$
+  select exists (
+    select 1 from public.pension_family_members where family_key = requested_family
+  );
+$$;
+revoke all on function public.pension_lab_ready(text) from public;
+grant execute on function public.pension_lab_ready(text) to anon, authenticated;
 commit;

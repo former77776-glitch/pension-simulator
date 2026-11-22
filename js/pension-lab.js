@@ -351,6 +351,34 @@ async function importLabSnapshot() {
   }
 }
 
+function downloadLabBackup() {
+  let data = collectAppStateForServer();
+  if (labField("labGate").hidden === false) {
+    const storage = window.localStorage;
+    const keys = {
+      assetRows: "pensionAssetRows", investmentData: "pensionInvestmentData",
+      assetPeriods: "pensionAssetPeriods", assetFutureBackup: "pensionAssetFutureBackup",
+      assetArchivedPeriods: "pensionAssetArchivedPeriods", labAssetMetadata: "pensionLabMetadata",
+      housePlan: HOUSE_PLAN_STORAGE_KEY, retirementPlan: RETIREMENT_PLAN_STORAGE_KEY
+    };
+    data = Object.fromEntries(Object.entries(keys).flatMap(([field, key]) => {
+      const raw = storage.getItem(key);
+      if (!raw) return [];
+      try { return [[field, JSON.parse(raw)]]; } catch { return []; }
+    }));
+    if (!Array.isArray(data.assetRows)) {
+      labField("labSignInStatus").textContent = "이 브라우저에 저장된 자산 기록이 없습니다.";
+      return;
+    }
+  }
+  const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `pension-lab-backup-${currentPeriod()}.json`;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 function initPensionLab() {
   try { restoreLabMetadata(JSON.parse(appStorage.getItem("pensionLabMetadata") || "null")); }
   catch { restoreLabMetadata(null); }
@@ -360,6 +388,12 @@ function initPensionLab() {
   labField("labSnapshotFile").onchange = importLabSnapshot;
   labField("labGate").hidden = !authRequired;
   labField("labWorkspace").inert = authRequired;
+  for (const button of document.querySelectorAll("[data-lab-backup]")) {
+    button.onclick = () => {
+      try { downloadLabBackup(); }
+      catch { labField("labSignInStatus").textContent = "브라우저 저장소를 읽을 수 없습니다."; }
+    };
+  }
   labField("labSignIn").onsubmit = async event => {
     event.preventDefault();
     const button = event.currentTarget.querySelector("button");

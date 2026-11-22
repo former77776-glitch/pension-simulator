@@ -56,8 +56,21 @@ class handler(BaseHTTPRequestHandler):
         )
 
         try:
-            with urlopen(request, timeout=10) as response:
-                response.read()
+            try:
+                with urlopen(request, timeout=10) as response:
+                    response.read()
+            except HTTPError as error:
+                if error.code not in (401, 403):
+                    raise
+                error.close()
+                # The authenticated schema no longer grants anon access to asset rows.
+                query = urlencode({"requested_family": os.environ.get("PENSION_FAMILY_KEY", "kim_family")})
+                readiness = Request(f"{supabase_url}/rest/v1/rpc/pension_lab_ready?{query}",
+                                    headers={"apikey": supabase_key})
+                with urlopen(readiness, timeout=10) as response:
+                    if json.loads(response.read(32)) is not True:
+                        self.send_json(502, {"ok": False, "error": "Supabase family sync is not configured"})
+                        return
             self.send_json(200, {
                 "ok": True,
                 "message": "Supabase keepalive success",

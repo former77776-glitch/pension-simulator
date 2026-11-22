@@ -1,3 +1,7 @@
+    let serverSaveQueued = false;
+    let serverLocalRevision = 0;
+    let serverSavedRevision = 0;
+
     function supabaseConfigured() {
       return Boolean(supabaseClient && FAMILY_KEY);
     }
@@ -39,7 +43,9 @@
         badge.className = `sync-badge ${serverSync.connected ? "connected" : "pending"}`;
       }
       if (meta) {
-        if (!supabaseConfigured()) {
+        if (message && !serverSync.connected) {
+          meta.textContent = message;
+        } else if (!supabaseConfigured()) {
           meta.textContent = "Supabase URL과 anon key를 설정하면 서버 저장/불러오기를 사용할 수 있습니다.";
         } else if (!serverSync.connected) {
           meta.textContent = message || "가족 계정으로 로그인하면 서버 데이터를 불러옵니다.";
@@ -300,10 +306,6 @@
     function collectAppStateForServer() {
       const housePlan = collectHousePlanForServer();
       const realEstatePlan = normalizeRealEstatePlan(collectRealEstatePlanFromInputs());
-      if (!collectAppStateForServer.lastRealEstateDebugAt || Date.now() - collectAppStateForServer.lastRealEstateDebugAt > 3000) {
-        console.debug("realEstatePlan before server save", realEstatePlan);
-        collectAppStateForServer.lastRealEstateDebugAt = Date.now();
-      }
       return {
         schemaVersion: 2,
         serverStateVersion: 2,
@@ -469,6 +471,10 @@
     async function loadFromServer({ initial = false } = {}) {
       if (!requireServerConnection()) return;
       try {
+        if (!initial && (serverSaveInFlight || serverLocalRevision !== serverSavedRevision)) {
+          setServerSyncStatus("이 기기에 서버 미저장 변경이 있습니다. JSON 백업을 내려받은 뒤 다시 불러오세요.");
+          if (serverSaveInFlight || !window.confirm("이 기기의 미저장 변경이 있습니다. 서버 데이터로 바꿀까요?")) return;
+        }
         setServerSyncStatus("서버에서 불러오는 중입니다.");
         const row = await fetchServerAssetRow();
         if (!row?.data_json) {
@@ -484,6 +490,7 @@
           }
         }
         applyServerState(row.data_json);
+        serverSavedRevision = serverLocalRevision;
         const now = new Date().toISOString();
         serverSync.lastLoadAt = now;
         serverSync.lastSyncAt = row.updated_at || now;
@@ -502,7 +509,12 @@
     }
 
     async function saveToServer({ silent = false } = {}) {
-      if (!requireServerConnection() || serverSaveInFlight) return;
+      if (!requireServerConnection()) return;
+      if (serverSaveInFlight) {
+        serverSaveQueued = true;
+        return;
+      }
+      let saved = false;
       try {
         serverSaveInFlight = true;
         if (!silent) setServerSyncStatus("서버에 저장하는 중입니다.");
@@ -511,23 +523,34 @@
           setServerSyncStatus("다른 기기에서 저장한 변경이 있습니다. 서버 데이터를 다시 불러오세요.");
           return;
         }
+        const revision = serverLocalRevision;
         const row = await upsertServerAssetRow(collectAppStateForServer(), current?.updated_at);
+        if (!serverSync.connected) return;
         const now = row?.updated_at || new Date().toISOString();
         serverSync.lastSaveAt = now;
         serverSync.lastSyncAt = now;
         appStorage.setItem(SERVER_LAST_SAVE_STORAGE_KEY, serverSync.lastSaveAt);
         appStorage.setItem(SERVER_LAST_SYNC_STORAGE_KEY, serverSync.lastSyncAt);
         appStorage.setItem(SERVER_LOCAL_UPDATED_STORAGE_KEY, now);
-        setServerSyncStatus("서버 저장됨");
+        serverSavedRevision = revision;
+        saved = true;
+        setServerSyncStatus(revision === serverLocalRevision ? "서버 저장됨" : "추가 변경 저장 대기 중");
       } catch (error) {
         setServerSyncStatus(`서버 저장 실패: ${error.message}`);
       } finally {
         serverSaveInFlight = false;
+        const queued = serverSaveQueued;
+        serverSaveQueued = false;
+        if (saved && serverSync.connected && (queued || (serverSync.autoSave && serverSavedRevision !== serverLocalRevision))) {
+          window.clearTimeout(serverSaveTimer);
+          void saveToServer({ silent: true });
+        }
       }
     }
 
     function scheduleServerAutoSave() {
       if (suppressServerAutoSave) return;
+      serverLocalRevision += 1;
       markLocalUpdated();
       if (!serverSyncEnabled()) return;
       if (!appBootstrapped) {
@@ -545,9 +568,18 @@
     }
 
     async function logoutServerSync() {
+      if ((serverSaveInFlight || serverSavedRevision !== serverLocalRevision) &&
+          !window.confirm("아직 서버에 저장되지 않은 변경이 있습니다. 로그아웃할까요?")) return;
       window.clearTimeout(serverSaveTimer);
       serverSync.connected = false;
       serverSync.token = "";
       await supabaseClient.auth.signOut();
       location.reload();
     }
+
+    window.addEventListener("beforeunload", event => {
+      if (serverSync.connected && (serverSaveInFlight || serverSavedRevision !== serverLocalRevision)) {
+        event.preventDefault();
+        event.returnValue = "";
+      }
+    });
