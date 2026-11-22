@@ -1,6 +1,7 @@
 const labOwners = ["본인", "아내", "공동"];
 const labKinds = ["부동산", "주식", "연금", "금", "현금", "대출/부채"];
 let labMetadata = { groups: [], snapshots: {} };
+let labFilterCategory = "";
 
 function escLab(value) {
   return String(value ?? "").replace(/[&<>"']/g, (char) => ({
@@ -48,6 +49,12 @@ function labTotals(rows) {
   return { assets, debt, net: assets - debt };
 }
 
+function labAmount(value) {
+  if (Math.abs(value) >= 100000000) return `${(value / 100000000).toLocaleString("ko-KR", { maximumFractionDigits: 2 })}억원`;
+  if (Math.abs(value) >= 10000) return `${Math.round(value / 10000).toLocaleString("ko-KR")}만원`;
+  return `${value.toLocaleString("ko-KR")}원`;
+}
+
 function labPeriodRows(period) {
   return labRows(period).filter(row => period === currentPeriod() || row.values?.[period] != null ||
     assetArchivedPeriods.rows?.[row.id]?.[period] != null || getInvestment(row.id, period))
@@ -69,31 +76,40 @@ function renderLabDashboard() {
   const rows = labPeriodRows(period);
   const totals = labTotals(rows);
   labField("labPeriod").textContent = `${periodLabel(period)} · ${supabaseConfigured() ? "가족 자산" : "예시 데이터 · 이 기기 저장"}`;
-  labField("labTotals").innerHTML = [["순자산", totals.net], ["총자산", totals.assets], ["총부채", totals.debt]]
-    .map(([name, value]) => `<div class="card"><span>${name}</span><strong title="${won(value)}"><span class="lab-total-full">${won(value)}</span><span class="lab-total-compact">${compactWon(value)}</span></strong></div>`).join("");
+  labField("labTotals").innerHTML = [
+    ["우리 집 순자산", totals.net, "총자산 − 총부채"],
+    ["총자산", totals.assets, `${rows.filter(row => row.amount >= 0).length}개 자산 항목`],
+    ["총부채", totals.debt, `${rows.filter(row => row.amount < 0).length}개 부채 항목`]
+  ].map(([name, value, note]) => `<div class="card"><span>${name}</span><strong title="${won(value)}">${labAmount(value)}</strong><small>${note}</small></div>`).join("");
   const allocation = new Map();
   rows.filter(row => row.amount > 0).forEach(row => allocation.set(row.category, (allocation.get(row.category) || 0) + row.amount));
-  const colors = ["#2864dc", "#0f766e", "#7048bc", "#d07b20", "#62748a", "#aa4869"];
+  const categoryColors = new Map([["주식", "#219689"], ["현금", "#648dcc"], ["연금", "#aa8ac2"], ["부동산", "#be9c67"], ["금", "#dca456"]]);
+  const customColors = ["#729d87", "#be798c", "#7299a8"];
   const shares = [...allocation].sort((a, b) => b[1] - a[1]).map(([name, value], index) => ({
-    name, share: value / totals.assets * 100, color: colors[index % colors.length]
+    name, share: value / totals.assets * 100, color: categoryColors.get(name) || customColors[index % customColors.length]
   }));
   labField("labAllocation").innerHTML = shares.length ? `<div class="lab-bar" aria-hidden="true">${shares.map(({ share, color }) => `<span style="width:${share}%;background:${color}"></span>`).join("")}</div><ul class="lab-legend">${shares.map(({ name, share, color }) => `<li><i style="background:${color}"></i>${escLab(name)} <strong>${share.toFixed(1)}%</strong></li>`).join("")}</ul>` : "<p>등록된 자산이 없습니다.</p>";
   const filter = labField("labFilter");
-  const selected = filter.value;
-  filter.replaceChildren(new Option("전체 분류", ""), ...[...new Set([...labKinds, ...rows.map(row => row.category)])].map(name => new Option(name, name)));
-  filter.value = [...filter.options].some(option => option.value === selected) ? selected : "";
+  const categories = ["", ...new Set([...labKinds, ...rows.map(row => row.category)])];
+  if (!categories.includes(labFilterCategory)) labFilterCategory = "";
+  const focused = filter.contains(document.activeElement);
+  filter.innerHTML = categories.map(category => `<button type="button" data-lab-category="${escLab(category)}" aria-pressed="${category === labFilterCategory}">${escLab(category || "전체")}</button>`).join("");
+  if (focused) filter.querySelector('[aria-pressed="true"]').focus();
   const query = labField("labSearch").value.trim().toLowerCase();
-  const visible = rows.filter(row => (!filter.value || filter.value === row.category) &&
+  const visible = rows.filter(row => (!labFilterCategory || labFilterCategory === row.category) &&
     [row.name, ...row.holdings.flatMap(holding => [holding.symbol, holding.name])].some(name => String(name || "").toLowerCase().includes(query)));
   list.innerHTML = labTable(visible, true);
+  labField("labAssetCount").textContent = `${visible.length}개 항목`;
 }
 
 function labTable(rows, edit = false) {
   if (!rows.length) return "<p>표시할 자산이 없습니다.</p>";
-  return `<table class="lab-table"><thead><tr><th>자산</th><th>분류</th><th>소유자</th><th>평가금액</th>${edit ? "<th>관리</th>" : ""}</tr></thead><tbody>${rows.map(row => `<tr>
-    <td><strong>${escLab(row.name)}</strong>${row.holdings.map(item => `<small>${escLab(item.name)} · ${escLab(item.symbol)} · ${escLab(item.shares)}주 × ${won(item.price)}${item.updatedAt ? ` · ${escLab(item.updatedAt)}` : ""}</small>`).join("")}</td>
-    <td>${escLab(row.category)}${row.subcategory ? ` / ${escLab(row.subcategory)}` : ""}</td><td>${escLab(row.owner)}</td><td class="lab-money">${won(row.amount)}</td>
-    ${edit ? `<td><button type="button" data-lab-edit="${escLab(row.id)}">${escLab(row.name)} 편집</button></td>` : ""}
+  return `<table class="lab-table"><thead><tr><th>자산명</th><th>분류</th><th>보유 수량</th><th>평가액</th>${edit ? '<th aria-label="관리"></th>' : ""}</tr></thead><tbody>${rows.map(row => `<tr>
+    <td class="lab-asset-name"><strong>${escLab(row.name)}</strong>${row.holdings.map(item => `<small>${escLab(item.symbol || item.name)}${edit ? "" : ` · ${escLab(item.shares)}주 × ${won(item.price)}${item.updatedAt ? ` · ${escLab(item.updatedAt)}` : ""}`}</small>`).join("")}</td>
+    <td class="lab-asset-category">${escLab(row.category)}${row.subcategory ? ` / ${escLab(row.subcategory)}` : ""}</td>
+    <td class="lab-quantity">${row.holdings.length === 1 ? `${escLab(row.holdings[0].shares)}주` : row.holdings.length ? `${row.holdings.length}종목` : "–"}</td>
+    <td class="lab-money" title="${won(row.amount)}">${labAmount(row.amount)}</td>
+    ${edit ? `<td class="lab-row-action"><button type="button" data-lab-edit="${escLab(row.id)}" aria-label="${escLab(row.name)} 수정">수정</button></td>` : ""}
   </tr>`).join("")}</tbody></table>`;
 }
 
@@ -320,7 +336,13 @@ function initPensionLab() {
     else activateTab("assets");
     labField("serverSyncCard").scrollIntoView({ block: "start" });
   };
-  labField("labFilter").onchange = renderLabDashboard;
+  labField("labFilter").onclick = event => {
+    const button = event.target.closest("[data-lab-category]");
+    if (button) {
+      labFilterCategory = button.dataset.labCategory;
+      renderLabDashboard();
+    }
+  };
   labField("labSearch").oninput = renderLabDashboard;
   labField("labAddAsset").onclick = () => editLabAsset();
   labField("labCategories").onclick = () => editLabCategories();

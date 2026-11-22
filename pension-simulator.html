@@ -31,12 +31,13 @@
     </div>
 
     <section id="labDashboardPanel" class="panel active">
-      <div class="lab-heading"><div><h1>자산 대시보드</h1><span id="labPeriod"></span></div><button id="labUpdatePrices" type="button">주식·ETF 가격 업데이트</button></div>
+      <div class="lab-heading lab-dashboard-title"><div><h1>우리 집 자산</h1><span id="labPeriod"></span></div><div class="lab-actions"><button id="labExportHoldings">CSV 저장</button><button class="primary" id="labAddAsset">자산 추가</button></div></div>
       <div class="lab-totals" id="labTotals"></div>
-      <section class="lab-section"><h2>자산 구성</h2><div id="labAllocation"></div></section>
-      <section class="lab-section">
-        <div class="lab-heading"><h2>보유 자산</h2><div class="lab-actions"><button id="labCategories">분류 관리</button><button id="labExportHoldings">CSV 내보내기</button><button class="primary" id="labAddAsset">자산 추가</button></div></div>
-        <div class="lab-filters"><label>자산명 검색<input id="labSearch" type="search"></label><label>대분류<select id="labFilter"></select></label></div>
+      <section class="lab-section lab-portfolio"><h2>자산 포트폴리오</h2><div id="labAllocation"></div></section>
+      <section class="lab-section lab-inventory">
+        <div class="lab-heading"><h2>보유 자산 목록</h2><div class="lab-actions"><button id="labCategories">분류 관리</button><button id="labUpdatePrices" type="button">가격 업데이트</button></div></div>
+        <div class="lab-category-tabs" id="labFilter" role="group" aria-label="대분류"></div>
+        <div class="lab-filters"><input id="labSearch" type="search" aria-label="자산명 검색" placeholder="자산명 검색"><span id="labAssetCount"></span></div>
         <div id="labHoldings"></div>
         <p id="labStatus" role="status"></p>
       </section>
