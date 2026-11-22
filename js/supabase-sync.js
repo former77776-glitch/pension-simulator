@@ -339,13 +339,13 @@
 
     function applyServerState(data) {
       if (!data || typeof data !== "object") throw new Error("서버 데이터 형식이 올바르지 않습니다.");
+      assetFutureBackup = data.assetFutureBackup && typeof data.assetFutureBackup === "object" ? data.assetFutureBackup : {};
       if (Array.isArray(data.assetRows)) {
         assetRows = data.assetRows;
         normalizeAssetRowPeriods(assetRows);
       }
       if (Array.isArray(data.assetPeriods)) assetPeriods = data.assetPeriods.filter(isValidPeriod).sort(comparePeriods);
       if (!assetPeriods.length) assetPeriods = buildAssetPeriods(2024);
-      assetFutureBackup = data.assetFutureBackup && typeof data.assetFutureBackup === "object" ? data.assetFutureBackup : {};
       assetArchivedPeriods = data.assetArchivedPeriods && typeof data.assetArchivedPeriods === "object" ? data.assetArchivedPeriods : {};
       investmentData = data.investmentData && typeof data.investmentData === "object" ? normalizeInvestmentPeriods(data.investmentData) : {};
       persistServerStateToLocalStorage(data);

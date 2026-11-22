@@ -32,6 +32,11 @@
 
     <section id="labDashboardPanel" class="panel active">
       <div class="lab-heading lab-dashboard-title"><div><h1>우리 집 자산</h1><span id="labPeriod"></span></div><div class="lab-actions"><button id="labExportHoldings">CSV 저장</button><button class="primary" id="labAddAsset">자산 추가</button></div></div>
+      <div class="lab-actions" id="labSnapshotControls" hidden>
+        <button id="labImportSnapshot" type="button">Supabase 백업 열기</button>
+        <input id="labSnapshotFile" type="file" accept=".json,application/json" hidden>
+        <span id="labSnapshotStatus" role="status"></span>
+      </div>
       <div class="lab-totals" id="labTotals"></div>
       <section class="lab-section lab-portfolio"><h2>자산 포트폴리오</h2><div id="labAllocation"></div></section>
       <section class="lab-section lab-inventory">

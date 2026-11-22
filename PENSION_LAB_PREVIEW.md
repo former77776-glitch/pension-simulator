@@ -13,6 +13,12 @@ sync. Device UI state is local. Pension inputs are in memory until the server
 document is saved. The legacy family-password check happens in the browser and
 the legacy REST requests use the anonymous role.
 
+For private visual validation, export a single authorized family row containing
+`data_json` from the Supabase dashboard as JSON and select **Supabase 백업 열기**
+in the protected Vercel Preview. A wrapped SQL result containing one row or the
+raw `data_json` object is accepted. The copy stays in browser memory and is
+discarded on reload. Server sync is disabled in this Preview mode.
+
 1. Export a full backup of the legacy family row and any unsynced browser data.
    Use a separate Supabase project for Preview. Import the backed-up family row
    there and retain the original schema and data.

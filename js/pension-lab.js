@@ -2,6 +2,7 @@ const labOwners = ["본인", "아내", "공동"];
 const labKinds = ["부동산", "주식", "연금", "금", "현금", "대출/부채"];
 let labMetadata = { groups: [], snapshots: {} };
 let labFilterCategory = "";
+let labPrivateSnapshot = false;
 
 function escLab(value) {
   return String(value ?? "").replace(/[&<>"']/g, (char) => ({
@@ -75,7 +76,8 @@ function renderLabDashboard() {
   const period = currentPeriod();
   const rows = labPeriodRows(period);
   const totals = labTotals(rows);
-  labField("labPeriod").textContent = `${periodLabel(period)} · ${supabaseConfigured() ? "가족 자산" : "예시 데이터 · 이 기기 저장"}`;
+  const source = labPrivateSnapshot ? "Supabase 백업 · 이 세션에서만 표시" : supabaseConfigured() ? "가족 자산" : "예시 데이터 · 이 기기 저장";
+  labField("labPeriod").textContent = `${periodLabel(period)} · ${source}`;
   labField("labTotals").innerHTML = [
     ["우리 집 순자산", totals.net, "총자산 − 총부채"],
     ["총자산", totals.assets, `${rows.filter(row => row.amount >= 0).length}개 자산 항목`],
@@ -315,10 +317,47 @@ function exportLabCsv(history = false) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+function parseLabSnapshot(raw) {
+  const parsed = JSON.parse(raw.replace(/^\uFEFF/, ""));
+  if (Array.isArray(parsed) && parsed.length !== 1) throw new Error("가족 데이터 한 행만 선택해 주세요.");
+  const row = Array.isArray(parsed) ? parsed[0] : parsed;
+  const data = typeof row?.data_json === "string" ? JSON.parse(row.data_json) : row?.data_json ?? row;
+  if (!Array.isArray(data?.assetRows)) throw new Error("가족 자산의 data_json을 포함한 JSON 파일을 선택해 주세요.");
+  for (const asset of data.assetRows) {
+    if (!asset || typeof asset.id !== "string" || !/^[a-zA-Z0-9_-]+$/.test(asset.id) ||
+        typeof asset.label !== "string" || typeof asset.category !== "string" || /[<>"&]/.test(asset.category)) {
+      throw new Error("자산 식별자 또는 분류 형식이 올바르지 않습니다.");
+    }
+  }
+  return data;
+}
+
+async function importLabSnapshot() {
+  const input = labField("labSnapshotFile");
+  const file = input.files[0];
+  if (!file || SUPABASE_URL || SUPABASE_ANON_KEY || FAMILY_KEY) return;
+  const status = labField("labSnapshotStatus");
+  try {
+    if (file.size > 20 * 1024 * 1024) throw new Error("20MB 이하의 JSON 백업을 선택해 주세요.");
+    const data = parseLabSnapshot(await file.text());
+    appStorage = labSessionStorage;
+    labPrivateSnapshot = true;
+    applyServerState(data);
+    status.textContent = "백업을 열었습니다. 새로고침하면 다시 예시 데이터가 표시됩니다.";
+  } catch (error) {
+    status.textContent = `백업을 열 수 없습니다 · ${error.message}`;
+  } finally {
+    input.value = "";
+  }
+}
+
 function initPensionLab() {
   try { restoreLabMetadata(JSON.parse(appStorage.getItem("pensionLabMetadata") || "null")); }
   catch { restoreLabMetadata(null); }
   const authRequired = Boolean(SUPABASE_URL || SUPABASE_ANON_KEY || FAMILY_KEY);
+  labField("labSnapshotControls").hidden = authRequired;
+  labField("labImportSnapshot").onclick = () => labField("labSnapshotFile").click();
+  labField("labSnapshotFile").onchange = importLabSnapshot;
   labField("labGate").hidden = !authRequired;
   labField("labWorkspace").inert = authRequired;
   labField("labSignIn").onsubmit = async event => {

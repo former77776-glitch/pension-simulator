@@ -6,11 +6,12 @@
       ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: false, detectSessionInUrl: false } })
       : null;
     const labMemory = new Map();
-    const appStorage = supabaseClient ? {
+    const labSessionStorage = {
       getItem: (key) => labMemory.get(key) ?? null,
       setItem: (key, value) => labMemory.set(key, String(value)),
       removeItem: (key) => labMemory.delete(key)
-    } : window.localStorage;
+    };
+    let appStorage = supabaseClient ? labSessionStorage : window.localStorage;
     const SERVER_AUTH_STORAGE_KEY = "pensionServerSyncAuth";
     const SERVER_AUTO_SAVE_STORAGE_KEY = "pensionServerAutoSave";
     const SERVER_LAST_SYNC_STORAGE_KEY = "pensionServerLastSyncAt";

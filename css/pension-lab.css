@@ -49,6 +49,9 @@ body { background: var(--lab-bg); }
 .lab-legend li { display: flex; align-items: center; gap: 6px; font-size: 14px; }
 .lab-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; }
 .lab-actions, .lab-filters { display: flex; gap: 8px; flex-wrap: wrap; }
+#labSnapshotControls[hidden], #labSnapshotFile[hidden] { display: none; }
+#labSnapshotControls { align-items: center; margin-bottom: 12px; }
+#labSnapshotStatus { color: var(--lab-muted); font-size: 14px; overflow-wrap: anywhere; }
 .lab-category-tabs { display: flex; gap: 6px; overflow-x: auto; border-bottom: 1px solid var(--lab-border); }
 #labDashboardPanel .lab-category-tabs button { border: 0; border-radius: 0; border-bottom: 2px solid transparent; color: var(--lab-muted); }
 #labDashboardPanel .lab-category-tabs [aria-pressed="true"] { color: var(--lab-teal); border-bottom-color: var(--lab-teal); }
