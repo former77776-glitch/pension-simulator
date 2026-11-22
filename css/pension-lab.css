@@ -22,6 +22,15 @@ body { background: var(--lab-bg); }
 .lab-theme-picker { display: flex; padding: 3px; border: 1px solid var(--lab-border); border-radius: 7px; background: var(--lab-bg); }
 .lab-theme-picker button { min-height: 30px; padding-inline: 9px; background: transparent; color: var(--lab-muted); font-size: 13px; }
 .lab-theme-picker [aria-pressed="true"] { background: var(--accent-soft); color: var(--accent-text); }
+.lab-public { max-width: 960px; padding-top: 24px; }
+.lab-public .lab-bar[hidden], #publicAssetStatus:empty { display: none; }
+.lab-public-categories { list-style: none; padding: 0; margin: 12px 0 0; }
+.lab-public-categories li { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto minmax(76px, auto); align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--lab-border); }
+.lab-public-categories li:last-child { border-bottom: 0; }
+.lab-public-categories i { width: 10px; height: 10px; border-radius: 2px; }
+.lab-public-categories span:nth-child(3) { color: var(--lab-muted); }
+.lab-public-categories strong { text-align: right; font-variant-numeric: tabular-nums; }
+#publicAssetStatus { color: var(--lab-muted); }
 #labWorkspace { max-width: 1320px; }
 #labDashboardPanel, #labMonthly, #labDialog, .lab-gate { color: var(--lab-text); }
 #labDashboardPanel button, #labMonthly button, #labDialog button, .lab-gate button {

@@ -18,6 +18,7 @@
       root.dataset.theme = next;
       try { localStorage.setItem(preferenceKey, next); } catch { /* Apply for this session. */ }
       syncButtons();
+      if (typeof refreshChartTheme !== "function") return;
       refreshChartTheme();
       const active = document.querySelector(".panel.active")?.id;
       if (active === "assetsPanel") renderAssetCharts();
