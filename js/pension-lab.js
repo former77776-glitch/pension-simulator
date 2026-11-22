@@ -1,0 +1,346 @@
+const labOwners = ["본인", "아내", "공동"];
+const labKinds = ["부동산", "주식", "연금", "금", "현금", "대출/부채"];
+let labMetadata = { groups: [], snapshots: {} };
+
+function escLab(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  })[char]);
+}
+
+function restoreLabMetadata(value) {
+  labMetadata = {
+    groups: Array.isArray(value?.groups) ? structuredClone(value.groups) : [],
+    snapshots: value?.snapshots && typeof value.snapshots === "object" ? structuredClone(value.snapshots) : {}
+  };
+  appStorage.setItem("pensionLabMetadata", JSON.stringify(labMetadata));
+}
+
+function collectLabMetadata() {
+  return labMetadata;
+}
+
+function labPersist() {
+  appStorage.setItem("pensionLabMetadata", JSON.stringify(labMetadata));
+  refreshAssetView();
+  renderHousePlan();
+}
+
+function labField(id) {
+  return document.getElementById(id);
+}
+
+function labRows(period = currentPeriod()) {
+  return assetRows.filter(row => !row.retiredFrom || row.retiredFrom > period);
+}
+
+function labGroup(row) {
+  return labMetadata.groups.find(group => group.id === row.labGroup);
+}
+
+function labCategory(row, period) {
+  return labGroup(row)?.name || assetCategoryKey(row, period);
+}
+
+function labTotals(rows) {
+  const assets = rows.reduce((sum, row) => sum + Math.max(0, row.amount), 0);
+  const debt = rows.reduce((sum, row) => sum + Math.max(0, -row.amount), 0);
+  return { assets, debt, net: assets - debt };
+}
+
+function labPeriodRows(period) {
+  return labRows(period).filter(row => period === currentPeriod() || row.values?.[period] != null ||
+    assetArchivedPeriods.rows?.[row.id]?.[period] != null || getInvestment(row.id, period))
+    .map(row => {
+      const record = getInvestment(row.id, period);
+      return {
+        id: row.id, name: row.label, category: labCategory(row, period), subcategory: row.labSubcategory || "",
+        owner: row.owner || "공동", amount: rowValue(row, period), stock: row.type === "stock",
+        holdings: structuredClone(record?.holdings || []),
+        investment: record ? structuredClone(record) : null
+      };
+    });
+}
+
+function renderLabDashboard() {
+  const list = labField("labHoldings");
+  if (!list) return;
+  const period = currentPeriod();
+  const rows = labPeriodRows(period);
+  const totals = labTotals(rows);
+  labField("labPeriod").textContent = `${periodLabel(period)} · ${supabaseConfigured() ? "가족 자산" : "예시 데이터 · 이 기기 저장"}`;
+  labField("labTotals").innerHTML = [["순자산", totals.net], ["총자산", totals.assets], ["총부채", totals.debt]]
+    .map(([name, value]) => `<div class="card"><span>${name}</span><strong title="${won(value)}"><span class="lab-total-full">${won(value)}</span><span class="lab-total-compact">${compactWon(value)}</span></strong></div>`).join("");
+  const allocation = new Map();
+  rows.filter(row => row.amount > 0).forEach(row => allocation.set(row.category, (allocation.get(row.category) || 0) + row.amount));
+  const colors = ["#2864dc", "#0f766e", "#7048bc", "#d07b20", "#62748a", "#aa4869"];
+  const shares = [...allocation].sort((a, b) => b[1] - a[1]).map(([name, value], index) => ({
+    name, share: value / totals.assets * 100, color: colors[index % colors.length]
+  }));
+  labField("labAllocation").innerHTML = shares.length ? `<div class="lab-bar" aria-hidden="true">${shares.map(({ share, color }) => `<span style="width:${share}%;background:${color}"></span>`).join("")}</div><ul class="lab-legend">${shares.map(({ name, share, color }) => `<li><i style="background:${color}"></i>${escLab(name)} <strong>${share.toFixed(1)}%</strong></li>`).join("")}</ul>` : "<p>등록된 자산이 없습니다.</p>";
+  const filter = labField("labFilter");
+  const selected = filter.value;
+  filter.replaceChildren(new Option("전체 분류", ""), ...[...new Set([...labKinds, ...rows.map(row => row.category)])].map(name => new Option(name, name)));
+  filter.value = [...filter.options].some(option => option.value === selected) ? selected : "";
+  const query = labField("labSearch").value.trim().toLowerCase();
+  const visible = rows.filter(row => (!filter.value || filter.value === row.category) &&
+    [row.name, ...row.holdings.flatMap(holding => [holding.symbol, holding.name])].some(name => String(name || "").toLowerCase().includes(query)));
+  list.innerHTML = labTable(visible, true);
+}
+
+function labTable(rows, edit = false) {
+  if (!rows.length) return "<p>표시할 자산이 없습니다.</p>";
+  return `<table class="lab-table"><thead><tr><th>자산</th><th>분류</th><th>소유자</th><th>평가금액</th>${edit ? "<th>관리</th>" : ""}</tr></thead><tbody>${rows.map(row => `<tr>
+    <td><strong>${escLab(row.name)}</strong>${row.holdings.map(item => `<small>${escLab(item.name)} · ${escLab(item.symbol)} · ${escLab(item.shares)}주 × ${won(item.price)}${item.updatedAt ? ` · ${escLab(item.updatedAt)}` : ""}</small>`).join("")}</td>
+    <td>${escLab(row.category)}${row.subcategory ? ` / ${escLab(row.subcategory)}` : ""}</td><td>${escLab(row.owner)}</td><td class="lab-money">${won(row.amount)}</td>
+    ${edit ? `<td><button type="button" data-lab-edit="${escLab(row.id)}">${escLab(row.name)} 편집</button></td>` : ""}
+  </tr>`).join("")}</tbody></table>`;
+}
+
+function labDialog(markup) {
+  const dialog = labField("labDialog");
+  if (dialog.open) dialog.close();
+  dialog.innerHTML = markup;
+  dialog.showModal();
+  dialog.querySelector("[data-close]").onclick = () => dialog.close();
+  return dialog;
+}
+
+function editLabAsset(id) {
+  const row = labRows().find(item => item.id === id);
+  const period = currentPeriod();
+  const options = [
+    ...labKinds.map(kind => [`kind:${kind}`, kind]),
+    ...labMetadata.groups.flatMap(group => [[group.id, group.name], ...group.children.map(child => [`${group.id}:${child}`, `${group.name} / ${child}`])])
+  ];
+  const dialog = labDialog(`<form><h2>${row ? "자산 편집" : "자산 추가"}</h2>
+    <label>자산명<input name="name" required maxlength="100" value="${escLab(row?.label)}"></label>
+    <label>분류<select name="group">${options.map(([value, name]) => `<option value="${escLab(value)}">${escLab(name)}</option>`).join("")}</select></label>
+    <label>소유자<select name="owner">${labOwners.map(owner => `<option>${owner}</option>`).join("")}</select></label>
+    <label>평가금액 (원)<input name="amount" type="number" min="0" step="1" required value="${Math.abs(row ? rowValue(row, period) : 0)}"></label>
+    <div class="lab-actions"><button type="button" data-close>닫기</button>${row ? '<button type="button" data-retire>삭제</button>' : ""}${row && isInvestmentRow(row) ? '<button type="button" data-holdings>보유 종목 편집</button>' : ""}<button class="primary">저장</button></div>
+    <p role="status"></p></form>`);
+  const form = dialog.querySelector("form");
+  form.elements.group.value = row?.labGroup ? [row.labGroup, row.labSubcategory].filter(Boolean).join(":") : `kind:${row ? assetCategoryKey(row, period) : "현금"}`;
+  if (!form.elements.group.value) form.elements.group.value = "kind:현금";
+  form.elements.owner.value = labOwners.includes(row?.owner) ? row.owner : "공동";
+  const holdingsButton = form.querySelector("[data-holdings]");
+  if (holdingsButton) holdingsButton.onclick = () => { dialog.close(); editLabInvestment(row.id); };
+  const retire = dialog.querySelector("[data-retire]");
+  if (retire) retire.onclick = () => {
+    if (!confirm("현재 보유 목록에서 삭제할까요? 과거 기록은 보관됩니다.")) return;
+    row.retiredFrom = period;
+    dialog.close();
+    labPersist();
+  };
+  form.onsubmit = (event) => {
+    event.preventDefault();
+    const name = form.elements.name.value.trim();
+    if (!name) return;
+    const choice = form.elements.group.value;
+    const separator = choice.indexOf(":");
+    const groupId = separator < 0 ? choice : choice.slice(0, separator);
+    const child = separator < 0 ? "" : choice.slice(separator + 1);
+    const group = labMetadata.groups.find(item => item.id === groupId);
+    const kind = group?.kind || child;
+    const target = row || { id: crypto.randomUUID(), values: {} };
+    const record = getInvestment(target.id, period);
+    if (record?.holdings?.length && kind !== "주식" && kind !== "연금") {
+      form.querySelector("[role=status]").textContent = "보유 종목을 먼저 정리해 주세요.";
+      return;
+    }
+    if (row) {
+      target.labHistoricalKinds ||= {};
+      for (const previous of recordedAssetPeriods().filter(value => value < period)) {
+        target.labHistoricalKinds[previous] ??= assetCategoryKey(target, previous);
+      }
+    }
+    Object.assign(target, {
+      label: name, category: kind, labAccountingKind: kind, owner: form.elements.owner.value,
+      debt: kind === "대출/부채", labGroup: group?.id || "", labSubcategory: group ? child : "",
+      type: kind === "주식" || (kind === "연금" && target.type === "stock") ? "stock" : "manual"
+    });
+    target.values ||= {};
+    target.values[period] = Number(form.elements.amount.value) * (target.debt ? -1 : 1);
+    if (!row) assetRows.push(target);
+    dialog.close();
+    labPersist();
+    if (isInvestmentRow(target)) editLabInvestment(target.id);
+  };
+}
+
+function editLabInvestment(id) {
+  activateTab("assets");
+  if (isMobileLayout()) activateMobileView("investment", { scroll: false });
+  selectedInvestment = { rowId: id, period: currentPeriod() };
+  resetInvestmentDrafts();
+  renderInvestmentPanel();
+  setMobileAssetEditMode(true);
+  labField("investmentCard").scrollIntoView({ block: "start" });
+}
+
+function editLabCategories(id = "") {
+  const group = labMetadata.groups.find(item => item.id === id);
+  const dialog = labDialog(`<form><h2>분류 관리</h2>
+    <label>분류 선택<select name="selected"><option value="">새 대분류</option>${labMetadata.groups.map(item => `<option value="${escLab(item.id)}" ${item.id === id ? "selected" : ""}>${escLab(item.name)}</option>`).join("")}</select></label>
+    <label>대분류 이름<input name="name" maxlength="60" required value="${escLab(group?.name)}"></label>
+    <label>집계 유형<select name="kind">${labKinds.map(kind => `<option ${kind === group?.kind ? "selected" : ""}>${kind}</option>`).join("")}</select></label>
+    ${(group?.children || []).map((child, index) => `<label>소분류<input name="child${index}" maxlength="60" value="${escLab(child)}"></label>`).join("")}
+    <label>새 소분류 (한 줄에 하나)<textarea name="children" rows="3"></textarea></label>
+    <div class="lab-actions"><button type="button" data-close>닫기</button>${group ? '<button type="button" data-remove>삭제</button>' : ""}<button class="primary">저장</button></div><p role="status"></p></form>`);
+  const form = dialog.querySelector("form");
+  form.elements.selected.onchange = () => editLabCategories(form.elements.selected.value);
+  const used = () => labRows().filter(row => row.labGroup === id);
+  const status = message => { form.querySelector("[role=status]").textContent = message; };
+  const remove = dialog.querySelector("[data-remove]");
+  if (remove) remove.onclick = () => {
+    if (used().length) return status("이 분류의 자산을 먼저 다른 분류로 이동해 주세요.");
+    labMetadata.groups = labMetadata.groups.filter(item => item.id !== id);
+    dialog.close();
+    labPersist();
+  };
+  form.onsubmit = event => {
+    event.preventDefault();
+    const name = form.elements.name.value.trim();
+    const kind = form.elements.kind.value;
+    const renamed = new Map((group?.children || []).map((child, index) => [child, form.elements[`child${index}`].value.trim()]));
+    const children = [...renamed.values(), ...form.elements.children.value.split("\n").map(value => value.trim())].filter(Boolean);
+    if (!name || labMetadata.groups.some(item => item.id !== id && item.name === name)) return status("고유한 대분류 이름을 입력해 주세요.");
+    if (new Set(children).size !== children.length) return status("소분류 이름이 중복됩니다.");
+    if (group?.kind !== kind && used().length) return status("집계 유형을 바꾸려면 자산을 먼저 이동해 주세요.");
+    if (used().some(row => row.labSubcategory && !renamed.get(row.labSubcategory))) {
+      return status("사용 중인 소분류의 자산을 먼저 이동해 주세요.");
+    }
+    used().forEach(row => { if (row.labSubcategory) row.labSubcategory = renamed.get(row.labSubcategory); });
+    if (group) Object.assign(group, { name, kind, children });
+    else labMetadata.groups.push({ id: crypto.randomUUID(), name, kind, children });
+    dialog.close();
+    labPersist();
+  };
+}
+
+function renderLabHistory() {
+  const select = labField("labHistoryPeriod");
+  if (!select) return;
+  const previous = select.value || previousMonthPeriod(currentPeriod());
+  const periods = [...new Set([...recordedAssetPeriods(), ...Object.keys(labMetadata.snapshots)])]
+    .filter(period => period < currentPeriod()).sort(comparePeriods).reverse();
+  select.replaceChildren(...periods.map(period => new Option(periodLabel(period), period)));
+  if (periods.includes(previous)) select.value = previous;
+  const snapshot = labMetadata.snapshots[select.value];
+  const rows = snapshot?.rows || labPeriodRows(select.value);
+  const { assets, debt, net } = snapshot?.totals || labTotals(rows);
+  labField("labFinalize").disabled = !select.value || Boolean(snapshot);
+  labField("labHistory").innerHTML = select.value ? `<p>${snapshot ? "확정 기록" : "기존 기록"} · 총자산 ${won(assets)} · 총부채 ${won(debt)} · 순자산 ${won(net)}</p>${labTable(rows)}` : "<p>지난 월 기록이 없습니다.</p>";
+}
+
+let labFinalizationInFlight = false;
+
+async function finalizeLabHistory(requestedPeriod) {
+  const button = labField("labFinalize");
+  const period = typeof requestedPeriod === "string" ? requestedPeriod : labField("labHistoryPeriod").value;
+  if (labFinalizationInFlight || !period || period >= currentPeriod() || labMetadata.snapshots[period]) return;
+  const status = labField("labHistoryStatus");
+  labFinalizationInFlight = true;
+  button.disabled = true;
+  status.textContent = "월말 종가를 확인 중입니다.";
+  const baseline = labMetadata;
+  try {
+    const rows = labPeriodRows(period);
+    if (!rows.length) throw new Error("확정할 자산 기록이 없습니다.");
+    for (const row of rows) {
+      if (!row.stock) continue;
+      if (row.amount && !row.holdings.length) throw new Error(`${row.name}의 당시 보유 수량 기록이 없습니다.`);
+      for (const item of row.holdings) {
+        if (!item.symbol || !Number.isFinite(Number(item.shares)) || Number(item.shares) < 0) throw new Error(`${row.name}의 종목 또는 수량을 확인해 주세요.`);
+        const quote = await fetchPriceApi(`/api/close?symbol=${encodeURIComponent(item.symbol)}&month=${period}`);
+        if (!(quote.price > 0) || !quote.date?.startsWith(period + "-")) throw new Error(`${item.symbol}의 월말 종가를 확인할 수 없습니다.`);
+        item.price = quote.price;
+        item.updatedAt = quote.date;
+      }
+      row.amount = Math.round(row.holdings.reduce((sum, item) => sum + Number(item.shares) * item.price, 0));
+      if (row.investment) row.investment.holdings = row.holdings;
+    }
+    if (baseline !== labMetadata || labMetadata.snapshots[period]) throw new Error("기록이 갱신되었습니다. 다시 확인해 주세요.");
+    labMetadata.snapshots[period] = { rows, totals: labTotals(rows), confirmedAt: new Date().toISOString() };
+    labPersist();
+    status.textContent = "월말 기록을 확정했습니다.";
+  } catch (error) {
+    status.textContent = `확정 실패 · ${error.message}`;
+  } finally {
+    labFinalizationInFlight = false;
+    renderLabHistory();
+  }
+}
+
+function exportLabCsv(history = false) {
+  const escape = value => {
+    const text = typeof value === "string" && /^[\s]*[=+@-]/.test(value) ? "'" + value : String(value ?? "");
+    return '"' + text.replaceAll('"', '""') + '"';
+  };
+  const rows = [["기록 월", "자산", "대분류", "소분류", "소유자", "평가금액", "종목", "티커", "수량", "단가", "가격 기준일", "확정"]];
+  const periods = history ? [...new Set([...recordedAssetPeriods(), ...Object.keys(labMetadata.snapshots)])].filter(period => period < currentPeriod()).sort(comparePeriods) : [currentPeriod()];
+  for (const period of periods) {
+    const snapshot = labMetadata.snapshots[period];
+    const items = snapshot?.rows || labPeriodRows(period);
+    for (const row of items) {
+      for (const [index, item] of (row.holdings.length ? row.holdings : [{}]).entries()) {
+        rows.push([period, row.name, row.category, row.subcategory, row.owner, index ? "" : row.amount, item.name, item.symbol, item.shares, item.price, item.updatedAt, snapshot ? "확정" : ""]);
+      }
+    }
+    const totals = snapshot?.totals || labTotals(items);
+    for (const [label, value] of [["총자산", totals.assets], ["총부채", totals.debt], ["순자산", totals.net]]) rows.push([period, label, "", "", "", value]);
+  }
+  const url = URL.createObjectURL(new Blob(["\uFEFF", rows.map(row => row.map(escape).join(",")).join("\r\n")], { type: "text/csv;charset=utf-8" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = history ? "pension-lab-monthly.csv" : "pension-lab-holdings.csv";
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function initPensionLab() {
+  try { restoreLabMetadata(JSON.parse(appStorage.getItem("pensionLabMetadata") || "null")); }
+  catch { restoreLabMetadata(null); }
+  const authRequired = Boolean(SUPABASE_URL || SUPABASE_ANON_KEY || FAMILY_KEY);
+  labField("labGate").hidden = !authRequired;
+  labField("labWorkspace").inert = authRequired;
+  labField("labSignIn").onsubmit = async event => {
+    event.preventDefault();
+    const button = event.currentTarget.querySelector("button");
+    button.disabled = true;
+    labField("labSignInStatus").textContent = "로그인 중입니다.";
+    await connectFamilySync();
+    labField("labSignInStatus").textContent = labField("serverSyncMeta").textContent;
+    button.disabled = false;
+  };
+  labField("labSyncLink").onclick = event => {
+    event.preventDefault();
+    if (isMobileLayout()) activateMobileView("settings", { scroll: false });
+    else activateTab("assets");
+    labField("serverSyncCard").scrollIntoView({ block: "start" });
+  };
+  labField("labFilter").onchange = renderLabDashboard;
+  labField("labSearch").oninput = renderLabDashboard;
+  labField("labAddAsset").onclick = () => editLabAsset();
+  labField("labCategories").onclick = () => editLabCategories();
+  labField("labHoldings").onclick = event => {
+    const button = event.target.closest("[data-lab-edit]");
+    if (button) editLabAsset(button.dataset.labEdit);
+  };
+  labField("labUpdatePrices").onclick = async () => {
+    const button = labField("labUpdatePrices");
+    button.disabled = true;
+    try {
+      await updateLatestYearPrices();
+      labField("labStatus").textContent = labField("priceStatus").textContent;
+    } finally { button.disabled = false; }
+  };
+  labField("labHistoryPeriod").onchange = renderLabHistory;
+  labField("labFinalize").onclick = finalizeLabHistory;
+  labField("labExportHoldings").onclick = () => exportLabCsv();
+  labField("labExportHistory").onclick = () => exportLabCsv(true);
+  if (isMobileLayout()) activateMobileView("labDashboard", { scroll: false });
+  renderLabDashboard();
+  renderLabHistory();
+}

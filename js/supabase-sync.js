@@ -1,5 +1,5 @@
     function supabaseConfigured() {
-      return Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
+      return Boolean(supabaseClient && FAMILY_KEY);
     }
 
     function serverSyncEnabled() {
@@ -8,7 +8,7 @@
 
     function markLocalUpdated() {
       try {
-        localStorage.setItem(SERVER_LOCAL_UPDATED_STORAGE_KEY, new Date().toISOString());
+        appStorage.setItem(SERVER_LOCAL_UPDATED_STORAGE_KEY, new Date().toISOString());
       } catch (_error) {
         // localStorage가 막힌 환경에서는 서버 충돌 비교만 건너뛴다.
       }
@@ -42,7 +42,7 @@
         if (!supabaseConfigured()) {
           meta.textContent = "Supabase URL과 anon key를 설정하면 서버 저장/불러오기를 사용할 수 있습니다.";
         } else if (!serverSync.connected) {
-          meta.textContent = "가족 비밀번호를 입력하면 PC와 모바일에서 같은 자산 데이터를 볼 수 있습니다.";
+          meta.textContent = message || "가족 계정으로 로그인하면 서버 데이터를 불러옵니다.";
         } else {
           meta.textContent = serverStatusText(message);
         }
@@ -51,13 +51,12 @@
 
     function loadServerSyncState() {
       try {
-        const auth = JSON.parse(localStorage.getItem(SERVER_AUTH_STORAGE_KEY) || "null");
-        serverSync.connected = Boolean(auth?.familyKey === FAMILY_KEY && auth?.token);
-        serverSync.token = auth?.token || "";
-        serverSync.autoSave = localStorage.getItem(SERVER_AUTO_SAVE_STORAGE_KEY) === "true";
-        serverSync.lastSyncAt = localStorage.getItem(SERVER_LAST_SYNC_STORAGE_KEY) || "";
-        serverSync.lastSaveAt = localStorage.getItem(SERVER_LAST_SAVE_STORAGE_KEY) || "";
-        serverSync.lastLoadAt = localStorage.getItem(SERVER_LAST_LOAD_STORAGE_KEY) || "";
+        serverSync.connected = false;
+        serverSync.token = "";
+        serverSync.autoSave = appStorage.getItem(SERVER_AUTO_SAVE_STORAGE_KEY) === "true";
+        serverSync.lastSyncAt = appStorage.getItem(SERVER_LAST_SYNC_STORAGE_KEY) || "";
+        serverSync.lastSaveAt = appStorage.getItem(SERVER_LAST_SAVE_STORAGE_KEY) || "";
+        serverSync.lastLoadAt = appStorage.getItem(SERVER_LAST_LOAD_STORAGE_KEY) || "";
       } catch (_error) {
         serverSync = { connected: false, token: "", autoSave: false, lastSyncAt: "", lastSaveAt: "", lastLoadAt: "" };
       }
@@ -314,6 +313,7 @@
         assetFutureBackup,
         assetArchivedPeriods,
         investmentData,
+        labAssetMetadata: collectLabMetadata(),
         pension: collectPensionInputsForServer(),
         housePlan,
         realEstatePlan,
@@ -324,16 +324,17 @@
 
     function persistServerStateToLocalStorage(data) {
       if (!data || typeof data !== "object") return;
-      if (Array.isArray(data.assetRows)) localStorage.setItem("pensionAssetRows", JSON.stringify(data.assetRows));
-      if (data.investmentData && typeof data.investmentData === "object") localStorage.setItem("pensionInvestmentData", JSON.stringify(data.investmentData));
-      if (Array.isArray(data.assetPeriods)) localStorage.setItem("pensionAssetPeriods", JSON.stringify(data.assetPeriods));
-      if (data.assetFutureBackup && typeof data.assetFutureBackup === "object") localStorage.setItem("pensionAssetFutureBackup", JSON.stringify(data.assetFutureBackup));
-      if (data.assetArchivedPeriods && typeof data.assetArchivedPeriods === "object") localStorage.setItem("pensionAssetArchivedPeriods", JSON.stringify(data.assetArchivedPeriods));
+      if (Array.isArray(data.assetRows)) appStorage.setItem("pensionAssetRows", JSON.stringify(data.assetRows));
+      if (data.investmentData && typeof data.investmentData === "object") appStorage.setItem("pensionInvestmentData", JSON.stringify(data.investmentData));
+      if (Array.isArray(data.assetPeriods)) appStorage.setItem("pensionAssetPeriods", JSON.stringify(data.assetPeriods));
+      if (data.assetFutureBackup && typeof data.assetFutureBackup === "object") appStorage.setItem("pensionAssetFutureBackup", JSON.stringify(data.assetFutureBackup));
+      if (data.assetArchivedPeriods && typeof data.assetArchivedPeriods === "object") appStorage.setItem("pensionAssetArchivedPeriods", JSON.stringify(data.assetArchivedPeriods));
+      restoreLabMetadata(data.labAssetMetadata);
       const serverHousePlan = resolveServerHousePlan(data);
-      if (serverHousePlan) localStorage.setItem(HOUSE_PLAN_STORAGE_KEY, JSON.stringify(serverHousePlan));
+      if (serverHousePlan) appStorage.setItem(HOUSE_PLAN_STORAGE_KEY, JSON.stringify(serverHousePlan));
       const serverRetirementPlan = resolveRetirementPlanDefaults(data.retirementPlan || RETIREMENT_PLAN_DEFAULTS, data.retirementPlanDefaultVersion);
-      localStorage.setItem(RETIREMENT_PLAN_STORAGE_KEY, JSON.stringify(serverRetirementPlan));
-      localStorage.setItem(RETIREMENT_PLAN_DEFAULT_VERSION_STORAGE_KEY, String(RETIREMENT_PLAN_DEFAULT_VERSION));
+      appStorage.setItem(RETIREMENT_PLAN_STORAGE_KEY, JSON.stringify(serverRetirementPlan));
+      appStorage.setItem(RETIREMENT_PLAN_DEFAULT_VERSION_STORAGE_KEY, String(RETIREMENT_PLAN_DEFAULT_VERSION));
     }
 
     function applyServerState(data) {
@@ -357,7 +358,7 @@
       }
       const serverHousePlan = resolveServerHousePlan(data);
       if (serverHousePlan) {
-        localStorage.setItem(HOUSE_PLAN_STORAGE_KEY, JSON.stringify(serverHousePlan));
+        appStorage.setItem(HOUSE_PLAN_STORAGE_KEY, JSON.stringify(serverHousePlan));
         applyRealEstatePlanToInputs(data?.realEstatePlan && typeof data.realEstatePlan === "object" ? data.realEstatePlan : housePlanToRealEstatePlan(serverHousePlan));
       }
       applyRetirementPlanState(resolveRetirementPlanDefaults(data.retirementPlan || RETIREMENT_PLAN_DEFAULTS, data.retirementPlanDefaultVersion), { persist: true, render: false });
@@ -366,6 +367,7 @@
       if (startInput) startInput.value = periodYear(assetPeriods[0] || currentPeriod());
       if (endInput) endInput.value = periodLabel(assetPeriods.at(-1) || latestManagedPeriod());
       selectedInvestment = null;
+      ensureMonthlySnapshots();
       suppressServerAutoSave = true;
       try {
         renderAssetTable();
@@ -382,7 +384,7 @@
     function supabaseHeaders(extra = {}) {
       return {
         apikey: SUPABASE_ANON_KEY,
-        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        Authorization: `Bearer ${serverSync.token}`,
         "Content-Type": "application/json",
         ...extra
       };
@@ -395,6 +397,9 @@
 
     async function fetchServerAssetRow() {
       if (!supabaseConfigured()) throw new Error("Supabase URL과 anon key를 먼저 설정하세요.");
+      const { data, error } = await supabaseClient.auth.getSession();
+      if (error || !data.session) throw new Error("다시 로그인해 주세요.");
+      serverSync.token = data.session.access_token;
       const query = `?family_key=eq.${encodeURIComponent(FAMILY_KEY)}&select=data_json,updated_at&limit=1`;
       const response = await fetch(familyAssetUrl(query), { headers: supabaseHeaders() });
       if (!response.ok) throw new Error(`서버 조회 실패 (${response.status})`);
@@ -402,11 +407,12 @@
       return Array.isArray(rows) && rows.length ? rows[0] : null;
     }
 
-    async function upsertServerAssetRow(data) {
+    async function upsertServerAssetRow(data, expectedRevision) {
       if (!supabaseConfigured()) throw new Error("Supabase URL과 anon key를 먼저 설정하세요.");
-      const response = await fetch(familyAssetUrl("?on_conflict=family_key&select=updated_at"), {
-        method: "POST",
-        headers: supabaseHeaders({ Prefer: "resolution=merge-duplicates,return=representation" }),
+      const query = expectedRevision ? `?family_key=eq.${encodeURIComponent(FAMILY_KEY)}&updated_at=eq.${encodeURIComponent(expectedRevision)}&select=updated_at` : "?select=updated_at";
+      const response = await fetch(familyAssetUrl(query), {
+        method: expectedRevision ? "PATCH" : "POST",
+        headers: supabaseHeaders({ Prefer: "return=representation" }),
         body: JSON.stringify({
           family_key: FAMILY_KEY,
           data_json: data,
@@ -415,7 +421,8 @@
       });
       if (!response.ok) throw new Error(`서버 저장 실패 (${response.status})`);
       const rows = await response.json();
-      return Array.isArray(rows) && rows.length ? rows[0] : null;
+      if (!Array.isArray(rows) || !rows.length) throw new Error("다른 기기에서 먼저 저장했습니다. 서버 데이터를 다시 불러오세요.");
+      return rows[0];
     }
 
     function requireServerConnection() {
@@ -432,34 +439,34 @@
 
     async function connectFamilySync() {
       const input = document.getElementById("familyPasswordInput");
-      const remember = document.getElementById("rememberFamilyDevice")?.checked !== false;
+      const email = document.getElementById("labEmail")?.value.trim();
       const password = input?.value || "";
-      if (!password.trim()) {
-        setServerSyncStatus("가족 비밀번호를 입력하세요.");
+      if (!supabaseConfigured() || !email || !password) {
+        setServerSyncStatus("이메일과 비밀번호를 입력하세요.");
         return;
       }
       try {
-        const token = await sha256(`${FAMILY_KEY}:${password}`);
-        const passwordHash = await sha256(password);
-        if (FAMILY_PASSWORD_SHA256 && passwordHash !== FAMILY_PASSWORD_SHA256) {
-          setServerSyncStatus("가족 비밀번호가 맞지 않습니다.");
-          return;
+        const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        const access = await supabaseClient.rpc("can_access_pension_family", { requested_family: FAMILY_KEY });
+        if (access.error || access.data !== true) {
+          await supabaseClient.auth.signOut();
+          throw new Error("이 가족 데이터에 접근할 권한이 없습니다.");
         }
         serverSync.connected = true;
-        serverSync.token = token;
-        if (remember) {
-          localStorage.setItem(SERVER_AUTH_STORAGE_KEY, JSON.stringify({ familyKey: FAMILY_KEY, token, connectedAt: new Date().toISOString() }));
-        } else {
-          localStorage.removeItem(SERVER_AUTH_STORAGE_KEY);
-        }
+        serverSync.autoSave = true;
         if (input) input.value = "";
-        setServerSyncStatus(FAMILY_PASSWORD_SHA256 ? "서버 동기화가 연결되었습니다." : "서버 동기화가 연결되었습니다. 배포 전 가족 비밀번호 해시를 설정하세요.");
+        await loadFromServer({ initial: true });
+        document.getElementById("labGate").hidden = true;
+        document.getElementById("labWorkspace").inert = false;
       } catch (error) {
+        serverSync.connected = false;
+        await supabaseClient.auth.signOut();
         setServerSyncStatus(`연결 실패: ${error.message}`);
       }
     }
 
-    async function loadFromServer() {
+    async function loadFromServer({ initial = false } = {}) {
       if (!requireServerConnection()) return;
       try {
         setServerSyncStatus("서버에서 불러오는 중입니다.");
@@ -468,7 +475,7 @@
           setServerSyncStatus("서버에 저장된 데이터가 없습니다.");
           return;
         }
-        const localUpdatedAt = localStorage.getItem(SERVER_LOCAL_UPDATED_STORAGE_KEY) || "";
+        const localUpdatedAt = appStorage.getItem(SERVER_LOCAL_UPDATED_STORAGE_KEY) || "";
         if (row.updated_at && localUpdatedAt && new Date(row.updated_at) > new Date(localUpdatedAt)) {
           const ok = confirm("서버 데이터가 현재 기기 데이터보다 최신일 수 있습니다. 서버 데이터로 덮어쓸까요?");
           if (!ok) {
@@ -480,41 +487,37 @@
         const now = new Date().toISOString();
         serverSync.lastLoadAt = now;
         serverSync.lastSyncAt = row.updated_at || now;
-        localStorage.setItem(SERVER_LAST_LOAD_STORAGE_KEY, serverSync.lastLoadAt);
-        localStorage.setItem(SERVER_LAST_SYNC_STORAGE_KEY, serverSync.lastSyncAt);
-        localStorage.setItem(SERVER_LOCAL_UPDATED_STORAGE_KEY, serverSync.lastSyncAt);
+        appStorage.setItem(SERVER_LAST_LOAD_STORAGE_KEY, serverSync.lastLoadAt);
+        appStorage.setItem(SERVER_LAST_SYNC_STORAGE_KEY, serverSync.lastSyncAt);
+        appStorage.setItem(SERVER_LOCAL_UPDATED_STORAGE_KEY, serverSync.lastSyncAt);
         setServerSyncStatus("서버 데이터를 불러왔습니다.");
+        const previous = previousMonthPeriod(currentPeriod());
+        if (initial && recordedAssetPeriods().includes(previous) && !labMetadata.snapshots[previous]) {
+          void finalizeLabHistory(previous);
+        }
       } catch (error) {
+        if (initial) throw error;
         setServerSyncStatus(`서버 불러오기 실패: ${error.message}`);
       }
     }
 
-    async function saveToServer({ skipConflictCheck = false, silent = false } = {}) {
+    async function saveToServer({ silent = false } = {}) {
       if (!requireServerConnection() || serverSaveInFlight) return;
       try {
         serverSaveInFlight = true;
         if (!silent) setServerSyncStatus("서버에 저장하는 중입니다.");
-        if (!skipConflictCheck) {
-          const row = await fetchServerAssetRow();
-          if (row?.updated_at && (!serverSync.lastSyncAt || new Date(row.updated_at) > new Date(serverSync.lastSyncAt))) {
-            if (silent) {
-              setServerSyncStatus("서버에 더 최신 데이터가 있어 자동 저장을 건너뛰었습니다.");
-              return;
-            }
-            const ok = confirm("서버에 더 최신 데이터가 있습니다. 현재 기기 데이터로 서버를 덮어쓸까요?");
-            if (!ok) {
-              setServerSyncStatus("서버 저장을 취소했습니다.");
-              return;
-            }
-          }
+        const current = await fetchServerAssetRow();
+        if (current && current.updated_at !== serverSync.lastSyncAt) {
+          setServerSyncStatus("다른 기기에서 저장한 변경이 있습니다. 서버 데이터를 다시 불러오세요.");
+          return;
         }
-        const row = await upsertServerAssetRow(collectAppStateForServer());
+        const row = await upsertServerAssetRow(collectAppStateForServer(), current?.updated_at);
         const now = row?.updated_at || new Date().toISOString();
         serverSync.lastSaveAt = now;
         serverSync.lastSyncAt = now;
-        localStorage.setItem(SERVER_LAST_SAVE_STORAGE_KEY, serverSync.lastSaveAt);
-        localStorage.setItem(SERVER_LAST_SYNC_STORAGE_KEY, serverSync.lastSyncAt);
-        localStorage.setItem(SERVER_LOCAL_UPDATED_STORAGE_KEY, now);
+        appStorage.setItem(SERVER_LAST_SAVE_STORAGE_KEY, serverSync.lastSaveAt);
+        appStorage.setItem(SERVER_LAST_SYNC_STORAGE_KEY, serverSync.lastSyncAt);
+        appStorage.setItem(SERVER_LOCAL_UPDATED_STORAGE_KEY, now);
         setServerSyncStatus("서버 저장됨");
       } catch (error) {
         setServerSyncStatus(`서버 저장 실패: ${error.message}`);
@@ -537,14 +540,14 @@
 
     function toggleAutoServerSave() {
       serverSync.autoSave = !serverSync.autoSave;
-      localStorage.setItem(SERVER_AUTO_SAVE_STORAGE_KEY, serverSync.autoSave ? "true" : "false");
+      appStorage.setItem(SERVER_AUTO_SAVE_STORAGE_KEY, serverSync.autoSave ? "true" : "false");
       setServerSyncStatus(serverSync.autoSave ? "자동 서버 저장이 켜졌습니다." : "자동 서버 저장이 꺼졌습니다.");
     }
 
-    function logoutServerSync() {
+    async function logoutServerSync() {
       window.clearTimeout(serverSaveTimer);
-      localStorage.removeItem(SERVER_AUTH_STORAGE_KEY);
       serverSync.connected = false;
       serverSync.token = "";
-      setServerSyncStatus("이 기기의 서버 인증만 해제했습니다.");
+      await supabaseClient.auth.signOut();
+      location.reload();
     }

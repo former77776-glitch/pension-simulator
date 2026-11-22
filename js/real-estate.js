@@ -125,20 +125,20 @@
     function persistHousePlanInputs(skipServerAutoSave = false) {
       try {
         const housePlan = collectHousePlanForServer();
-        localStorage.setItem(HOUSE_PLAN_STORAGE_KEY, JSON.stringify({
+        appStorage.setItem(HOUSE_PLAN_STORAGE_KEY, JSON.stringify({
           ...housePlan,
           realEstatePlan: normalizeRealEstatePlan(collectRealEstatePlanFromInputs())
         }));
         if (!skipServerAutoSave) scheduleServerAutoSave();
       } catch (_error) {
-        // localStorage 사용이 막힌 환경에서는 저장만 건너뛴다.
+        // appStorage 사용이 막힌 환경에서는 저장만 건너뛴다.
       }
     }
 
     function loadHousePlanInputs() {
       let saved = null;
       try {
-        saved = JSON.parse(localStorage.getItem(HOUSE_PLAN_STORAGE_KEY) || "null");
+        saved = JSON.parse(appStorage.getItem(HOUSE_PLAN_STORAGE_KEY) || "null");
       } catch (_error) {
         saved = null;
       }

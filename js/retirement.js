@@ -133,8 +133,8 @@
     }
 
     function storeRetirementPlan({ scheduleServer = true } = {}) {
-      localStorage.setItem(RETIREMENT_PLAN_STORAGE_KEY, JSON.stringify(retirementPlanState));
-      localStorage.setItem(RETIREMENT_PLAN_DEFAULT_VERSION_STORAGE_KEY, String(RETIREMENT_PLAN_DEFAULT_VERSION));
+      appStorage.setItem(RETIREMENT_PLAN_STORAGE_KEY, JSON.stringify(retirementPlanState));
+      appStorage.setItem(RETIREMENT_PLAN_DEFAULT_VERSION_STORAGE_KEY, String(RETIREMENT_PLAN_DEFAULT_VERSION));
       if (scheduleServer) scheduleServerAutoSave();
     }
 
@@ -151,20 +151,20 @@
     function applyRetirementPlanState(value, { persist = true, render = true } = {}) {
       retirementPlanState = normalizeRetirementPlan(value);
       syncRetirementInputs();
-      if (persist) localStorage.setItem(RETIREMENT_PLAN_STORAGE_KEY, JSON.stringify(retirementPlanState));
+      if (persist) appStorage.setItem(RETIREMENT_PLAN_STORAGE_KEY, JSON.stringify(retirementPlanState));
       if (render) renderRetirementPlan();
     }
 
     function loadRetirementPlanInputs() {
       let stored = null;
       try {
-        stored = JSON.parse(localStorage.getItem(RETIREMENT_PLAN_STORAGE_KEY) || "null");
+        stored = JSON.parse(appStorage.getItem(RETIREMENT_PLAN_STORAGE_KEY) || "null");
       } catch (error) {
         console.warn("은퇴 계획 설정을 불러오지 못해 기본값을 사용합니다.", error);
       }
-      const storedVersion = Number(localStorage.getItem(RETIREMENT_PLAN_DEFAULT_VERSION_STORAGE_KEY) || 0);
+      const storedVersion = Number(appStorage.getItem(RETIREMENT_PLAN_DEFAULT_VERSION_STORAGE_KEY) || 0);
       applyRetirementPlanState(resolveRetirementPlanDefaults(stored || RETIREMENT_PLAN_DEFAULTS, storedVersion), { persist: true, render: true });
-      localStorage.setItem(RETIREMENT_PLAN_DEFAULT_VERSION_STORAGE_KEY, String(RETIREMENT_PLAN_DEFAULT_VERSION));
+      appStorage.setItem(RETIREMENT_PLAN_DEFAULT_VERSION_STORAGE_KEY, String(RETIREMENT_PLAN_DEFAULT_VERSION));
     }
 
     function onRetirementPlanInput(event) {

@@ -1,9 +1,16 @@
-    const SUPABASE_URL = "https://lnrdbbxzevejurshraem.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxucmRiYnh6ZXZlanVyc2hyYWVtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MDY1MTAsImV4cCI6MjA5NzE4MjUxMH0.YDh0_RXFk-FmRw9-0nCwXpUtQ4fS9uODGvUuhIIdGuQ";
+    const SUPABASE_URL = window.PENSION_LAB_CONFIG?.supabaseUrl || "";
+    const SUPABASE_ANON_KEY = window.PENSION_LAB_CONFIG?.supabaseAnonKey || "";
     const FAMILY_ASSETS_TABLE = "family_assets";
-    const FAMILY_KEY = "kim_family";
-    const FAMILY_PASSWORD_SHA256 = "e4782cfc2b471cd4e24686f692188416d8a313cccb62679dc08c348447c2507b";
-    const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+    const FAMILY_KEY = window.PENSION_LAB_CONFIG?.familyKey || "";
+    const supabaseClient = SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase
+      ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: false, detectSessionInUrl: false } })
+      : null;
+    const labMemory = new Map();
+    const appStorage = supabaseClient ? {
+      getItem: (key) => labMemory.get(key) ?? null,
+      setItem: (key, value) => labMemory.set(key, String(value)),
+      removeItem: (key) => labMemory.delete(key)
+    } : window.localStorage;
     const SERVER_AUTH_STORAGE_KEY = "pensionServerSyncAuth";
     const SERVER_AUTO_SAVE_STORAGE_KEY = "pensionServerAutoSave";
     const SERVER_LAST_SYNC_STORAGE_KEY = "pensionServerLastSyncAt";
@@ -14,17 +21,11 @@
     const HOUSE_DEFAULT_INTERIOR = 150000000;
     const HOUSE_DEFAULT_RESERVE = 50000000;
 
-    const ASSET_ROWS = [
-      { id: "apartment", category: "부동산", label: "아파트 (실거래가 기준)", type: "manual", values: { 2024: 440000000, 2025: 445000000, 2026: 460000000, 2027: 460000000, 2028: 460000000, 2029: 460000000, 2030: 460000000 } },
-      { id: "retirementStock", category: "주식", label: "(상윤+혜진) 연금 계좌", type: "stock", values: { 2024: 75500000, 2025: 100000000, 2026: 151000000 } },
-      { id: "hynixStock", category: "주식", label: "(상윤+혜진)하이닉스", type: "stock", values: { 2024: 44710000, 2025: 193800000, 2026: 852440000 } },
-      { id: "gold", category: "금", label: "금", type: "manual", values: { 2024: 0, 2025: 11715000, 2026: 22300000 } },
-      { id: "cash", category: "현금", label: "보유 현금", type: "manual", values: { 2024: 39000000, 2025: 117000000, 2026: 42000000 } },
-      { id: "isa", category: "현금", label: "ISA", type: "manual", values: { 2024: 16000000, 2025: 18100000, 2026: 18360000 } },
-      { id: "subscription", category: "현금", label: "청약계좌", type: "manual", values: { 2024: 18000000, 2025: 18000000, 2026: 18000000, 2027: 18000000, 2028: 18000000, 2029: 18000000, 2030: 18000000 } },
-      { id: "mortgage", category: "대출", label: "주택 담보 대출", type: "manual", debt: true, values: { 2024: -44000000, 2025: 0, 2026: 0, 2027: 0, 2028: 0, 2029: 0, 2030: 0 } },
-      { id: "saneLoan", category: "대출", label: "사내 대출", type: "manual", debt: true, values: { 2024: -75000000, 2025: -64500000, 2026: -60300000 } },
-      { id: "hynixStockLoan", category: "대출", label: "(상윤) 하이닉스 주식 대출", type: "manual", debt: true, values: { 2024: -11600000, 2025: -11600000, 2026: -11600000 } }
+    const ASSET_ROWS = supabaseClient ? [] : [
+      { id: "demo-home", category: "부동산", label: "예시 아파트", type: "manual", owner: "공동", values: { 2024: 420000000, 2025: 460000000, [currentPeriod()]: 500000000 } },
+      { id: "demo-stock", category: "주식", label: "예시 ETF", type: "stock", owner: "본인", values: { 2024: 60000000, 2025: 76000000, [currentPeriod()]: 94000000 } },
+      { id: "demo-cash", category: "현금", label: "예시 예금", type: "manual", owner: "아내", values: { 2024: 40000000, 2025: 54000000, [currentPeriod()]: 68000000 } },
+      { id: "demo-loan", category: "대출/부채", label: "예시 주택담보대출", debt: true, type: "manual", owner: "공동", values: { 2024: -190000000, 2025: -175000000, [currentPeriod()]: -160000000 } }
     ];
 
     const HOLDINGS = [

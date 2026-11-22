@@ -4,10 +4,11 @@ import json
 import re
 import sys
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, quote, urlencode, urlparse
 from urllib.request import Request, urlopen
+from zoneinfo import ZoneInfo
 
 
 HOST = "127.0.0.1"
@@ -94,6 +95,37 @@ def yahoo_close(symbol: str):
             date = datetime.fromtimestamp(timestamps[index]).strftime("%Y-%m-%d") if index < len(timestamps) else ""
             return {"symbol": symbol, "price": round(close), "date": date, "source": "yahoo-chart"}
     raise ValueError(f"{symbol} close price not found")
+
+
+def yahoo_month_end_close(symbol: str, month: str):
+    if not re.fullmatch(r"[A-Za-z0-9.^=_-]{1,32}", symbol):
+        raise ValueError("Invalid symbol")
+    if not re.fullmatch(r"[0-9]{4}-(0[1-9]|1[0-2])", month):
+        raise ValueError("Invalid month")
+    if month >= datetime.now(ZoneInfo("Asia/Seoul")).strftime("%Y-%m"):
+        raise ValueError("The month has not closed")
+    start = datetime.strptime(month, "%Y-%m").replace(tzinfo=timezone.utc)
+    end = (start.replace(day=28) + timedelta(days=4)).replace(day=1)
+    params = urlencode({
+        "period1": int((start - timedelta(days=2)).timestamp()),
+        "period2": int((end + timedelta(days=2)).timestamp()),
+        "interval": "1d",
+    })
+    payload = http_json(f"https://query1.finance.yahoo.com/v8/finance/chart/{quote(symbol)}?{params}")
+    result = ((payload.get("chart") or {}).get("result") or [None])[0]
+    if not result:
+        raise ValueError("No trading history for the selected month")
+    exchange = ZoneInfo(result["meta"]["exchangeTimezoneName"])
+    closes = (((result.get("indicators") or {}).get("quote") or [{}])[0]).get("close") or []
+    days = []
+    for timestamp, close in zip(result.get("timestamp") or [], closes):
+        date = datetime.fromtimestamp(timestamp, exchange).strftime("%Y-%m-%d")
+        if date.startswith(month + "-") and isinstance(close, (int, float)) and close > 0:
+            days.append((date, close))
+    if not days:
+        raise ValueError("No closing price for the selected month")
+    date, price = max(days, key=lambda day: day[0])
+    return {"symbol": symbol, "price": price, "date": date, "source": "yahoo-month-end"}
 
 
 def ketf_close(code: str, name: str):

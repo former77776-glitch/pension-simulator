@@ -3,22 +3,51 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>자산 기록 기반 연금 시뮬레이터</title>
+  <title>PENSION LAB</title>
   <link rel="stylesheet" href="./css/styles.css">
+  <link rel="stylesheet" href="./css/pension-lab.css">
 </head>
 <body>
-  <main>
+  <div id="labGate" class="lab-gate" hidden>
+    <form id="labSignIn" class="card">
+      <h1>PENSION LAB</h1>
+      <label>이메일<input id="labEmail" type="email" autocomplete="username" required></label>
+      <label>비밀번호<input id="familyPasswordInput" type="password" autocomplete="current-password" required></label>
+      <button class="primary">로그인</button>
+      <p id="labSignInStatus" role="status"></p>
+    </form>
+  </div>
+  <header class="lab-header"><strong>PENSION LAB</strong><span>가족 자산 관리</span><a href="#serverSyncCard" id="labSyncLink">동기화 설정</a></header>
+  <main id="labWorkspace">
     <div class="topbar">
       <h1>자산 기록 기반 연금 시뮬레이터</h1>
       <nav class="tabs">
-        <button type="button" class="tab active" data-tab="assets">자산 기록</button>
+        <button type="button" class="tab active" data-tab="labDashboard">자산 대시보드</button>
+        <button type="button" class="tab" data-tab="assets">월별 자산 기록</button>
         <button type="button" class="tab" data-tab="pension">연금 시뮬레이션</button>
         <button type="button" class="tab" data-tab="housePlan">부동산 구매 계획</button>
         <button type="button" class="tab" data-tab="retirement">은퇴 계획</button>
       </nav>
     </div>
 
-    <section id="assetsPanel" class="panel active">
+    <section id="labDashboardPanel" class="panel active">
+      <div class="lab-heading"><div><h1>자산 대시보드</h1><span id="labPeriod"></span></div><button id="labUpdatePrices" type="button">주식·ETF 가격 업데이트</button></div>
+      <div class="lab-totals" id="labTotals"></div>
+      <section class="lab-section"><h2>자산 구성</h2><div id="labAllocation"></div></section>
+      <section class="lab-section">
+        <div class="lab-heading"><h2>보유 자산</h2><div class="lab-actions"><button id="labCategories">분류 관리</button><button id="labExportHoldings">CSV 내보내기</button><button class="primary" id="labAddAsset">자산 추가</button></div></div>
+        <div class="lab-filters"><label>자산명 검색<input id="labSearch" type="search"></label><label>대분류<select id="labFilter"></select></label></div>
+        <div id="labHoldings"></div>
+        <p id="labStatus" role="status"></p>
+      </section>
+    </section>
+    <section id="assetsPanel" class="panel">
+      <section class="lab-section" id="labMonthly">
+        <div class="lab-heading"><h2>월별 자산 기록</h2><div class="lab-actions"><button id="labExportHistory">월별 CSV</button><button id="labFinalize" class="primary">월말 기록 확정</button></div></div>
+        <label>기록 월<select id="labHistoryPeriod"></select></label>
+        <div id="labHistory"></div>
+        <p id="labHistoryStatus" role="status"></p>
+      </section>
       <div class="period-view-toggle" role="group" aria-label="자산 기록 표시 기간">
         <button type="button" class="active" data-period-view="summary" aria-pressed="true">요약 보기</button>
         <button type="button" data-period-view="all" aria-pressed="false">전체 보기</button>
@@ -71,11 +100,6 @@
         </div>
         <details class="server-sync-details">
           <summary>서버 동기화 설정</summary>
-          <div class="server-sync-form" id="serverSyncLogin">
-            <input id="familyPasswordInput" type="password" autocomplete="current-password" placeholder="가족 비밀번호">
-            <label><input type="checkbox" id="rememberFamilyDevice" checked> 이 기기에서 기억하기</label>
-            <button type="button" class="primary" id="connectFamilySync">연결</button>
-          </div>
           <div class="server-sync-actions">
           <button type="button" id="toggleAutoServerSave" disabled>자동 서버 저장 OFF</button>
           <button type="button" id="logoutServerSync" disabled>이 기기에서 로그아웃</button>
@@ -99,8 +123,6 @@
                 <label>시작연도 <input id="assetStartYear" class="num" value="2024"></label>
                 <label>최신월 <input id="assetEndYear" class="num" value="" readonly></label>
                 <button type="button" id="rebuildAssetYears">기간 새로고침</button>
-                <button type="button" id="closeCurrentMonth">이번 달 마감 저장</button>
-                <button type="button" id="updateSelectedYearPrices">선택 월 가격 업데이트</button>
                 <button type="button" id="checkProxy">가격 연결 확인</button>
                 <button type="button" id="exportAssetCsv">자산 CSV 저장</button>
               </div>
@@ -487,18 +509,20 @@
     </section>
   </main>
   <nav class="mobile-bottom-nav" aria-label="모바일 주요 탭">
-    <button type="button" class="mobile-nav-btn active" data-mobile-view="home">홈</button>
-    <button type="button" class="mobile-nav-btn" data-mobile-view="assets">자산</button>
+    <button type="button" class="mobile-nav-btn active" data-mobile-view="labDashboard">대시보드</button>
+    <button type="button" class="mobile-nav-btn" data-mobile-view="assets">월별 기록</button>
     <button type="button" class="mobile-nav-btn" data-mobile-view="investment">투자</button>
     <button type="button" class="mobile-nav-btn" data-mobile-view="pension">연금</button>
     <button type="button" class="mobile-nav-btn" data-mobile-view="retirement">은퇴 계획</button>
     <button type="button" class="mobile-nav-btn" data-mobile-view="settings">설정</button>
   </nav>
+  <dialog id="labDialog"></dialog>
   <div class="tooltip" id="tooltip"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.9/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./js/pension-lab-config.js" defer></script>
   <script src="./js/core.js" defer></script>
   <script src="./js/assets.js" defer></script>
   <script src="./js/charts.js" defer></script>
@@ -507,6 +531,7 @@
   <script src="./js/retirement.js" defer></script>
   <script src="./js/supabase-sync.js" defer></script>
   <script src="./js/mobile.js" defer></script>
+  <script src="./js/pension-lab.js" defer></script>
   <script src="./js/app.js" defer></script>
 </body>
 </html>

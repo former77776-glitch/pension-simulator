@@ -54,6 +54,7 @@
     bindEvents();
     loadServerSyncState();
     loadStoredAssetData();
+    initPensionLab();
     loadHousePlanInputs();
     loadRetirementPlanInputs();
     syncResponsiveDetails();

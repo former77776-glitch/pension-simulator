@@ -1,4 +1,7 @@
     function rowValue(row, period) {
+      const confirmed = labMetadata.snapshots[period]?.rows.find(item => item.id === row?.id);
+      if (confirmed) return confirmed.amount;
+      if (row?.retiredFrom && period >= row.retiredFrom) return 0;
       return Number(row?.values?.[period] ?? assetArchivedPeriods.rows?.[row?.id]?.[period] ?? 0);
     }
 
@@ -119,7 +122,7 @@
 
     function isInvestmentCell(rowId, period) {
       const row = assetRows.find((item) => item.id === rowId);
-      return isInvestmentRow(row) && displayedAssetPeriods().includes(period);
+      return isInvestmentRow(row) && displayedAssetPeriods().includes(period) && period === currentPeriod() && !row?.retiredFrom;
     }
 
     function normalizeAssetRowPeriods(rows) {
@@ -256,10 +259,6 @@
         changed = true;
       }
       const hasPreviousSnapshot = assetRows.some((row) => Object.prototype.hasOwnProperty.call(row.values || {}, previous));
-      if (comparePeriods(previous, current) < 0 && assetPeriods.includes(previous) && !hasPreviousSnapshot) {
-        const source = latestPeriodWithAnyData(previousMonthPeriod(previous)) || latestPeriodWithAnyData(current);
-        if (source) changed = snapshotPeriod(source, previous) || changed;
-      }
       const hasCurrentSnapshot = assetRows.some((row) => Object.prototype.hasOwnProperty.call(row.values || {}, current));
       if (assetPeriods.includes(current) && !hasCurrentSnapshot) {
         const source = latestVisibleSourcePeriod(current, previous);
@@ -332,14 +331,14 @@
 
     function persistAssetData({ silent = true } = {}) {
       try {
-        localStorage.setItem("pensionAssetRows", JSON.stringify(assetRows));
-        localStorage.setItem("pensionInvestmentData", JSON.stringify(investmentData));
-        localStorage.setItem("pensionAssetPeriods", JSON.stringify(assetPeriods));
-        localStorage.setItem("pensionAssetFutureBackup", JSON.stringify(assetFutureBackup));
-        localStorage.setItem("pensionAssetArchivedPeriods", JSON.stringify(assetArchivedPeriods));
-        localStorage.removeItem("pensionAssetYears");
-        localStorage.removeItem("pensionHoldings");
-        localStorage.removeItem("pensionGoldState");
+        appStorage.setItem("pensionAssetRows", JSON.stringify(assetRows));
+        appStorage.setItem("pensionInvestmentData", JSON.stringify(investmentData));
+        appStorage.setItem("pensionAssetPeriods", JSON.stringify(assetPeriods));
+        appStorage.setItem("pensionAssetFutureBackup", JSON.stringify(assetFutureBackup));
+        appStorage.setItem("pensionAssetArchivedPeriods", JSON.stringify(assetArchivedPeriods));
+        appStorage.removeItem("pensionAssetYears");
+        appStorage.removeItem("pensionHoldings");
+        appStorage.removeItem("pensionGoldState");
         scheduleServerAutoSave();
         const status = document.getElementById("saveStatus");
         if (status) {
@@ -387,11 +386,13 @@
           cells.push(`<td class="category" rowspan="${spans[row.category]}">${row.category}</td>`);
           used.add(row.category);
         }
-        cells.push(`<td class="label">${row.label}</td>`);
+        cells.push(`<td class="label">${escLab(row.label)}</td>`);
         for (const period of periods) {
           const value = rowValue(row, period);
           const neg = value < 0 ? " negative" : "";
-          if (isInvestmentRow(row)) {
+          if (period !== currentPeriod() || row.retiredFrom) {
+            cells.push(`<td class="value${neg}">${won(value)}</td>`);
+          } else if (isInvestmentRow(row)) {
             const selected = selectedInvestment && selectedInvestment.rowId === row.id && selectedInvestment.period === period;
             const hasData = !!getInvestment(row.id, period);
             cells.push(`<td class="value investment-cell${neg}${selected ? " selected-investment" : ""}${hasData ? " has-investment" : ""}" data-row="${row.id}" data-period="${period}" title="${periodTitle(period)} ${row.category} 상세 정보 편집">${won(value)}</td>`);
@@ -419,7 +420,7 @@
     function onAssetCellChange(event) {
       const input = event.target;
       const row = assetRows.find((item) => item.id === input.dataset.row);
-      if (!row) return;
+      if (!row || input.dataset.period !== currentPeriod() || row.retiredFrom) return;
       row.values = row.values || {};
       row.values[input.dataset.period] = toNumber(input.value);
       input.value = won(row.values[input.dataset.period]);
@@ -438,6 +439,8 @@
     }
 
     function renderAssetSummary() {
+      renderLabDashboard();
+      renderLabHistory();
       const period = latestManagedPeriod();
       const prevPeriod = assetPeriods[assetPeriods.indexOf(period) - 1];
       const net = assetRows.reduce((sum, row) => sum + rowValue(row, period), 0);
@@ -576,6 +579,8 @@
 
     function assetCategoryKey(row, period = latestManagedPeriod()) {
       const known = new Set(["부동산", "연금", "주식", "금", "금/비트", "현금", "대출", "대출/부채"]);
+      if (known.has(row?.labHistoricalKinds?.[period])) return row.labHistoricalKinds[period];
+      if (known.has(row?.labAccountingKind)) return row.labAccountingKind;
       const text = `${row?.category || ""} ${row?.label || ""} ${row?.id || ""}`;
       const identity = `${row?.label || ""} ${row?.id || ""}`;
       if (row?.debt || row?.category === "대출" || row?.category === "대출/부채" || /대출|부채/i.test(text) || rowValue(row, period) < 0) return "대출/부채";
@@ -1025,6 +1030,7 @@
       const targets = Object.entries(investmentData).filter(([key, data]) => {
         const [keyRowId, keyPeriod] = key.split(":");
         if (keyPeriod !== period) return false;
+        if (assetRows.find(row => row.id === keyRowId)?.retiredFrom) return false;
         if (rowId && keyRowId !== rowId) return false;
         return data && (data.type === "stock" || data.type === "gold");
       });
@@ -1042,8 +1048,7 @@
     }
 
     function confirmPastPeriodUpdate(period) {
-      if (!isPastManagedPeriod(period)) return true;
-      return window.confirm("과거 기록을 현재가로 업데이트할 수 있습니다. 기록 보존을 위해 신중히 진행하세요. 계속할까요?");
+      return period === currentPeriod();
     }
 
     async function updateLatestYearPrices() {
@@ -1297,12 +1302,12 @@
 
     function loadStoredAssetData() {
       try {
-        const savedRows = localStorage.getItem("pensionAssetRows");
-        const savedInvestment = localStorage.getItem("pensionInvestmentData");
-        const savedPeriods = localStorage.getItem("pensionAssetPeriods");
-        const savedYears = localStorage.getItem("pensionAssetYears");
-        const savedFutureBackup = localStorage.getItem("pensionAssetFutureBackup");
-        const savedArchivedPeriods = localStorage.getItem("pensionAssetArchivedPeriods");
+        const savedRows = appStorage.getItem("pensionAssetRows");
+        const savedInvestment = appStorage.getItem("pensionInvestmentData");
+        const savedPeriods = appStorage.getItem("pensionAssetPeriods");
+        const savedYears = appStorage.getItem("pensionAssetYears");
+        const savedFutureBackup = appStorage.getItem("pensionAssetFutureBackup");
+        const savedArchivedPeriods = appStorage.getItem("pensionAssetArchivedPeriods");
         if (savedFutureBackup) {
           const parsedBackup = JSON.parse(savedFutureBackup);
           if (parsedBackup && typeof parsedBackup === "object" && !Array.isArray(parsedBackup)) assetFutureBackup = parsedBackup;

@@ -1,0 +1,62 @@
+.lab-header { min-height: 60px; background: #12213b; color: #fff; display: flex; align-items: center; gap: 16px; padding: 10px 24px; }
+.lab-header strong { font-size: 20px; }
+.lab-header span { color: #d4deef; font-size: 14px; }
+.lab-header a { color: #fff; margin-left: auto; font-size: 14px; }
+#labWorkspace { max-width: 1600px; }
+#labWorkspace > .topbar > h1 { display: none; }
+.lab-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.lab-heading h1, .lab-heading h2, .lab-section h2 { margin: 0; }
+.lab-heading span, .lab-totals span { color: #46576e; font-size: 14px; }
+.lab-totals { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 12px 0; }
+.lab-totals > div { display: grid; gap: 6px; padding: 14px; }
+.lab-totals strong { font-size: 21px; overflow-wrap: anywhere; }
+.lab-totals strong span { font: inherit; color: inherit; }
+.lab-totals .lab-total-compact { display: none; }
+.lab-totals > div:first-child { border-color: #aaccf7; }
+.lab-section { min-width: 0; margin-bottom: 14px; padding: 14px 0; border-bottom: 1px solid #d8e1ed; }
+.lab-bar { display: flex; overflow: hidden; height: 20px; border-radius: 4px; margin-top: 12px; }
+.lab-legend { list-style: none; display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 10px 0 0; padding: 0; }
+.lab-legend li { display: flex; align-items: center; gap: 6px; font-size: 14px; }
+.lab-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; }
+.lab-actions, .lab-filters { display: flex; gap: 8px; flex-wrap: wrap; }
+.lab-filters { margin-bottom: 10px; }
+.lab-filters label, #labMonthly > label { display: grid; gap: 4px; font-size: 14px; }
+.lab-table { table-layout: auto; min-width: 0; width: 100%; background: #fff; }
+.lab-table th, .lab-table td { text-align: left; padding: 9px; border-bottom: 1px solid #e2e8f0; vertical-align: middle; overflow-wrap: anywhere; }
+.lab-table th { position: static; }
+.lab-table small { display: block; margin-top: 4px; color: #52647a; }
+.lab-table .lab-money { text-align: right; font-variant-numeric: tabular-nums; }
+.lab-gate { position: fixed; inset: 0; display: grid; place-items: center; padding: 16px; background: #eef3f9; z-index: 100; }
+.lab-gate[hidden] { display: none; }
+.lab-gate form { width: min(100%, 360px); padding: 20px; }
+.lab-gate form, #labDialog form { display: grid; gap: 12px; }
+.lab-gate label, #labDialog label { display: grid; gap: 5px; }
+#labDialog { width: min(460px, calc(100% - 24px)); border: 1px solid #d8e1ed; border-radius: 8px; padding: 18px; }
+#labDialog::backdrop { background: #12213b66; }
+#labDialog h2, #labDialog p { margin: 0; }
+#labDialog input, #labDialog select, #labDialog textarea { width: 100%; min-width: 0; font: inherit; }
+#labWorkspace .analysis-strip { display: none; }
+@media (min-width: 769px) {
+  #labWorkspace { display: grid; grid-template-columns: 198px minmax(0, 1fr); align-items: start; gap: 18px; }
+  #labWorkspace > .topbar { grid-column: 1; position: sticky; top: 14px; display: block; }
+  #labWorkspace > .topbar .tabs { display: grid; gap: 6px; }
+  #labWorkspace > .topbar button { text-align: left; }
+  #labWorkspace > .panel { grid-column: 2; min-width: 0; }
+}
+@media (max-width: 768px) {
+  .lab-header { padding: 8px 12px; }
+  .lab-header span { display: none; }
+  .lab-totals strong { font-size: 15px; }
+  .lab-totals .lab-total-full { display: none; }
+  .lab-totals .lab-total-compact { display: inline; }
+  .lab-totals > div { padding: 9px; }
+  #labWorkspace .lab-table { display: block; background: transparent; }
+  #labWorkspace .lab-table thead { display: none; }
+  #labWorkspace .lab-table tbody { display: grid; gap: 8px; }
+  #labWorkspace .lab-table tr { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6px; background: #fff; border: 1px solid #d8e1ed; border-radius: 8px; padding: 9px; }
+  #labWorkspace .lab-table td { padding: 0; border: 0; white-space: normal; }
+  #labWorkspace .lab-table td:first-child, #labWorkspace .lab-table td:nth-child(5) { grid-column: 1 / -1; }
+  #labWorkspace .lab-table td:nth-child(3) { text-align: right; }
+  #labWorkspace .lab-table .lab-money { text-align: left; font-weight: 700; }
+  body:not([data-mobile-view="assets"]) #labMonthly { display: none; }
+}

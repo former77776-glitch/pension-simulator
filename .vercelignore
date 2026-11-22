@@ -1,0 +1,4 @@
+pension-simulator_260612.html
+*.log
+**/__pycache__/**
+supabase/**

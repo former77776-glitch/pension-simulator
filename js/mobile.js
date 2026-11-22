@@ -12,6 +12,7 @@
       if (tabName === "housePlan") renderHousePlan();
       if (tabName === "retirement") renderRetirementPlan();
       if (tabName === "assets") renderAssetCharts();
+      if (tabName === "labDashboard") renderLabDashboard();
     }
 
     function setMobileAssetEditMode(editing) {
@@ -43,7 +44,7 @@
       });
       if (viewName === "pension") activateTab("pension");
       else if (viewName === "housePlan") activateTab("housePlan");
-      else if (viewName === "retirement") activateTab("retirement");
+      else if (viewName === "retirement" || viewName === "labDashboard") activateTab(viewName);
       else {
         activateTab("assets");
         if (viewName === "investment") ensureMobileInvestmentSelection();
