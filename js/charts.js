@@ -686,9 +686,17 @@
 
 
     function drawChart(canvas, series, lineSeries) {
+      const { width, height } = canvas.getBoundingClientRect();
+      if (width < 100 || !height || !pensionRows.length) return;
+      const ratio = window.devicePixelRatio || 1;
+      const pixelWidth = Math.round(width * ratio);
+      const pixelHeight = Math.round(height * ratio);
+      if (canvas.width !== pixelWidth) canvas.width = pixelWidth;
+      if (canvas.height !== pixelHeight) canvas.height = pixelHeight;
       const ctx = canvas.getContext("2d");
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const area = { left: 58, top: 16, right: canvas.width - 18, bottom: canvas.height - 34 };
+      ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+      ctx.clearRect(0, 0, width, height);
+      const area = { left: 58, top: 16, right: width - 18, bottom: height - 34 };
       area.width = area.right - area.left;
       area.height = area.bottom - area.top;
       const maxStack = Math.max(...pensionRows.map((r) => series.reduce((s, item) => s + Math.max(0, r[item.key]), 0)), 1) / 100000000;
@@ -702,8 +710,9 @@
         ctx.beginPath(); ctx.moveTo(area.left, y); ctx.lineTo(area.right, y); ctx.stroke();
         ctx.fillText(`${(yMax * i / 5).toFixed(1)}억`, 8, y + 4);
       }
-      const gap = 5;
-      const barW = Math.max(6, (area.width - gap * (pensionRows.length - 1)) / pensionRows.length);
+      const slot = area.width / pensionRows.length;
+      const gap = Math.min(5, slot * .24);
+      const barW = slot - gap;
       const p = readSimInputs();
       const gapStartIndex = pensionRows.findIndex((row) => row["나이"] >= NATIONAL_PENSION_GAP_START_AGE);
       const gapEndIndex = pensionRows.findIndex((row) => row["나이"] >= p.national_pension_start_age);
@@ -745,10 +754,17 @@
         ctx.setLineDash([]);
       }
       ctx.fillStyle = "#b2bec7";
-      const every = Math.max(1, Math.ceil(pensionRows.length / 8));
+      ctx.font = "12px Malgun Gothic, sans-serif";
+      ctx.textAlign = "center";
+      const labelGap = 34;
+      const every = Math.max(1, Math.ceil(labelGap / slot));
+      const last = pensionRows.length - 1;
       pensionRows.forEach((row, index) => {
-        if (index % every === 0 || index === pensionRows.length - 1) ctx.fillText(row["나이"], area.left + index * (barW + gap), canvas.height - 12);
+        if (index === last || (index % every === 0 && (last - index) * slot >= labelGap)) {
+          ctx.fillText(row["나이"], area.left + (index + .5) * slot, height - 12);
+        }
       });
+      ctx.textAlign = "start";
     }
 
     function renderCharts() {
@@ -764,3 +780,6 @@
         { key: "개인연금", color: "#34a853" }
       ], [{ key: "총 과세", color: "#abd3fa" }, { key: "그해 목표 실수령액", color: "#ff989c", dash: true }]);
     }
+
+    const pensionChartResize = new ResizeObserver(() => renderCharts());
+    document.querySelectorAll("#pensionPanel .chart-card canvas").forEach(canvas => pensionChartResize.observe(canvas));
