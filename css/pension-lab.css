@@ -1,10 +1,15 @@
 :root {
+  color-scheme: dark;
   --lab-bg: #181a1c;
   --lab-panel: #222527;
   --lab-border: #383d41;
   --lab-text: #f1f4f7;
   --lab-muted: #b2bec7;
   --lab-teal: #6ad9c6;
+}
+button:focus-visible, a:focus-visible, summary:focus-visible, input:focus-visible, select:focus-visible {
+  outline: 2px solid var(--lab-teal);
+  outline-offset: 2px;
 }
 body { background: var(--lab-bg); }
 .lab-header { min-height: 64px; background: #142536; color: #fff; display: flex; align-items: center; gap: 16px; padding: 10px 24px; }
@@ -105,8 +110,8 @@ body { background: var(--lab-bg); }
   #labWorkspace .lab-table .lab-asset-name { grid-column: 1 / -1; }
   #labWorkspace .lab-table .lab-quantity { text-align: right; }
   #labWorkspace .lab-table .lab-money { text-align: left; align-self: center; }
-  .mobile-bottom-nav { background: #192128; border-color: var(--lab-border); }
-  .mobile-bottom-nav button { background: transparent; color: var(--lab-muted); }
+  .mobile-bottom-nav { background: #192128; border-color: var(--lab-border); grid-template-columns: repeat(7, minmax(0, 1fr)); }
+  .mobile-bottom-nav button { background: transparent; color: var(--lab-muted); white-space: normal; word-break: keep-all; padding-inline: 1px; }
   .mobile-bottom-nav button.active { background: #243742; color: var(--lab-teal); }
   body:not([data-mobile-view="assets"]) #labMonthly { display: none; }
 }

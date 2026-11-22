@@ -1,22 +1,23 @@
     :root {
-      --bg: #f5f7fb;
-      --surface: #ffffff;
-      --border: #d9e2ef;
-      --text: #172033;
-      --muted: #667085;
-      --accent: #2563eb;
-      --accent-soft: #dbeafe;
-      --header: #1d4ed8;
-      --estimate: #f8e7d1;
-      --net: #dfeeda;
-      --negative: #ff0000;
-      --green: #34a853;
+      --bg: #181a1c;
+      --surface: #222527;
+      --border: #383d41;
+      --text: #f1f4f7;
+      --muted: #b2bec7;
+      --accent: #225565;
+      --accent-text: #78d9c9;
+      --accent-soft: #253940;
+      --header: #234455;
+      --estimate: #3e3025;
+      --net: #243931;
+      --negative: #ff989c;
+      --green: #7bd6a3;
       --amber: #f59e0b;
-      --red: #ef4444;
-      --navy: #1e3a8a;
-      --teal: #0f766e;
-      --violet: #7c3aed;
-      --cyan: #0891b2;
+      --red: #f58c90;
+      --navy: #a9cdf8;
+      --teal: #6ad9c6;
+      --violet: #c5a6f0;
+      --cyan: #78d2e9;
       --shadow: 0 14px 34px rgba(23, 32, 51, .08);
       font-family: "Malgun Gothic", "Apple SD Gothic Neo", "Segoe UI", system-ui, sans-serif;
     }
@@ -45,7 +46,7 @@
       border-radius: 7px;
       padding: 0 12px;
       background: var(--accent-soft);
-      color: #1e3a8a;
+      color: #a9cdf8;
       font-weight: 700;
       cursor: pointer;
       white-space: nowrap;
@@ -62,7 +63,7 @@
       border: 1px solid var(--border);
       border-radius: 6px;
       padding: 0 8px;
-      background: #fff;
+      background: #222527;
       color: var(--text);
     }
 
@@ -91,7 +92,7 @@
     }
 
     .tab {
-      background: #e8eef8;
+      background: #29343f;
       color: var(--text);
     }
 
@@ -241,7 +242,7 @@
       width: 100%;
       min-height: 44px;
       margin-top: 8px;
-      background: #e8eef7;
+      background: #29343f;
       color: var(--navy);
     }
 
@@ -251,7 +252,7 @@
       padding: 12px;
       border: 1px solid var(--border);
       border-radius: 8px;
-      background: #fff;
+      background: #222527;
     }
 
     .mobile-view-heading strong,
@@ -266,7 +267,7 @@
       min-height: 44px;
       padding: 8px 12px;
       color: var(--navy);
-      background: #e8eef7;
+      background: #29343f;
     }
 
     .mobile-investment-tools {
@@ -321,7 +322,7 @@
     .mobile-category-toggle .mobile-category-head::after {
       content: "펼치기";
       flex: 0 0 auto;
-      color: var(--accent);
+      color: var(--accent-text);
       font-size: 12px;
       font-weight: 900;
     }
@@ -456,7 +457,7 @@
       padding: 7px 8px;
       border: 1px solid var(--border);
       border-radius: 8px;
-      background: #f8fafc;
+      background: #272c30;
       min-width: 0;
     }
 
@@ -517,8 +518,8 @@
     }
 
     .toolbar .secondary-actions button {
-      background: #eef4ff;
-      color: #25406f;
+      background: #243442;
+      color: #b8d5f3;
       font-weight: 700;
     }
 
@@ -635,20 +636,20 @@
       min-height: 24px;
       padding: 0 8px;
       border-radius: 999px;
-      background: #f1f5f9;
+      background: #2a3034;
       color: var(--muted);
       font-size: 12px;
       font-weight: 900;
     }
 
     .sync-badge.connected {
-      background: #dcfce7;
-      color: #166534;
+      background: #233a30;
+      color: #9ae6ba;
     }
 
     .sync-badge.pending {
-      background: #fff7ed;
-      color: #9a3412;
+      background: #3b2c24;
+      color: #ffc19d;
     }
 
     .managed-year-badge {
@@ -656,10 +657,10 @@
       align-items: center;
       min-height: 34px;
       padding: 0 10px;
-      border: 1px solid #bfdbfe;
+      border: 1px solid #425c77;
       border-radius: 8px;
-      background: #eff6ff;
-      color: #1d4ed8;
+      background: #243442;
+      color: #8fc7fa;
       font-size: 12px;
       font-weight: 800;
       white-space: nowrap;
@@ -678,21 +679,21 @@
     .asset-table {
       table-layout: fixed;
       font-size: 12px;
-      background: #fff;
+      background: #222527;
       border-collapse: separate;
       border-spacing: 0;
     }
 
     th, td {
       border: 0;
-      border-bottom: 1px solid #e5eaf2;
+      border-bottom: 1px solid #3a454d;
       padding: 4px 6px;
       white-space: nowrap;
     }
 
     th {
-      background: #f8fafc;
-      color: #475467;
+      background: #272c30;
+      color: #bfccd5;
       text-align: center;
       font-weight: 800;
       height: 30px;
@@ -705,15 +706,15 @@
     td.category {
       text-align: center;
       font-weight: 700;
-      background: #f8fafc;
-      color: #334155;
+      background: #272c30;
+      color: #c4d1db;
       width: 72px;
     }
 
     td.label {
       text-align: left;
       width: 176px;
-      color: #27364a;
+      color: #d8e4ed;
     }
 
     td.value {
@@ -734,7 +735,7 @@
 
     td.manual input:focus {
       outline: 2px solid var(--accent);
-      background: #fff;
+      background: #222527;
     }
 
     .negative {
@@ -744,12 +745,12 @@
     .net-row td {
       background: var(--net);
       font-weight: 900;
-      border-top: 1px solid #a9c9a1;
+      border-top: 1px solid #52745a;
     }
 
     .growth-row td {
       text-align: right;
-      background: #fff;
+      background: #222527;
     }
 
     .holdings-card {
@@ -769,7 +770,7 @@
       padding: 12px;
       border: 1px dashed var(--border);
       border-radius: 8px;
-      background: #f8fafc;
+      background: #272c30;
       color: var(--muted);
       font-size: 13px;
       line-height: 1.5;
@@ -798,10 +799,10 @@
       max-width: 100%;
       min-width: 0;
       padding: 5px 8px;
-      border: 1px solid #bfdbfe;
+      border: 1px solid #425c77;
       border-radius: 999px;
-      background: #eff6ff;
-      color: #1d4ed8;
+      background: #243442;
+      color: #8fc7fa;
       font-size: 12px;
       font-weight: 900;
       line-height: 1.25;
@@ -815,7 +816,7 @@
       padding: 9px;
       border: 1px solid var(--border);
       border-radius: 8px;
-      background: #f8fafc;
+      background: #272c30;
     }
 
     .investment-summary span {
@@ -839,7 +840,7 @@
     td.investment-cell {
       cursor: pointer;
       position: relative;
-      background: #fff;
+      background: #222527;
       padding-right: 8px;
     }
 
@@ -848,7 +849,7 @@
       position: absolute;
       top: 4px;
       right: 5px;
-      color: var(--accent);
+      color: var(--accent-text);
       font-size: 10px;
       font-weight: 900;
       opacity: 0;
@@ -859,7 +860,7 @@
     td.investment-cell:hover {
       outline: 2px solid rgba(245, 158, 11, .45);
       outline-offset: -2px;
-      background: #fffbeb;
+      background: #3b3223;
     }
 
     td.investment-cell:hover::after {
@@ -869,7 +870,7 @@
     td.investment-cell.selected-investment {
       outline: 1px solid var(--accent);
       outline-offset: -2px;
-      background: #eff6ff;
+      background: #243442;
       font-weight: 900;
     }
 
@@ -913,7 +914,7 @@
       overflow: auto;
       border: 1px solid var(--border);
       border-radius: 8px;
-      background: #fff;
+      background: #222527;
       box-shadow: 0 16px 32px rgba(15, 23, 42, .14);
       padding: 4px;
     }
@@ -934,7 +935,7 @@
 
     .autocomplete-option:hover,
     .autocomplete-option.active {
-      background: #eef6ff;
+      background: #293e48;
     }
 
     .autocomplete-option .symbol {
@@ -1000,7 +1001,7 @@
       padding: 9px;
       border: 1px solid var(--border);
       border-radius: 8px;
-      background: #fff;
+      background: #222527;
       overflow: hidden;
     }
 
@@ -1071,8 +1072,8 @@
     .holding-list button {
       min-height: 26px;
       padding: 0 7px;
-      border-color: #e5e7eb;
-      background: #f8fafc;
+      border-color: #3d464d;
+      background: #272c30;
       color: var(--muted);
       font-size: 11px;
       font-weight: 800;
@@ -1156,7 +1157,7 @@
 
     .field input {
       text-align: right;
-      background: #f8fafc;
+      background: #272c30;
     }
 
     .stepper {
@@ -1283,7 +1284,7 @@
     }
 
     .sim-table th, .sim-table td {
-      border: 1px solid #eef2f7;
+      border: 1px solid #283238;
       padding: 7px 8px;
       text-align: right;
     }
@@ -1292,7 +1293,7 @@
       position: sticky;
       top: 0;
       z-index: 1;
-      background: #edf2f7;
+      background: #2c383e;
     }
 
     .sim-table th.main {
@@ -1310,9 +1311,9 @@
       z-index: 10;
       display: none;
       padding: 8px 10px;
-      border: 1px solid #334155;
+      border: 1px solid #c4d1db;
       border-radius: 7px;
-      background: rgba(255, 255, 255, .97);
+      background: rgba(28, 34, 39, .98);
       color: var(--text);
       box-shadow: 0 12px 28px rgba(15, 23, 42, .18);
       font-size: 12px;
@@ -1512,7 +1513,7 @@
       min-height: 28px;
       padding: 0 10px;
       border-radius: 999px;
-      background: #eef2ff;
+      background: #302d43;
       color: var(--navy);
       font-size: 12px;
       font-weight: 900;
@@ -1525,13 +1526,13 @@
       min-height: 24px;
       padding: 0 8px;
       border-radius: 999px;
-      background: #ecfdf3;
+      background: #233a30;
       color: var(--green);
       font-weight: 900;
     }
 
     .status-badge.bad {
-      background: #fef2f2;
+      background: #432b30;
       color: var(--red);
     }
 
@@ -1601,21 +1602,21 @@
     }
 
     .house-table th {
-      background: #eff6ff;
+      background: #243442;
       color: var(--navy);
       font-weight: 900;
     }
 
     .house-table th.final-period,
     .house-table td.final-period {
-      background: #fff7ed;
+      background: #3b2c24;
     }
 
     .house-table th:first-child,
     .house-table td:first-child {
       text-align: left;
       width: 130px;
-      background: #f8fafc;
+      background: #272c30;
       font-weight: 800;
     }
 
@@ -1624,7 +1625,7 @@
       gap: 8px;
       border: 1px solid var(--border);
       border-radius: 8px;
-      background: #fff;
+      background: #222527;
     }
 
     details.house-details > summary {
@@ -1666,7 +1667,7 @@
     .retirement-period {
       padding: 6px 9px;
       border-radius: 6px;
-      background: #eef2f7;
+      background: #283238;
       color: var(--muted);
       font-size: 12px;
       font-weight: 700;
@@ -1737,7 +1738,7 @@
       min-width: 0;
       min-height: 28px;
       padding: 4px 5px;
-      background: #eef2f7;
+      background: #283238;
       color: var(--muted);
       font-size: 11px;
     }
@@ -1745,12 +1746,12 @@
     .retirement-presets button.active {
       background: var(--accent-soft);
       color: var(--navy);
-      box-shadow: inset 0 0 0 1px #93c5fd;
+      box-shadow: inset 0 0 0 1px #5079a5;
     }
 
     .retirement-additional-card {
-      border-color: #93c5fd;
-      background: #f8fbff;
+      border-color: #5079a5;
+      background: #25323f;
     }
 
     .retirement-additional-card strong {
@@ -1759,8 +1760,8 @@
     }
 
     .retirement-additional-card.complete {
-      border-color: #86c99a;
-      background: #f5fbf6;
+      border-color: #548568;
+      background: #23382e;
     }
 
     .retirement-additional-card.complete strong {
@@ -1805,7 +1806,7 @@
     }
 
     .retirement-progress-head strong {
-      color: var(--accent);
+      color: var(--accent-text);
       font-size: 32px;
     }
 
@@ -1814,7 +1815,7 @@
       margin-top: 15px;
       overflow: hidden;
       border-radius: 6px;
-      background: #e8eef8;
+      background: #29343f;
     }
 
     .retirement-progress-track > div {
@@ -1845,7 +1846,7 @@
       padding: 10px 12px;
       border: 1px solid var(--border);
       border-radius: 7px;
-      background: #f8fafc;
+      background: #272c30;
       text-align: right;
     }
 
@@ -1880,7 +1881,7 @@
       height: 34px;
       margin: 8px 0;
       padding: 0;
-      accent-color: var(--accent);
+      accent-color: var(--accent-text);
       cursor: pointer;
     }
 
@@ -2066,7 +2067,7 @@
         display: block;
         border: 1px solid var(--border);
         border-radius: 8px;
-        background: #fff;
+        background: #222527;
       }
 
       .mobile-input-details > summary {
@@ -2187,7 +2188,7 @@
         gap: 4px;
         min-height: 64px;
         padding: 8px max(8px, env(safe-area-inset-left)) calc(8px + env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-right));
-        background: rgba(255, 255, 255, .96);
+        background: rgba(25, 33, 40, .97);
         border-top: 1px solid var(--border);
         box-shadow: 0 -8px 24px rgba(23, 32, 51, .08);
       }
@@ -2197,7 +2198,7 @@
         min-width: 0;
         padding: 8px 4px;
         border-radius: 10px;
-        background: #eef2f7;
+        background: #283238;
         color: var(--text);
         font-size: 12px;
       }
