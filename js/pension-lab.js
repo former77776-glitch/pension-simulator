@@ -403,6 +403,28 @@ function initPensionLab() {
     labField("labSignInStatus").textContent = labField("serverSyncMeta").textContent;
     button.disabled = false;
   };
+  labField("labIssueFamilyLink").onclick = issueFamilyLink;
+  labField("labCopyFamilyLink").onclick = async () => {
+    const input = labField("labFamilyLinkUrl");
+    try {
+      await navigator.clipboard.writeText(input.value);
+      setServerSyncStatus("가족 링크를 복사했습니다.");
+    } catch {
+      input.select();
+      setServerSyncStatus("선택된 가족 링크를 복사해 주세요.");
+    }
+  };
+  labField("labUseFamilyLink").onclick = async () => {
+    if (serverSaveInFlight || serverSavedRevision !== serverLocalRevision) {
+      setServerSyncStatus("서버 저장을 완료한 뒤 가족 링크로 전환해 주세요.");
+      return;
+    }
+    const token = new URLSearchParams(new URL(labField("labFamilyLinkUrl").value).hash.slice(1)).get("family");
+    await supabaseClient.auth.signOut({ scope: "local" });
+    labField("labFamilyLinkResult").hidden = true;
+    labField("labFamilyLinkUrl").value = "";
+    await connectFamilyLink(token);
+  };
   labField("labSyncLink").onclick = event => {
     event.preventDefault();
     if (isMobileLayout()) activateMobileView("settings", { scroll: false });

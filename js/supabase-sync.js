@@ -1,6 +1,8 @@
     let serverSaveQueued = false;
     let serverLocalRevision = 0;
     let serverSavedRevision = 0;
+    let familyLinkToken = "";
+    const FAMILY_LINK_STORAGE_KEY = "pensionLabFamilyLink:" + FAMILY_KEY;
 
     function supabaseConfigured() {
       return Boolean(supabaseClient && FAMILY_KEY);
@@ -31,6 +33,10 @@
       const meta = document.getElementById("serverSyncMeta");
       const login = document.getElementById("serverSyncLogin");
       const disabled = !serverSync.connected;
+      const issue = document.getElementById("labIssueFamilyLink");
+      if (issue) issue.hidden = disabled || !!familyLinkToken;
+      const logout = document.getElementById("logoutServerSync");
+      if (logout) logout.textContent = familyLinkToken ? "이 기기 연결 해제" : "관리자 연결 해제";
       ["loadFromServer", "saveToServer", "toggleAutoServerSave", "logoutServerSync"].forEach((id) => {
         const button = document.getElementById(id);
         if (button) button.disabled = disabled;
@@ -48,7 +54,7 @@
         } else if (!supabaseConfigured()) {
           meta.textContent = "Supabase URL과 anon key를 설정하면 서버 저장/불러오기를 사용할 수 있습니다.";
         } else if (!serverSync.connected) {
-          meta.textContent = message || "가족 계정으로 로그인하면 서버 데이터를 불러옵니다.";
+          meta.textContent = message || "가족 전용 링크를 열면 서버 데이터를 불러옵니다.";
         } else {
           meta.textContent = serverStatusText(message);
         }
@@ -399,6 +405,14 @@
 
     async function fetchServerAssetRow() {
       if (!supabaseConfigured()) throw new Error("Supabase URL과 anon key를 먼저 설정하세요.");
+      if (familyLinkToken) {
+        const { data, error } = await supabaseClient.rpc("pension_family_link_read", {
+          requested_family: FAMILY_KEY, access_token: familyLinkToken
+        });
+        if (error?.code === "42501") throw new Error("가족 링크가 교체되었거나 올바르지 않습니다. 새 링크를 열어 주세요.");
+        if (error) throw new Error("가족 데이터를 불러올 수 없습니다. 잠시 후 다시 시도해 주세요.");
+        return data;
+      }
       const { data, error } = await supabaseClient.auth.getSession();
       if (error || !data.session) throw new Error("다시 로그인해 주세요.");
       serverSync.token = data.session.access_token;
@@ -411,6 +425,15 @@
 
     async function upsertServerAssetRow(data, expectedRevision) {
       if (!supabaseConfigured()) throw new Error("Supabase URL과 anon key를 먼저 설정하세요.");
+      if (familyLinkToken) {
+        const result = await supabaseClient.rpc("pension_family_link_write", {
+          requested_family: FAMILY_KEY, access_token: familyLinkToken, expected_revision: expectedRevision || null, next_data: data
+        });
+        if (result.error?.code === "42501") throw new Error("기존 링크가 교체되었습니다. 새 가족 링크를 열어 주세요.");
+        if (result.error) throw new Error("가족 자산 저장에 실패했습니다.");
+        if (!result.data?.updated_at) throw new Error("다른 기기가 먼저 저장했습니다. JSON 백업 후 다시 불러오세요.");
+        return result.data;
+      }
       const query = expectedRevision ? `?family_key=eq.${encodeURIComponent(FAMILY_KEY)}&updated_at=eq.${encodeURIComponent(expectedRevision)}&select=updated_at` : "?select=updated_at";
       const response = await fetch(familyAssetUrl(query), {
         method: expectedRevision ? "PATCH" : "POST",
@@ -429,7 +452,7 @@
 
     function requireServerConnection() {
       if (!serverSync.connected) {
-        setServerSyncStatus("가족 비밀번호 연결이 필요합니다.");
+        setServerSyncStatus("가족 링크 연결이 필요합니다.");
         return false;
       }
       if (!supabaseConfigured()) {
@@ -468,6 +491,61 @@
       }
     }
 
+    async function connectFamilyLink(token) {
+      if (!/^[0-9a-f]{64}$/.test(token) || !supabaseConfigured()) return;
+      const status = document.getElementById("labSignInStatus");
+      status.textContent = "가족 자산을 불러오는 중입니다.";
+      familyLinkToken = token;
+      serverSync.connected = true;
+      serverSync.autoSave = true;
+      try {
+        await loadFromServer({ initial: true });
+        try { localStorage.setItem(FAMILY_LINK_STORAGE_KEY, token); }
+        catch { /* The link still works for this session. */ }
+        document.getElementById("labGate").hidden = true;
+        document.getElementById("labWorkspace").inert = false;
+      } catch (error) {
+        familyLinkToken = "";
+        serverSync.connected = false;
+        setServerSyncStatus(error.message);
+        status.textContent = error.message;
+      }
+    }
+
+    function openRememberedFamilyLink() {
+      if (!supabaseConfigured()) return;
+      const fromUrl = new URLSearchParams(location.hash.slice(1)).get("family");
+      let remembered = "";
+      try { remembered = localStorage.getItem(FAMILY_LINK_STORAGE_KEY) || ""; } catch { /* Optional persistence. */ }
+      if (fromUrl !== null && !/^[0-9a-f]{64}$/.test(fromUrl)) {
+        history.replaceState(null, "", location.pathname + location.search);
+        document.getElementById("labSignInStatus").textContent = "가족 링크가 올바르지 않습니다.";
+        return;
+      }
+      if (fromUrl !== null) history.replaceState(null, "", location.pathname + location.search);
+      void connectFamilyLink(fromUrl || remembered);
+    }
+
+    async function issueFamilyLink() {
+      if (!serverSync.connected || familyLinkToken) return;
+      if (!window.confirm("새 링크를 만들면 이전 가족 링크는 사용할 수 없게 됩니다. 계속할까요?")) return;
+      const button = document.getElementById("labIssueFamilyLink");
+      button.disabled = true;
+      try {
+        const { data, error } = await supabaseClient.rpc("pension_issue_family_link", { requested_family: FAMILY_KEY });
+        if (error || !/^[0-9a-f]{64}$/.test(data)) throw new Error("가족 링크를 만들 수 없습니다.");
+        const url = new URL(location.pathname, location.origin);
+        url.hash = "family=" + data;
+        document.getElementById("labFamilyLinkUrl").value = url.href;
+        document.getElementById("labFamilyLinkResult").hidden = false;
+        setServerSyncStatus("가족 링크가 생성되었습니다.");
+      } catch (error) {
+        setServerSyncStatus(error.message);
+      } finally {
+        button.disabled = false;
+      }
+    }
+
     async function loadFromServer({ initial = false } = {}) {
       if (!requireServerConnection()) return;
       try {
@@ -478,6 +556,7 @@
         setServerSyncStatus("서버에서 불러오는 중입니다.");
         const row = await fetchServerAssetRow();
         if (!row?.data_json) {
+          if (initial && familyLinkToken) throw new Error("서버에 가족 자산 기록이 없습니다.");
           setServerSyncStatus("서버에 저장된 데이터가 없습니다.");
           return;
         }
@@ -573,6 +652,8 @@
       window.clearTimeout(serverSaveTimer);
       serverSync.connected = false;
       serverSync.token = "";
+      familyLinkToken = "";
+      try { localStorage.removeItem(FAMILY_LINK_STORAGE_KEY); } catch { /* The in-memory link was removed. */ }
       await supabaseClient.auth.signOut();
       location.reload();
     }

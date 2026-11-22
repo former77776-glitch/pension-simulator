@@ -68,4 +68,5 @@
       pendingServerAutoSaveAfterBoot = false;
       scheduleServerAutoSave();
     }
+    openRememberedFamilyLink();
     autoConnectPriceApi();
