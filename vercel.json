@@ -1,7 +1,10 @@
 {
+  "redirects": [
+    { "source": "/manage", "destination": "/", "permanent": false },
+    { "source": "/public-overview.html", "destination": "/", "permanent": false }
+  ],
   "rewrites": [
-    { "source": "/", "destination": "/public-overview.html" },
-    { "source": "/manage", "destination": "/pension-simulator.html" },
+    { "source": "/", "destination": "/pension-simulator.html" },
     { "source": "/api/(.*)", "destination": "/api/$1" }
   ],
   "crons": [

@@ -383,7 +383,7 @@
       for (const row of assetRows) {
         const cells = [];
         if (!used.has(row.category)) {
-          cells.push(`<td class="category" rowspan="${spans[row.category]}">${row.category}</td>`);
+          cells.push(`<td class="category" rowspan="${spans[row.category]}">${escLab(row.category)}</td>`);
           used.add(row.category);
         }
         cells.push(`<td class="label">${escLab(row.label)}</td>`);
@@ -395,9 +395,9 @@
           } else if (isInvestmentRow(row)) {
             const selected = selectedInvestment && selectedInvestment.rowId === row.id && selectedInvestment.period === period;
             const hasData = !!getInvestment(row.id, period);
-            cells.push(`<td class="value investment-cell${neg}${selected ? " selected-investment" : ""}${hasData ? " has-investment" : ""}" data-row="${row.id}" data-period="${period}" title="${periodTitle(period)} ${row.category} 상세 정보 편집">${won(value)}</td>`);
+            cells.push(`<td class="value investment-cell${neg}${selected ? " selected-investment" : ""}${hasData ? " has-investment" : ""}" data-row="${escLab(row.id)}" data-period="${period}" title="${periodTitle(period)} ${escLab(row.category)} 상세 정보 편집">${won(value)}</td>`);
           } else {
-            cells.push(`<td class="value manual${neg}"><input class="money" data-row="${row.id}" data-period="${period}" value="${won(value)}"></td>`);
+            cells.push(`<td class="value manual${neg}"><input class="money" data-row="${escLab(row.id)}" data-period="${period}" value="${won(value)}"></td>`);
           }
         }
         html.push(`<tr>${cells.join("")}</tr>`);

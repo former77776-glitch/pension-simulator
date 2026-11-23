@@ -352,25 +352,7 @@ async function importLabSnapshot() {
 }
 
 function downloadLabBackup() {
-  let data = collectAppStateForServer();
-  if (labField("labGate").hidden === false) {
-    const storage = window.localStorage;
-    const keys = {
-      assetRows: "pensionAssetRows", investmentData: "pensionInvestmentData",
-      assetPeriods: "pensionAssetPeriods", assetFutureBackup: "pensionAssetFutureBackup",
-      assetArchivedPeriods: "pensionAssetArchivedPeriods", labAssetMetadata: "pensionLabMetadata",
-      housePlan: HOUSE_PLAN_STORAGE_KEY, retirementPlan: RETIREMENT_PLAN_STORAGE_KEY
-    };
-    data = Object.fromEntries(Object.entries(keys).flatMap(([field, key]) => {
-      const raw = storage.getItem(key);
-      if (!raw) return [];
-      try { return [[field, JSON.parse(raw)]]; } catch { return []; }
-    }));
-    if (!Array.isArray(data.assetRows)) {
-      labField("labSignInStatus").textContent = "이 브라우저에 저장된 자산 기록이 없습니다.";
-      return;
-    }
-  }
+  const data = collectAppStateForServer();
   const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));
   const link = document.createElement("a");
   link.href = url;
@@ -386,45 +368,9 @@ function initPensionLab() {
   labField("labSnapshotControls").hidden = authRequired;
   labField("labImportSnapshot").onclick = () => labField("labSnapshotFile").click();
   labField("labSnapshotFile").onchange = importLabSnapshot;
-  labField("labGate").hidden = !authRequired;
-  labField("labWorkspace").inert = authRequired;
   for (const button of document.querySelectorAll("[data-lab-backup]")) {
-    button.onclick = () => {
-      try { downloadLabBackup(); }
-      catch { labField("labSignInStatus").textContent = "브라우저 저장소를 읽을 수 없습니다."; }
-    };
+    button.onclick = () => downloadLabBackup();
   }
-  labField("labSignIn").onsubmit = async event => {
-    event.preventDefault();
-    const button = event.currentTarget.querySelector("button");
-    button.disabled = true;
-    labField("labSignInStatus").textContent = "로그인 중입니다.";
-    await connectFamilySync();
-    labField("labSignInStatus").textContent = labField("serverSyncMeta").textContent;
-    button.disabled = false;
-  };
-  labField("labIssueFamilyLink").onclick = issueFamilyLink;
-  labField("labCopyFamilyLink").onclick = async () => {
-    const input = labField("labFamilyLinkUrl");
-    try {
-      await navigator.clipboard.writeText(input.value);
-      setServerSyncStatus("가족 링크를 복사했습니다.");
-    } catch {
-      input.select();
-      setServerSyncStatus("선택된 가족 링크를 복사해 주세요.");
-    }
-  };
-  labField("labUseFamilyLink").onclick = async () => {
-    if (serverSaveInFlight || serverSavedRevision !== serverLocalRevision) {
-      setServerSyncStatus("서버 저장을 완료한 뒤 가족 링크로 전환해 주세요.");
-      return;
-    }
-    const token = new URLSearchParams(new URL(labField("labFamilyLinkUrl").value).hash.slice(1)).get("family");
-    await supabaseClient.auth.signOut({ scope: "local" });
-    labField("labFamilyLinkResult").hidden = true;
-    labField("labFamilyLinkUrl").value = "";
-    await connectFamilyLink(token);
-  };
   labField("labSyncLink").onclick = event => {
     event.preventDefault();
     if (isMobileLayout()) activateMobileView("settings", { scroll: false });

@@ -33,11 +33,9 @@
       bind("runBtn", "click", runPension);
       bind("csvBtn", "click", exportPensionCsv);
       bind("resetBtn", "click", resetPension);
-      bind("connectFamilySync", "click", connectFamilySync);
-      bind("loadFromServer", "click", loadFromServer);
+      bind("loadFromServer", "click", () => serverSync.connected ? loadFromServer() : connectPublicSync());
       bind("saveToServer", "click", () => saveToServer());
       bind("toggleAutoServerSave", "click", toggleAutoServerSave);
-      bind("logoutServerSync", "click", logoutServerSync);
       document.querySelectorAll("[data-house-input]").forEach((input) => {
         input.addEventListener("input", onHouseInputChanged);
         input.addEventListener("change", onHouseInputChanged);
@@ -68,5 +66,5 @@
       pendingServerAutoSaveAfterBoot = false;
       scheduleServerAutoSave();
     }
-    openRememberedFamilyLink();
+    void connectPublicSync();
     autoConnectPriceApi();

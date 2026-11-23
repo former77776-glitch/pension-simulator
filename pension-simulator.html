@@ -10,22 +10,6 @@
   <link rel="stylesheet" href="./css/pension-lab.css">
 </head>
 <body>
-  <div id="labGate" class="lab-gate" hidden>
-    <section class="card lab-access-card">
-      <h1>PENSION LAB</h1>
-      <p>받은 가족 전용 링크를 열면 바로 접속할 수 있습니다.</p>
-      <p id="labSignInStatus" role="status"></p>
-      <button type="button" data-lab-backup>이 브라우저의 자산 백업</button>
-      <details>
-        <summary>관리자용 링크 설정</summary>
-        <form id="labSignIn">
-          <label>이메일<input id="labEmail" type="email" autocomplete="username" required></label>
-          <label>비밀번호<input id="familyPasswordInput" type="password" autocomplete="current-password" required></label>
-          <button class="primary">관리자 인증</button>
-        </form>
-      </details>
-    </section>
-  </div>
   <header class="lab-header">
     <strong>PENSION LAB</strong><span>가족 자산 관리</span>
     <div class="lab-header-actions">
@@ -127,14 +111,7 @@
           <summary>서버 동기화 설정</summary>
           <div class="server-sync-actions">
           <button type="button" id="toggleAutoServerSave" disabled>자동 서버 저장 OFF</button>
-          <button type="button" id="logoutServerSync" disabled>이 기기에서 로그아웃</button>
-          <button type="button" id="labIssueFamilyLink" hidden>가족 링크 만들기</button>
           </div>
-        <div id="labFamilyLinkResult" hidden>
-          <label>가족 전용 링크<input id="labFamilyLinkUrl" type="text" readonly autocomplete="off"></label>
-          <button type="button" id="labCopyFamilyLink">링크 복사</button>
-          <button type="button" id="labUseFamilyLink">이 기기도 링크로 연결</button>
-        </div>
           <div class="server-sync-meta">서버 동기화는 수동 저장/불러오기로 확인한 뒤 자동 서버 저장을 켜는 것을 권장합니다.</div>
         </details>
       </div>
