@@ -36,11 +36,18 @@
       <div class="lab-heading lab-dashboard-title">
         <div><h1>우리 집 자산</h1><span id="labPeriod"></span></div>
         <div class="lab-actions">
-          <label class="lab-period-picker">조회 기간<select id="labHistoryPeriod"><option value="">현재 자산</option></select></label>
-          <button id="labExportHoldings" data-lab-current-only>CSV 저장</button>
+          <label class="lab-period-picker"><select id="labHistoryPeriod" aria-label="조회 기간"><option value="">현재 자산</option></select></label>
           <button class="primary" id="labAddAsset" data-lab-current-only>자산 추가</button>
-          <button id="labExportHistory" data-lab-history-only hidden>월별 CSV</button>
           <button id="labFinalize" data-lab-history-only hidden>월말 기록 확정</button>
+          <details class="lab-more">
+            <summary>더보기</summary>
+            <div class="lab-more-menu">
+              <button id="labUpdatePrices" type="button" data-lab-current-only>가격 업데이트</button>
+              <button id="labCategories" type="button" data-lab-current-only>분류 관리</button>
+              <button id="labExportHoldings" type="button" data-lab-current-only>CSV 저장</button>
+              <button id="labExportHistory" type="button" data-lab-history-only hidden>월별 CSV</button>
+            </div>
+          </details>
         </div>
       </div>
       <p id="labHistoryStatus" role="status" data-lab-history-only hidden></p>
@@ -52,9 +59,13 @@
       <div class="lab-totals" id="labTotals"></div>
       <section class="lab-section lab-portfolio"><h2>자산 포트폴리오</h2><div id="labAllocation"></div></section>
       <section class="lab-section lab-inventory">
-        <div class="lab-heading"><h2>보유 자산 목록</h2><div class="lab-actions"><button id="labCategories" data-lab-current-only>분류 관리</button><button id="labUpdatePrices" type="button" data-lab-current-only>가격 업데이트</button></div></div>
-        <div class="lab-category-tabs" id="labFilter" role="group" aria-label="대분류"></div>
-        <div class="lab-filters"><input id="labSearch" type="search" aria-label="자산명 검색" placeholder="자산명 검색"><span id="labAssetCount"></span></div>
+        <div class="lab-heading lab-inventory-heading">
+          <div class="lab-inventory-title"><h2>보유 자산</h2><span id="labAssetCount"></span></div>
+          <div class="lab-filters">
+            <input id="labSearch" type="search" aria-label="자산 또는 종목 검색" placeholder="자산 또는 종목 검색">
+            <select id="labFilter" aria-label="자산 분류"><option value="">전체 분류</option></select>
+          </div>
+        </div>
         <div id="labHoldings"></div>
         <p id="labStatus" role="status"></p>
         <p id="labSyncStatus" class="server-sync-desc" role="status" hidden></p>

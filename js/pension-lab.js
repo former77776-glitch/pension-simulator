@@ -95,10 +95,8 @@ function renderLabDashboard() {
   document.querySelectorAll("[data-lab-history-only]").forEach(element => { element.hidden = !historical; });
   labField("labFinalize").disabled = labFinalizationInFlight || !historical || Boolean(snapshot);
   labField("labTotals").innerHTML = [
-    ["우리 집 순자산", totals.net, "총자산 − 총부채"],
-    ["총자산", totals.assets, `${rows.filter(row => row.amount >= 0).length}개 자산 항목`],
-    ["총부채", totals.debt, `${rows.filter(row => row.amount < 0).length}개 부채 항목`]
-  ].map(([name, value, note]) => `<div class="card"><span>${name}</span><strong title="${won(value)}">${labAmount(value)}</strong><small>${note}</small></div>`).join("");
+    ["순자산", totals.net], ["총자산", totals.assets], ["총부채", totals.debt]
+  ].map(([name, value]) => `<div><span>${name}</span><strong title="${won(value)}">${labAmount(value)}</strong></div>`).join("");
   const allocation = new Map();
   rows.filter(row => row.amount > 0).forEach(row => allocation.set(row.category, (allocation.get(row.category) || 0) + row.amount));
   const categoryColors = new Map([["주식", "#219689"], ["현금", "#648dcc"], ["연금", "#aa8ac2"], ["부동산", "#be9c67"], ["금", "#dca456"]]);
@@ -110,12 +108,13 @@ function renderLabDashboard() {
   const filter = labField("labFilter");
   const categories = ["", ...new Set([...labKinds, ...rows.map(row => row.category)])];
   if (!categories.includes(labFilterCategory)) labFilterCategory = "";
-  const focused = filter.contains(document.activeElement);
-  filter.innerHTML = categories.map(category => `<button type="button" data-lab-category="${escLab(category)}" aria-pressed="${category === labFilterCategory}">${escLab(category || "전체")}</button>`).join("");
-  if (focused) filter.querySelector('[aria-pressed="true"]').focus();
+  if (categories.length !== filter.options.length || categories.some((category, index) => category !== filter.options[index].value)) {
+    filter.replaceChildren(...categories.map(category => new Option(category || "전체 분류", category)));
+  }
+  filter.value = labFilterCategory;
   const query = labField("labSearch").value.trim().toLowerCase();
   const visible = rows.filter(row => (!labFilterCategory || labFilterCategory === row.category) &&
-    [row.name, ...row.holdings.flatMap(holding => [holding.symbol, holding.name])].some(name => String(name || "").toLowerCase().includes(query)));
+    [row.name, ...row.holdings.flatMap(holding => [holding.symbol, labHoldingName(holding)])].some(name => String(name || "").toLowerCase().includes(query)));
   list.innerHTML = labTable(visible, !historical);
   labField("labAssetCount").textContent = `${visible.length}개 항목`;
 }
@@ -442,13 +441,17 @@ function initPensionLab() {
     else activateTab("assets");
     labField("serverSyncCard").scrollIntoView({ block: "start" });
   };
-  labField("labFilter").onclick = event => {
-    const button = event.target.closest("[data-lab-category]");
-    if (button) {
-      labFilterCategory = button.dataset.labCategory;
-      renderLabDashboard();
-    }
+  labField("labFilter").onchange = event => {
+    labFilterCategory = event.target.value;
+    renderLabDashboard();
   };
+  const more = labField("labDashboardPanel").querySelector(".lab-more");
+  more.querySelector(".lab-more-menu").addEventListener("click", event => {
+    if (event.target.closest("button")) more.open = false;
+  });
+  document.addEventListener("click", event => {
+    if (more.open && !more.contains(event.target)) more.open = false;
+  });
   labField("labSearch").oninput = renderLabDashboard;
   labField("labAddAsset").onclick = () => editLabAsset();
   labField("labCategories").onclick = () => editLabCategories();
