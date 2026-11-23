@@ -3,6 +3,7 @@ const labKinds = ["부동산", "주식", "연금", "금", "현금", "대출/부�
 let labMetadata = { groups: [], snapshots: {} };
 let labFilterCategory = "";
 let labPrivateSnapshot = false;
+let labFinalizationInFlight = false;
 
 function escLab(value) {
   return String(value ?? "").replace(/[&<>"']/g, (char) => ({
@@ -73,11 +74,26 @@ function labPeriodRows(period) {
 function renderLabDashboard() {
   const list = labField("labHoldings");
   if (!list) return;
-  const period = currentPeriod();
-  const rows = labPeriodRows(period);
-  const totals = labTotals(rows);
-  const source = labPrivateSnapshot ? "Supabase 백업 · 이 세션에서만 표시" : supabaseConfigured() ? "가족 자산" : "예시 데이터 · 이 기기 저장";
+  const select = labField("labHistoryPeriod");
+  const selected = select.value;
+  const history = [...new Set([...recordedAssetPeriods(), ...Object.keys(labMetadata.snapshots)])]
+    .filter(period => isValidPeriod(period) && period < currentPeriod()).sort(comparePeriods).reverse();
+  const choices = ["", ...history];
+  if (choices.length !== select.options.length || choices.some((period, index) => period !== select.options[index].value)) {
+    select.replaceChildren(...choices.map(period => new Option(period ? period.replace("-", ".") : "현재 자산", period)));
+    select.value = history.includes(selected) ? selected : "";
+  }
+  const historical = Boolean(select.value);
+  const period = select.value || currentPeriod();
+  const snapshot = historical ? labMetadata.snapshots[period] : null;
+  const rows = snapshot?.rows || labPeriodRows(period);
+  const totals = snapshot?.totals || labTotals(rows);
+  const source = historical ? (snapshot ? "확정 기록" : "기존 기록") :
+    labPrivateSnapshot ? "Supabase 백업 · 이 세션에서만 표시" : supabaseConfigured() ? "가족 자산" : "예시 데이터 · 이 기기 저장";
   labField("labPeriod").textContent = `${periodLabel(period)} · ${source}`;
+  document.querySelectorAll("[data-lab-current-only]").forEach(element => { element.hidden = historical; });
+  document.querySelectorAll("[data-lab-history-only]").forEach(element => { element.hidden = !historical; });
+  labField("labFinalize").disabled = labFinalizationInFlight || !historical || Boolean(snapshot);
   labField("labTotals").innerHTML = [
     ["우리 집 순자산", totals.net, "총자산 − 총부채"],
     ["총자산", totals.assets, `${rows.filter(row => row.amount >= 0).length}개 자산 항목`],
@@ -100,7 +116,7 @@ function renderLabDashboard() {
   const query = labField("labSearch").value.trim().toLowerCase();
   const visible = rows.filter(row => (!labFilterCategory || labFilterCategory === row.category) &&
     [row.name, ...row.holdings.flatMap(holding => [holding.symbol, holding.name])].some(name => String(name || "").toLowerCase().includes(query)));
-  list.innerHTML = labTable(visible, true);
+  list.innerHTML = labTable(visible, !historical);
   labField("labAssetCount").textContent = `${visible.length}개 항목`;
 }
 
@@ -111,14 +127,21 @@ function labHoldingName(holding) {
     name || holding.symbol || "이름 없는 종목";
 }
 
-function labTable(rows, edit = false) {
+function labQuoteLine(name, quantity, unit, price, updatedAt, current) {
+  const quote = toNumber(price) > 0 ? `${toNumber(price).toLocaleString("ko-KR", { maximumFractionDigits: 2 })}원/${unit}` : "단가 미등록";
+  const basis = `${current ? "최근 저장 단가" : "기록 단가"}${updatedAt ? ` · ${updatedAt}` : ""}`;
+  return `<small class="lab-holding-line"><span>${escLab(name)}</span><span>${toNumber(quantity).toLocaleString("ko-KR", { maximumFractionDigits: 8 })}${unit}</span><span class="lab-quote" title="${escLab(basis)}">${quote}</span></small>`;
+}
+
+function labTable(rows, edit) {
   if (!rows.length) return "<p>표시할 자산이 없습니다.</p>";
   return `<table class="lab-table"><thead><tr><th>자산명</th><th>분류</th><th>보유 수량</th><th>평가액</th>${edit ? '<th aria-label="관리"></th>' : ""}</tr></thead><tbody>${rows.map(row => `<tr>
-    <td class="lab-asset-name"><strong>${escLab(row.name)}</strong>${row.holdings.map(item => edit
-      ? `<small class="lab-holding-line"><span>${escLab(labHoldingName(item))}</span><span>${toNumber(item.shares).toLocaleString("ko-KR")}주</span></small>`
-      : `<small>${escLab(item.symbol || item.name)} · ${escLab(item.shares)}주 × ${won(item.price)}${item.updatedAt ? ` · ${escLab(item.updatedAt)}` : ""}</small>`).join("")}</td>
+    <td class="lab-asset-name"><strong>${escLab(row.name)}</strong>${row.holdings.map(item =>
+      labQuoteLine(labHoldingName(item), item.shares, "주", item.price, item.updatedAt, edit)).join("")}${goldItems(row.investment)
+      .filter(item => /금|gold/i.test(item.kind || "금")).map(item =>
+        labQuoteLine(item.kind || "금", item.quantity, "g", item.price, item.updatedAt, edit)).join("")}</td>
     <td class="lab-asset-category">${escLab(row.category)}${row.subcategory ? ` / ${escLab(row.subcategory)}` : ""}</td>
-    <td class="lab-quantity">${!edit && row.holdings.length === 1 ? `${escLab(row.holdings[0].shares)}주` : row.holdings.length ? `${row.holdings.length}종목` : "–"}</td>
+    <td class="lab-quantity">${row.holdings.length ? `${row.holdings.length}종목` : "–"}</td>
     <td class="lab-money" title="${won(row.amount)}">${labAmount(row.amount)}</td>
     ${edit ? `<td class="lab-row-action"><button type="button" data-lab-edit="${escLab(row.id)}" aria-label="${escLab(row.name)} 수정">수정</button></td>` : ""}
   </tr>`).join("")}</tbody></table>`;
@@ -291,23 +314,6 @@ function editLabCategories(id = "") {
   };
 }
 
-function renderLabHistory() {
-  const select = labField("labHistoryPeriod");
-  if (!select) return;
-  const previous = select.value || previousMonthPeriod(currentPeriod());
-  const periods = [...new Set([...recordedAssetPeriods(), ...Object.keys(labMetadata.snapshots)])]
-    .filter(period => period < currentPeriod()).sort(comparePeriods).reverse();
-  select.replaceChildren(...periods.map(period => new Option(periodLabel(period), period)));
-  if (periods.includes(previous)) select.value = previous;
-  const snapshot = labMetadata.snapshots[select.value];
-  const rows = snapshot?.rows || labPeriodRows(select.value);
-  const { assets, debt, net } = snapshot?.totals || labTotals(rows);
-  labField("labFinalize").disabled = !select.value || Boolean(snapshot);
-  labField("labHistory").innerHTML = select.value ? `<p>${snapshot ? "확정 기록" : "기존 기록"} · 총자산 ${won(assets)} · 총부채 ${won(debt)} · 순자산 ${won(net)}</p>${labTable(rows)}` : "<p>지난 월 기록이 없습니다.</p>";
-}
-
-let labFinalizationInFlight = false;
-
 async function finalizeLabHistory(requestedPeriod) {
   const button = labField("labFinalize");
   const period = typeof requestedPeriod === "string" ? requestedPeriod : labField("labHistoryPeriod").value;
@@ -341,7 +347,7 @@ async function finalizeLabHistory(requestedPeriod) {
     status.textContent = `확정 실패 · ${error.message}`;
   } finally {
     labFinalizationInFlight = false;
-    renderLabHistory();
+    renderLabDashboard();
   }
 }
 
@@ -453,11 +459,15 @@ function initPensionLab() {
       labField("labStatus").textContent = labField("priceStatus").textContent;
     } finally { button.disabled = false; }
   };
-  labField("labHistoryPeriod").onchange = renderLabHistory;
+  labField("labHistoryPeriod").onchange = () => {
+    labFilterCategory = "";
+    labField("labSearch").value = "";
+    labField("labHistoryStatus").textContent = "";
+    renderLabDashboard();
+  };
   labField("labFinalize").onclick = finalizeLabHistory;
   labField("labExportHoldings").onclick = () => exportLabCsv();
   labField("labExportHistory").onclick = () => exportLabCsv(true);
   if (isMobileLayout()) activateMobileView("labDashboard", { scroll: false });
   renderLabDashboard();
-  renderLabHistory();
 }

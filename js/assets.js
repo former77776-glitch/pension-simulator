@@ -440,7 +440,6 @@
 
     function renderAssetSummary() {
       renderLabDashboard();
-      renderLabHistory();
       const period = latestManagedPeriod();
       const prevPeriod = assetPeriods[assetPeriods.indexOf(period) - 1];
       const net = assetRows.reduce((sum, row) => sum + rowValue(row, period), 0);

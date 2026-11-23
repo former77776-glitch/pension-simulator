@@ -33,7 +33,17 @@
     </div>
 
     <section id="labDashboardPanel" class="panel active">
-      <div class="lab-heading lab-dashboard-title"><div><h1>우리 집 자산</h1><span id="labPeriod"></span></div><div class="lab-actions"><button id="labExportHoldings">CSV 저장</button><button class="primary" id="labAddAsset">자산 추가</button></div></div>
+      <div class="lab-heading lab-dashboard-title">
+        <div><h1>우리 집 자산</h1><span id="labPeriod"></span></div>
+        <div class="lab-actions">
+          <label class="lab-period-picker">조회 기간<select id="labHistoryPeriod"><option value="">현재 자산</option></select></label>
+          <button id="labExportHoldings" data-lab-current-only>CSV 저장</button>
+          <button class="primary" id="labAddAsset" data-lab-current-only>자산 추가</button>
+          <button id="labExportHistory" data-lab-history-only hidden>월별 CSV</button>
+          <button id="labFinalize" data-lab-history-only hidden>월말 기록 확정</button>
+        </div>
+      </div>
+      <p id="labHistoryStatus" role="status" data-lab-history-only hidden></p>
       <div class="lab-actions" id="labSnapshotControls" hidden>
         <button id="labImportSnapshot" type="button">Supabase 백업 열기</button>
         <input id="labSnapshotFile" type="file" accept=".json,application/json" hidden>
@@ -42,7 +52,7 @@
       <div class="lab-totals" id="labTotals"></div>
       <section class="lab-section lab-portfolio"><h2>자산 포트폴리오</h2><div id="labAllocation"></div></section>
       <section class="lab-section lab-inventory">
-        <div class="lab-heading"><h2>보유 자산 목록</h2><div class="lab-actions"><button id="labCategories">분류 관리</button><button id="labUpdatePrices" type="button">가격 업데이트</button></div></div>
+        <div class="lab-heading"><h2>보유 자산 목록</h2><div class="lab-actions"><button id="labCategories" data-lab-current-only>분류 관리</button><button id="labUpdatePrices" type="button" data-lab-current-only>가격 업데이트</button></div></div>
         <div class="lab-category-tabs" id="labFilter" role="group" aria-label="대분류"></div>
         <div class="lab-filters"><input id="labSearch" type="search" aria-label="자산명 검색" placeholder="자산명 검색"><span id="labAssetCount"></span></div>
         <div id="labHoldings"></div>
@@ -51,12 +61,6 @@
       </section>
     </section>
     <section id="assetsPanel" class="panel">
-      <section class="lab-section" id="labMonthly">
-        <div class="lab-heading"><h2>월별 자산 기록</h2><div class="lab-actions"><button id="labExportHistory">월별 CSV</button><button id="labFinalize" class="primary">월말 기록 확정</button></div></div>
-        <label>기록 월<select id="labHistoryPeriod"></select></label>
-        <div id="labHistory"></div>
-        <p id="labHistoryStatus" role="status"></p>
-      </section>
       <div class="period-view-toggle" role="group" aria-label="자산 기록 표시 기간">
         <button type="button" class="active" data-period-view="summary" aria-pressed="true">요약 보기</button>
         <button type="button" data-period-view="all" aria-pressed="false">전체 보기</button>

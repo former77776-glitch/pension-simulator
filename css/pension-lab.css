@@ -76,7 +76,10 @@ body { background: var(--lab-bg); }
 #labDashboardPanel .lab-category-tabs [aria-pressed="true"] { color: var(--lab-teal); border-bottom-color: var(--lab-teal); }
 .lab-filters { justify-content: space-between; align-items: center; margin: 14px 0 10px; }
 .lab-filters input { width: min(100%, 250px); height: 40px; }
-.lab-filters label, #labMonthly > label { display: grid; gap: 4px; font-size: 14px; }
+.lab-dashboard-title .lab-actions { align-items: end; }
+.lab-period-picker { display: grid; gap: 4px; font-size: 13px; color: var(--lab-muted); }
+.lab-period-picker select { min-height: 38px; background: var(--lab-panel); color: var(--lab-text); }
+#labHistoryStatus:empty { display: none; }
 .lab-table { table-layout: auto; min-width: 0; width: 100%; background: transparent; }
 .lab-table th, .lab-table td { text-align: left; padding: 13px 9px; border-bottom: 1px solid var(--lab-border); vertical-align: middle; overflow-wrap: anywhere; }
 .lab-table th { position: static; background: transparent; color: var(--lab-muted); font-size: 13px; }
@@ -84,7 +87,8 @@ body { background: var(--lab-bg); }
 .lab-table tr:last-child td { border-bottom: 0; }
 .lab-table small { display: block; margin-top: 4px; color: var(--lab-muted); }
 .lab-table .lab-holding-line { display: flex; flex-wrap: wrap; gap: 2px 8px; }
-.lab-holding-line span:last-child { color: var(--lab-text); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.lab-holding-line span:not(:first-child) { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.lab-holding-line .lab-quote { color: var(--lab-text); }
 .lab-table .lab-money { font-variant-numeric: tabular-nums; font-weight: 700; }
 .lab-asset-category, .lab-quantity { color: var(--lab-muted); }
 #labStatus:empty { display: none; }
