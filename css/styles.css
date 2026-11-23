@@ -1939,7 +1939,6 @@
       }
 
       body[data-mobile-view="home"] .mobile-view-section[data-mobile-section="home"],
-      body[data-mobile-view="assets"] .mobile-view-section[data-mobile-section="assets"],
       body[data-mobile-view="settings"] .mobile-view-section[data-mobile-section="settings"] {
         display: block;
       }
@@ -2055,8 +2054,13 @@
         margin-top: 10px;
       }
 
-      body[data-mobile-view="assets"].mobile-edit-mode .asset-table-details {
+      body[data-mobile-view="assets"] .asset-table-details {
         display: block;
+      }
+
+      body[data-mobile-view="assets"] .asset-grid > section {
+        width: 100%;
+        min-width: 0;
       }
 
       .asset-table-details > summary {

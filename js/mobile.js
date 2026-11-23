@@ -69,8 +69,8 @@
       const mobileSlot = document.getElementById("mobileNetChartSlot");
       const assetCharts = document.getElementById("assetCharts");
       if (netChartCard && mobileSlot && assetCharts) {
-        if (isMobile && netChartCard.parentElement !== mobileSlot) mobileSlot.append(netChartCard);
-        if (!isMobile && netChartCard.parentElement !== assetCharts) assetCharts.prepend(netChartCard);
+        const chartParent = isMobile && document.body.dataset.mobileView === "home" ? mobileSlot : assetCharts;
+        if (netChartCard.parentElement !== chartParent) chartParent.prepend(netChartCard);
         assetNetChartInstance?.resize();
         assetLongTermChartInstance?.resize();
       }
