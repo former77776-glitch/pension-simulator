@@ -26,9 +26,14 @@
       return message ? `${message} · ${parts.join(" · ")}` : parts.join(" · ");
     }
 
-    function setServerSyncStatus(message = "") {
+    function setServerSyncStatus(message = "", { showOnDashboard = false } = {}) {
       const badge = document.getElementById("serverSyncBadge");
       const meta = document.getElementById("serverSyncMeta");
+      const dashboard = document.getElementById("labSyncStatus");
+      if (showOnDashboard && dashboard) {
+        dashboard.textContent = message;
+        dashboard.hidden = !message;
+      }
       const disabled = !serverSync.connected;
       const retry = document.getElementById("loadFromServer");
       if (retry) retry.disabled = !supabaseConfigured();
@@ -398,9 +403,9 @@
       return result.data;
     }
 
-    function requireServerConnection() {
+    function requireServerConnection({ showOnDashboard = false } = {}) {
       if (supabaseConfigured() && serverSync.connected) return true;
-      setServerSyncStatus("공유 서버가 연결되면 저장할 수 있습니다.");
+      setServerSyncStatus("서버에 저장하지 못했습니다. 동기화 설정에서 연결을 확인해 주세요.", { showOnDashboard });
       return false;
     }
 
@@ -450,7 +455,7 @@
         appStorage.setItem(SERVER_LAST_LOAD_STORAGE_KEY, serverSync.lastLoadAt);
         appStorage.setItem(SERVER_LAST_SYNC_STORAGE_KEY, serverSync.lastSyncAt);
         appStorage.setItem(SERVER_LOCAL_UPDATED_STORAGE_KEY, serverSync.lastSyncAt);
-        setServerSyncStatus("서버 데이터를 불러왔습니다.");
+        setServerSyncStatus("서버 데이터를 불러왔습니다.", { showOnDashboard: !initial });
       } catch (error) {
         if (initial) throw error;
         setServerSyncStatus(`서버 불러오기 실패: ${error.message}`);
@@ -458,7 +463,8 @@
     }
 
     async function saveToServer({ silent = false } = {}) {
-      if (!requireServerConnection()) return;
+      const status = message => setServerSyncStatus(message, { showOnDashboard: true });
+      if (!requireServerConnection({ showOnDashboard: true })) return;
       if (serverSaveInFlight) {
         serverSaveQueued = true;
         return;
@@ -466,14 +472,9 @@
       let saved = false;
       try {
         serverSaveInFlight = true;
-        if (!silent) setServerSyncStatus("서버에 저장하는 중입니다.");
-        const current = await fetchServerAssetRow();
-        if (current && current.updated_at !== serverSync.lastSyncAt) {
-          setServerSyncStatus("다른 기기에서 저장한 변경이 있습니다. 서버 데이터를 다시 불러오세요.");
-          return;
-        }
+        if (!silent) status("서버에 저장하는 중입니다.");
         const revision = serverLocalRevision;
-        const row = await upsertServerAssetRow(collectAppStateForServer(), current?.updated_at);
+        const row = await upsertServerAssetRow(collectAppStateForServer(), serverSync.lastSyncAt);
         if (!serverSync.connected) return;
         const now = row?.updated_at || new Date().toISOString();
         serverSync.lastSaveAt = now;
@@ -483,9 +484,9 @@
         appStorage.setItem(SERVER_LOCAL_UPDATED_STORAGE_KEY, now);
         serverSavedRevision = revision;
         saved = true;
-        setServerSyncStatus(revision === serverLocalRevision ? "서버 저장됨" : "추가 변경 저장 대기 중");
+        status(revision === serverLocalRevision ? "서버 저장됨" : "추가 변경 저장 대기 중");
       } catch (error) {
-        setServerSyncStatus(`서버 저장 실패: ${error.message}`);
+        status(`서버 저장 실패: ${error.message}`);
       } finally {
         serverSaveInFlight = false;
         const queued = serverSaveQueued;
@@ -497,10 +498,15 @@
       }
     }
 
-    function scheduleServerAutoSave() {
+    function scheduleServerAutoSave({ immediate = false } = {}) {
       if (suppressServerAutoSave) return;
       serverLocalRevision += 1;
       markLocalUpdated();
+      if (immediate && supabaseConfigured()) {
+        window.clearTimeout(serverSaveTimer);
+        void saveToServer();
+        return;
+      }
       if (!serverSyncEnabled()) return;
       if (!appBootstrapped) {
         pendingServerAutoSaveAfterBoot = true;

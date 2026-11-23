@@ -24,7 +24,7 @@ function collectLabMetadata() {
 
 function labPersist() {
   appStorage.setItem("pensionLabMetadata", JSON.stringify(labMetadata));
-  refreshAssetView();
+  refreshAssetView({ immediate: true });
   renderHousePlan();
 }
 
@@ -104,12 +104,21 @@ function renderLabDashboard() {
   labField("labAssetCount").textContent = `${visible.length}개 항목`;
 }
 
+function labHoldingName(holding) {
+  const name = holding.name?.trim();
+  if (name && name !== holding.symbol) return name;
+  return localHoldingCandidates(holding.symbol).find(item => item.symbol === holding.symbol)?.name ||
+    name || holding.symbol || "이름 없는 종목";
+}
+
 function labTable(rows, edit = false) {
   if (!rows.length) return "<p>표시할 자산이 없습니다.</p>";
   return `<table class="lab-table"><thead><tr><th>자산명</th><th>분류</th><th>보유 수량</th><th>평가액</th>${edit ? '<th aria-label="관리"></th>' : ""}</tr></thead><tbody>${rows.map(row => `<tr>
-    <td class="lab-asset-name"><strong>${escLab(row.name)}</strong>${row.holdings.map(item => `<small>${escLab(item.symbol || item.name)}${edit ? "" : ` · ${escLab(item.shares)}주 × ${won(item.price)}${item.updatedAt ? ` · ${escLab(item.updatedAt)}` : ""}`}</small>`).join("")}</td>
+    <td class="lab-asset-name"><strong>${escLab(row.name)}</strong>${row.holdings.map(item => edit
+      ? `<small class="lab-holding-line"><span>${escLab(labHoldingName(item))}</span><span>${toNumber(item.shares).toLocaleString("ko-KR")}주</span></small>`
+      : `<small>${escLab(item.symbol || item.name)} · ${escLab(item.shares)}주 × ${won(item.price)}${item.updatedAt ? ` · ${escLab(item.updatedAt)}` : ""}</small>`).join("")}</td>
     <td class="lab-asset-category">${escLab(row.category)}${row.subcategory ? ` / ${escLab(row.subcategory)}` : ""}</td>
-    <td class="lab-quantity">${row.holdings.length === 1 ? `${escLab(row.holdings[0].shares)}주` : row.holdings.length ? `${row.holdings.length}종목` : "–"}</td>
+    <td class="lab-quantity">${!edit && row.holdings.length === 1 ? `${escLab(row.holdings[0].shares)}주` : row.holdings.length ? `${row.holdings.length}종목` : "–"}</td>
     <td class="lab-money" title="${won(row.amount)}">${labAmount(row.amount)}</td>
     ${edit ? `<td class="lab-row-action"><button type="button" data-lab-edit="${escLab(row.id)}" aria-label="${escLab(row.name)} 수정">수정</button></td>` : ""}
   </tr>`).join("")}</tbody></table>`;
@@ -127,6 +136,8 @@ function labDialog(markup) {
 function editLabAsset(id) {
   const row = labRows().find(item => item.id === id);
   const period = currentPeriod();
+  const record = row ? getInvestment(row.id, period) : null;
+  const originalHoldings = record?.holdings || [];
   const options = [
     ...labKinds.map(kind => [`kind:${kind}`, kind]),
     ...labMetadata.groups.flatMap(group => [[group.id, group.name], ...group.children.map(child => [`${group.id}:${child}`, `${group.name} / ${child}`])])
@@ -136,14 +147,55 @@ function editLabAsset(id) {
     <label>분류<select name="group">${options.map(([value, name]) => `<option value="${escLab(value)}">${escLab(name)}</option>`).join("")}</select></label>
     <label>소유자<select name="owner">${labOwners.map(owner => `<option>${owner}</option>`).join("")}</select></label>
     <label>평가금액 (원)<input name="amount" type="number" min="0" step="1" required value="${Math.abs(row ? rowValue(row, period) : 0)}"></label>
-    <div class="lab-actions"><button type="button" data-close>닫기</button>${row ? '<button type="button" data-retire>삭제</button>' : ""}${row && isInvestmentRow(row) ? '<button type="button" data-holdings>보유 종목 편집</button>' : ""}<button class="primary">저장</button></div>
+    <fieldset class="lab-stock-editor" hidden><legend>보유 종목</legend>
+      <div class="lab-stock-fields"></div>
+      <button type="button" data-add-holding>종목 추가</button>
+    </fieldset>
+    <div class="lab-actions"><button type="button" data-close>닫기</button>${row ? '<button type="button" data-retire>삭제</button>' : ""}<button class="primary">저장</button></div>
     <p role="status"></p></form>`);
   const form = dialog.querySelector("form");
   form.elements.group.value = row?.labGroup ? [row.labGroup, row.labSubcategory].filter(Boolean).join(":") : `kind:${row ? assetCategoryKey(row, period) : "현금"}`;
   if (!form.elements.group.value) form.elements.group.value = "kind:현금";
   form.elements.owner.value = labOwners.includes(row?.owner) ? row.owner : "공동";
-  const holdingsButton = form.querySelector("[data-holdings]");
-  if (holdingsButton) holdingsButton.onclick = () => { dialog.close(); editLabInvestment(row.id); };
+  const stockEditor = form.querySelector(".lab-stock-editor");
+  const stockFields = stockEditor.querySelector(".lab-stock-fields");
+  const holdingOriginals = new WeakMap();
+  const selectedGroup = () => {
+    const [groupId, ...parts] = form.elements.group.value.split(":");
+    const child = parts.join(":");
+    const group = labMetadata.groups.find(item => item.id === groupId);
+    return { group, child, kind: group?.kind || child };
+  };
+  const refreshStockFields = () => {
+    const { kind } = selectedGroup();
+    const hasHoldings = stockFields.childElementCount > 0;
+    stockEditor.hidden = !(kind === "주식" || (kind === "연금" && row?.type === "stock") || hasHoldings);
+    stockEditor.disabled = stockEditor.hidden;
+    form.elements.amount.readOnly = hasHoldings || (originalHoldings.length > 0 && !stockEditor.hidden);
+  };
+  const addHoldingFields = (holding, focus = false) => {
+    const fields = document.createElement("div");
+    fields.className = "lab-stock-edit-item";
+    fields.innerHTML = `<label>종목명<input data-stock="name" maxlength="100" required value="${escLab(holding ? labHoldingName(holding) : "")}"></label>
+      <label>종목 코드<input data-stock="symbol" maxlength="40" required value="${escLab(holding?.symbol || "")}"></label>
+      <label>수량<input data-stock="shares" type="number" min="0" step="any" required value="${holding ? toNumber(holding.shares) : ""}"></label>
+      <label>단가 (원)<input data-stock="price" type="number" min="0" step="any" required value="${holding ? toNumber(holding.price) : ""}"></label>
+      <button type="button" data-remove-holding>종목 삭제</button>`;
+    holdingOriginals.set(fields, holding);
+    stockFields.append(fields);
+    fields.querySelector("[data-remove-holding]").onclick = () => {
+      fields.remove();
+      if (!stockFields.childElementCount && originalHoldings.length) form.elements.amount.value = 0;
+      refreshStockFields();
+      (stockEditor.hidden ? form.elements.amount : stockEditor.querySelector("[data-add-holding]")).focus();
+    };
+    refreshStockFields();
+    if (focus) fields.querySelector('input[data-stock="name"]').focus();
+  };
+  for (const holding of originalHoldings) addHoldingFields(holding);
+  refreshStockFields();
+  form.elements.group.onchange = refreshStockFields;
+  stockEditor.querySelector("[data-add-holding]").onclick = () => addHoldingFields(null, true);
   const retire = dialog.querySelector("[data-retire]");
   if (retire) retire.onclick = () => {
     if (!confirm("현재 보유 목록에서 삭제할까요? 과거 기록은 보관됩니다.")) return;
@@ -155,16 +207,23 @@ function editLabAsset(id) {
     event.preventDefault();
     const name = form.elements.name.value.trim();
     if (!name) return;
-    const choice = form.elements.group.value;
-    const separator = choice.indexOf(":");
-    const groupId = separator < 0 ? choice : choice.slice(0, separator);
-    const child = separator < 0 ? "" : choice.slice(separator + 1);
-    const group = labMetadata.groups.find(item => item.id === groupId);
-    const kind = group?.kind || child;
+    const { group, child, kind } = selectedGroup();
     const target = row || { id: crypto.randomUUID(), values: {} };
-    const record = getInvestment(target.id, period);
-    if (record?.holdings?.length && kind !== "주식" && kind !== "연금") {
+    if (stockFields.childElementCount && kind !== "주식" && kind !== "연금") {
       form.querySelector("[role=status]").textContent = "보유 종목을 먼저 정리해 주세요.";
+      return;
+    }
+    const holdings = [...stockFields.children].map(fields => {
+      const original = holdingOriginals.get(fields);
+      const value = key => fields.querySelector(`[data-stock="${key}"]`).value.trim();
+      const symbol = value("symbol").toUpperCase();
+      const price = Number(value("price"));
+      const sameQuote = original && symbol === original.symbol && price === toNumber(original.price);
+      return { ...original, name: value("name"), symbol, price, shares: Number(value("shares")),
+        updatedAt: sameQuote ? original.updatedAt : "", source: sameQuote ? original.source : "manual" };
+    });
+    if (holdings.some(holding => !holding.name || !holding.symbol)) {
+      form.querySelector("[role=status]").textContent = "종목명과 종목 코드를 입력해 주세요.";
       return;
     }
     if (row) {
@@ -176,25 +235,20 @@ function editLabAsset(id) {
     Object.assign(target, {
       label: name, category: kind, labAccountingKind: kind, owner: form.elements.owner.value,
       debt: kind === "대출/부채", labGroup: group?.id || "", labSubcategory: group ? child : "",
-      type: kind === "주식" || (kind === "연금" && target.type === "stock") ? "stock" : "manual"
+      type: kind === "주식" || (kind === "연금" && (target.type === "stock" || holdings.length)) ? "stock" : "manual"
     });
     target.values ||= {};
     target.values[period] = Number(form.elements.amount.value) * (target.debt ? -1 : 1);
     if (!row) assetRows.push(target);
+    if (target.type !== "stock" && record?.type === "stock") {
+      delete investmentData[investmentKey(target.id, period)];
+    } else if (holdings.length || originalHoldings.length) {
+      setInvestment(target.id, period, { ...record, type: "stock", holdings, locked: true });
+      syncInvestmentValue(target.id, period);
+    }
     dialog.close();
     labPersist();
-    if (isInvestmentRow(target)) editLabInvestment(target.id);
   };
-}
-
-function editLabInvestment(id) {
-  activateTab("assets");
-  if (isMobileLayout()) activateMobileView("investment", { scroll: false });
-  selectedInvestment = { rowId: id, period: currentPeriod() };
-  resetInvestmentDrafts();
-  renderInvestmentPanel();
-  setMobileAssetEditMode(true);
-  labField("investmentCard").scrollIntoView({ block: "start" });
 }
 
 function editLabCategories(id = "") {

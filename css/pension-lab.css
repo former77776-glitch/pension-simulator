@@ -83,6 +83,8 @@ body { background: var(--lab-bg); }
 .lab-table th:nth-child(4), .lab-table .lab-money, .lab-table .lab-row-action { text-align: right; }
 .lab-table tr:last-child td { border-bottom: 0; }
 .lab-table small { display: block; margin-top: 4px; color: var(--lab-muted); }
+.lab-table .lab-holding-line { display: flex; flex-wrap: wrap; gap: 2px 8px; }
+.lab-holding-line span:last-child { color: var(--lab-text); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .lab-table .lab-money { font-variant-numeric: tabular-nums; font-weight: 700; }
 .lab-asset-category, .lab-quantity { color: var(--lab-muted); }
 #labStatus:empty { display: none; }
@@ -99,6 +101,13 @@ body { background: var(--lab-bg); }
 #labDialog::backdrop { background: #12213b66; }
 #labDialog h2, #labDialog p { margin: 0; }
 #labDialog input, #labDialog select, #labDialog textarea { width: 100%; min-width: 0; font: inherit; }
+#labDialog input[readonly] { color: var(--lab-muted); }
+.lab-stock-editor { min-width: 0; margin: 0; padding: 10px; border: 1px solid var(--lab-border); border-radius: 8px; }
+.lab-stock-fields { display: grid; gap: 10px; }
+.lab-stock-edit-item { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding-bottom: 10px; border-bottom: 1px solid var(--lab-border); }
+.lab-stock-edit-item > :first-child { grid-column: 1 / -1; }
+.lab-stock-edit-item button { grid-column: 1 / -1; justify-self: end; }
+.lab-stock-editor > button { margin-top: 8px; }
 #labWorkspace .analysis-strip { display: none; }
 #labWorkspace > .topbar .tab { background: transparent; color: var(--lab-muted); }
 #labWorkspace > .topbar .tab.active { background: light-dark(#e7f2f4, #24313b); color: var(--lab-teal); }

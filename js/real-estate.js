@@ -352,7 +352,7 @@
     }
 
 
-    function renderHousePlan() {
+    function renderHousePlan({ scheduleServer = false } = {}) {
       if (!document.getElementById("housePlanPanel")) return;
       updateHouseReadableHints();
       const { p, assets, labels, sell, keep } = housePlanRoadmap();
@@ -379,7 +379,7 @@
       renderHouseScenarioTable("houseSell", labels, sell, ltvLabel);
       renderHouseScenarioTable("houseKeep", labels, keep, ltvLabel);
       renderHousePlanChart(labels, selectedRows);
-      persistHousePlanInputs();
+      persistHousePlanInputs(!scheduleServer);
     }
 
     function onHouseInputChanged(event) {
@@ -390,7 +390,7 @@
       else if (input?.dataset?.houseInput === "percent" && event.type === "blur") input.value = `${toNumber(input.value).toLocaleString("ko-KR", { maximumFractionDigits: 1 })}%`;
       syncRealEstateFieldPeers(input);
       updateHouseReadableHints();
-      renderHousePlan();
+      renderHousePlan({ scheduleServer: true });
     }
 
     function onHouseRatioInput(event) {
@@ -402,5 +402,5 @@
       const number = document.querySelector(`[data-house-ratio-number="${key}"]`);
       if (range) range.value = value;
       if (number) number.value = value;
-      renderHousePlan();
+      renderHousePlan({ scheduleServer: true });
     }

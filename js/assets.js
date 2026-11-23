@@ -329,7 +329,7 @@
       }
     }
 
-    function persistAssetData({ silent = true } = {}) {
+    function persistAssetData({ silent = true, immediate = false } = {}) {
       try {
         appStorage.setItem("pensionAssetRows", JSON.stringify(assetRows));
         appStorage.setItem("pensionInvestmentData", JSON.stringify(investmentData));
@@ -339,7 +339,7 @@
         appStorage.removeItem("pensionAssetYears");
         appStorage.removeItem("pensionHoldings");
         appStorage.removeItem("pensionGoldState");
-        scheduleServerAutoSave();
+        scheduleServerAutoSave({ immediate });
         const status = document.getElementById("saveStatus");
         if (status) {
           status.textContent = silent ? "자동 저장됨" : "저장됨";
@@ -352,10 +352,10 @@
       }
     }
 
-    function refreshAssetView({ charts = true } = {}) {
+    function refreshAssetView({ charts = true, immediate = false } = {}) {
       renderAssetTable({ charts });
       renderInvestmentPanel();
-      persistAssetData();
+      persistAssetData({ immediate });
       if (document.getElementById("housePlanPanel")?.classList.contains("active")) renderHousePlan();
       if (document.getElementById("retirementPanel")?.classList.contains("active")) renderRetirementPlan();
     }
