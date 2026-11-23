@@ -130,21 +130,26 @@ function labHoldingName(holding) {
 function labQuoteLine(name, quantity, unit, price, updatedAt, current) {
   const quote = toNumber(price) > 0 ? `${toNumber(price).toLocaleString("ko-KR", { maximumFractionDigits: 2 })}원/${unit}` : "단가 미등록";
   const basis = `${current ? "최근 저장 단가" : "기록 단가"}${updatedAt ? ` · ${updatedAt}` : ""}`;
-  return `<small class="lab-holding-line"><span>${escLab(name)}</span><span>${toNumber(quantity).toLocaleString("ko-KR", { maximumFractionDigits: 8 })}${unit}</span><span class="lab-quote" title="${escLab(basis)}">${quote}</span></small>`;
+  return `<div class="lab-holding-line"><span class="lab-holding-name">${escLab(name)}</span><span class="lab-holding-meta"><span>${toNumber(quantity).toLocaleString("ko-KR", { maximumFractionDigits: 8 })}${unit}</span><span class="lab-quote" title="${escLab(basis)}">${quote}</span></span></div>`;
 }
 
 function labTable(rows, edit) {
   if (!rows.length) return "<p>표시할 자산이 없습니다.</p>";
-  return `<table class="lab-table"><thead><tr><th>자산명</th><th>분류</th><th>보유 수량</th><th>평가액</th>${edit ? '<th aria-label="관리"></th>' : ""}</tr></thead><tbody>${rows.map(row => `<tr>
-    <td class="lab-asset-name"><strong>${escLab(row.name)}</strong>${row.holdings.map(item =>
-      labQuoteLine(labHoldingName(item), item.shares, "주", item.price, item.updatedAt, edit)).join("")}${goldItems(row.investment)
-      .filter(item => /금|gold/i.test(item.kind || "금")).map(item =>
-        labQuoteLine(item.kind || "금", item.quantity, "g", item.price, item.updatedAt, edit)).join("")}</td>
-    <td class="lab-asset-category">${escLab(row.category)}${row.subcategory ? ` / ${escLab(row.subcategory)}` : ""}</td>
-    <td class="lab-quantity">${row.holdings.length ? `${row.holdings.length}종목` : "–"}</td>
-    <td class="lab-money" title="${won(row.amount)}">${labAmount(row.amount)}</td>
-    ${edit ? `<td class="lab-row-action"><button type="button" data-lab-edit="${escLab(row.id)}" aria-label="${escLab(row.name)} 수정">수정</button></td>` : ""}
-  </tr>`).join("")}</tbody></table>`;
+  const columns = edit ? 4 : 3;
+  const groups = rows.map(row => {
+    const holdings = [
+      ...row.holdings.map(item => labQuoteLine(labHoldingName(item), item.shares, "주", item.price, item.updatedAt, edit)),
+      ...goldItems(row.investment).filter(item => /금|gold/i.test(item.kind || "금")).map(item =>
+        labQuoteLine(item.kind || "금", item.quantity, "g", item.price, item.updatedAt, edit))
+    ];
+    return `<tbody class="lab-asset-group"><tr class="lab-asset-row">
+      <td class="lab-asset-name"><strong>${escLab(row.name)}</strong></td>
+      <td class="lab-asset-category">${escLab(row.category)}${row.subcategory ? ` / ${escLab(row.subcategory)}` : ""}</td>
+      <td class="lab-money" title="${won(row.amount)}">${labAmount(row.amount)}</td>
+      ${edit ? `<td class="lab-row-action"><button type="button" data-lab-edit="${escLab(row.id)}" aria-label="${escLab(row.name)} 수정">수정</button></td>` : ""}
+    </tr>${holdings.map(line => `<tr class="lab-holding-row"><td colspan="${columns}">${line}</td></tr>`).join("")}</tbody>`;
+  });
+  return `<table class="lab-table"><thead><tr><th scope="col">자산명</th><th scope="col">분류</th><th scope="col" class="lab-money-heading">평가액</th>${edit ? '<th scope="col" aria-label="관리"></th>' : ""}</tr></thead>${groups.join("")}</table>`;
 }
 
 function labDialog(markup) {
