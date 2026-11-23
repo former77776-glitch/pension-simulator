@@ -34,7 +34,7 @@
 
     <section id="labDashboardPanel" class="panel active">
       <div class="lab-heading lab-dashboard-title">
-        <div><h1>우리 집 자산</h1><span id="labPeriod"></span></div>
+        <div><h1>자산 대시보드</h1><span id="labPeriod"></span></div>
         <div class="lab-actions">
           <label class="lab-period-picker"><select id="labHistoryPeriod" aria-label="조회 기간"><option value="">현재 자산</option></select></label>
           <button class="primary" id="labAddAsset" data-lab-current-only>자산 추가</button>
@@ -57,13 +57,13 @@
         <span id="labSnapshotStatus" role="status"></span>
       </div>
       <div class="lab-totals" id="labTotals"></div>
-      <section class="lab-section lab-portfolio"><h2>자산 포트폴리오</h2><div id="labAllocation"></div></section>
+      <div id="labFilter" class="lab-category-tabs" role="group" aria-label="자산 분류"></div>
       <section class="lab-section lab-inventory">
         <div class="lab-heading lab-inventory-heading">
-          <div class="lab-inventory-title"><h2>보유 자산</h2><span id="labAssetCount"></span></div>
+          <div class="lab-inventory-title"><h2>보유 자산 목록</h2><span id="labAssetCount"></span></div>
           <div class="lab-filters">
             <input id="labSearch" type="search" aria-label="자산 또는 종목 검색" placeholder="자산 또는 종목 검색">
-            <select id="labFilter" aria-label="자산 분류"><option value="">전체 분류</option></select>
+            <select id="labSort" aria-label="자산 정렬"><option value="default">기본 순서</option><option value="value">평가액순</option><option value="name">이름순</option></select>
           </div>
         </div>
         <div id="labHoldings"></div>
