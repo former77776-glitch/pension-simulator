@@ -184,6 +184,78 @@ function labDialog(markup) {
   return dialog;
 }
 
+function bindLabHoldingSearch(fields, onQuote) {
+  const name = fields.querySelector('[data-stock="name"]');
+  const symbol = fields.querySelector('[data-stock="symbol"]');
+  const price = fields.querySelector('[data-stock="price"]');
+  const shares = fields.querySelector('[data-stock="shares"]');
+  const results = fields.querySelector(".lab-stock-results");
+  const status = fields.querySelector(".lab-stock-search small");
+  let revision = 0;
+  let timer;
+
+  const show = candidates => {
+    results.replaceChildren(...candidates.slice(0, 6).map(candidate => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = `${candidate.name} · ${candidate.symbol}`;
+      button.onclick = async () => {
+        window.clearTimeout(timer);
+        const selection = ++revision;
+        name.value = candidate.name;
+        symbol.value = candidate.symbol;
+        name.setCustomValidity("");
+        results.replaceChildren();
+        status.textContent = "단가 조회 중…";
+        shares.focus();
+        try {
+          const quote = await withPriceDeadline(signal => fetchYahooClose(candidate.symbol, signal));
+          if (selection !== revision || !fields.isConnected) return;
+          if (price.value === "") {
+            price.value = Math.round(quote.price);
+            onQuote({ ...quote, price: Number(price.value), symbol: candidate.symbol.toUpperCase() });
+          }
+          status.textContent = "";
+        } catch (_error) {
+          if (selection === revision && fields.isConnected) status.textContent = "단가를 직접 입력해 주세요.";
+        }
+      };
+      return button;
+    }));
+  };
+
+  name.addEventListener("input", () => {
+    const request = ++revision;
+    window.clearTimeout(timer);
+    if (symbol.value) price.value = "";
+    symbol.value = "";
+    onQuote(null);
+    const query = name.value.trim();
+    name.setCustomValidity(query ? "검색 결과에서 종목을 선택해 주세요." : "");
+    const local = query ? localHoldingCandidates(query) : [];
+    show(local);
+    status.textContent = !query || local.length ? "" : query.length < 2 ? "두 글자 이상 입력해 주세요." : "종목 검색 중…";
+    if (query.length < 2) return;
+    timer = window.setTimeout(async () => {
+      try {
+        const data = await withPriceDeadline(signal => fetchPriceApi(`/api/search?q=${encodeURIComponent(query)}`, signal));
+        if (request !== revision || !fields.isConnected) return;
+        const matches = uniqueHoldingCandidates([...local, ...normalizeSearchApiResults(data, query)]);
+        show(matches);
+        status.textContent = matches.length ? "" : "검색 결과가 없습니다.";
+      } catch (_error) {
+        if (request === revision && fields.isConnected && !local.length) status.textContent = "종목을 조회할 수 없습니다. 다시 검색해 주세요.";
+      }
+    }, 250);
+  });
+  name.addEventListener("keydown", event => {
+    const first = results.querySelector("button");
+    if (!first || event.key !== "ArrowDown") return;
+    event.preventDefault();
+    first.focus();
+  });
+}
+
 function editLabAsset(id) {
   const row = labRows().find(item => item.id === id);
   const period = currentPeriod();
@@ -211,6 +283,7 @@ function editLabAsset(id) {
   const stockEditor = form.querySelector(".lab-stock-editor");
   const stockFields = stockEditor.querySelector(".lab-stock-fields");
   const holdingOriginals = new WeakMap();
+  const holdingQuotes = new WeakMap();
   const selectedGroup = () => {
     const [groupId, ...parts] = form.elements.group.value.split(":");
     const child = parts.join(":");
@@ -220,20 +293,24 @@ function editLabAsset(id) {
   const refreshStockFields = () => {
     const { kind } = selectedGroup();
     const hasHoldings = stockFields.childElementCount > 0;
-    stockEditor.hidden = !(kind === "주식" || (kind === "연금" && row?.type === "stock") || hasHoldings);
+    stockEditor.hidden = !(kind === "주식" || kind === "연금" || hasHoldings);
     stockEditor.disabled = stockEditor.hidden;
     form.elements.amount.readOnly = hasHoldings || (originalHoldings.length > 0 && !stockEditor.hidden);
   };
   const addHoldingFields = (holding, focus = false) => {
     const fields = document.createElement("div");
     fields.className = "lab-stock-edit-item";
-    fields.innerHTML = `<label>종목명<input data-stock="name" maxlength="100" required value="${escLab(holding ? labHoldingName(holding) : "")}"></label>
-      <label>종목 코드<input data-stock="symbol" maxlength="40" required value="${escLab(holding?.symbol || "")}"></label>
+    fields.innerHTML = `${holding
+      ? `<label>종목명<input data-stock="name" maxlength="100" required value="${escLab(labHoldingName(holding))}"></label>
+         <label>종목 코드<input data-stock="symbol" maxlength="40" required value="${escLab(holding.symbol)}"></label>`
+      : `<div class="lab-stock-search"><label>종목명 검색<input data-stock="name" type="search" maxlength="100" autocomplete="off" required></label>
+         <input data-stock="symbol" type="hidden"><small aria-live="polite"></small><div class="lab-stock-results"></div></div>`}
       <label>수량<input data-stock="shares" type="number" min="0" step="any" required value="${holding ? toNumber(holding.shares) : ""}"></label>
       <label>단가 (원)<input data-stock="price" type="number" min="0" step="any" required value="${holding ? toNumber(holding.price) : ""}"></label>
       <button type="button" data-remove-holding>종목 삭제</button>`;
     holdingOriginals.set(fields, holding);
     stockFields.append(fields);
+    if (!holding) bindLabHoldingSearch(fields, quote => holdingQuotes.set(fields, quote));
     fields.querySelector("[data-remove-holding]").onclick = () => {
       fields.remove();
       if (!stockFields.childElementCount && originalHoldings.length) form.elements.amount.value = 0;
@@ -269,12 +346,13 @@ function editLabAsset(id) {
       const value = key => fields.querySelector(`[data-stock="${key}"]`).value.trim();
       const symbol = value("symbol").toUpperCase();
       const price = Number(value("price"));
-      const sameQuote = original && symbol === original.symbol && price === toNumber(original.price);
+      const quote = holdingQuotes.get(fields) || original;
+      const sameQuote = quote && symbol === quote.symbol && price === toNumber(quote.price);
       return { ...original, name: value("name"), symbol, price, shares: Number(value("shares")),
-        updatedAt: sameQuote ? original.updatedAt : "", source: sameQuote ? original.source : "manual" };
+        updatedAt: sameQuote ? quote.updatedAt || quote.date : "", source: sameQuote ? quote.source : "manual" };
     });
     if (holdings.some(holding => !holding.name || !holding.symbol)) {
-      form.querySelector("[role=status]").textContent = "종목명과 종목 코드를 입력해 주세요.";
+      form.querySelector("[role=status]").textContent = "종목명 검색 결과에서 추가할 종목을 선택해 주세요.";
       return;
     }
     if (row) {

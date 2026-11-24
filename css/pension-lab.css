@@ -101,7 +101,7 @@ body { background: var(--lab-bg); }
 .lab-share { color: var(--lab-muted); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .lab-group-heading > * { background: light-dark(#f0f5f6, #19262b); border-top: 1px solid var(--lab-border); }
 .lab-group-heading th { position: static; color: var(--lab-text); font-size: 14px; padding-block: 7px; }
-.lab-group-heading .lab-money { font-size: 16px; font-weight: 750; }
+.lab-group-heading .lab-money { color: var(--lab-text); font-size: 16px; font-weight: 750; }
 .lab-group-heading .lab-share { color: var(--lab-text); font-size: 13px; font-weight: 700; }
 .lab-group-heading th i { display: inline-block; width: 7px; height: 7px; border-radius: 2px; margin-inline: 3px 8px; background: var(--lab-teal); }
 .lab-group-heading small { color: var(--lab-muted); font-weight: 400; margin-inline-start: 4px; }
@@ -115,7 +115,7 @@ body { background: var(--lab-bg); }
 .lab-holding-meta span { white-space: nowrap; }
 .lab-holding-meta .lab-quote { color: var(--lab-text); }
 .lab-table .lab-money { font-variant-numeric: tabular-nums; }
-.lab-asset-row .lab-money { font-size: 14px; font-weight: 600; }
+.lab-asset-row .lab-money { color: var(--lab-muted); font-size: 14px; font-weight: 600; }
 .lab-asset-category { color: var(--lab-muted); }
 #labDashboardPanel .lab-row-action button { border: 1px solid var(--lab-border); background: transparent; color: var(--lab-muted); min-height: 30px; padding: 2px 9px; font-size: 12px; white-space: nowrap; }
 #labDashboardPanel .lab-row-action button:hover { color: var(--lab-teal); background: var(--accent-soft); }
@@ -139,6 +139,11 @@ body { background: var(--lab-bg); }
 .lab-stock-edit-item { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding-bottom: 10px; border-bottom: 1px solid var(--lab-border); }
 .lab-stock-edit-item > :first-child { grid-column: 1 / -1; }
 .lab-stock-edit-item button { grid-column: 1 / -1; justify-self: end; }
+.lab-stock-search { min-width: 0; }
+.lab-stock-search .lab-stock-results { display: grid; gap: 4px; max-height: 155px; overflow: auto; }
+#labDialog .lab-stock-results button { width: 100%; text-align: left; overflow-wrap: anywhere; }
+.lab-stock-search small { display: block; margin-top: 4px; color: var(--lab-muted); }
+.lab-stock-search small:empty { display: none; }
 .lab-stock-editor > button { margin-top: 8px; }
 #labWorkspace .analysis-strip { display: none; }
 #labWorkspace > .topbar .tab { background: transparent; color: var(--lab-muted); }
