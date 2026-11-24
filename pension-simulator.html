@@ -38,11 +38,11 @@
         <div class="lab-actions">
           <label class="lab-period-picker"><select id="labHistoryPeriod" aria-label="조회 기간"><option value="">현재 자산</option></select></label>
           <button class="primary" id="labAddAsset" data-lab-current-only>자산 추가</button>
+          <button id="labUpdatePrices" type="button" data-lab-current-only>가격 업데이트</button>
           <button id="labFinalize" data-lab-history-only hidden>월말 기록 확정</button>
           <details class="lab-more">
             <summary>더보기</summary>
             <div class="lab-more-menu">
-              <button id="labUpdatePrices" type="button" data-lab-current-only>가격 업데이트</button>
               <button id="labCategories" type="button" data-lab-current-only>분류 관리</button>
               <button id="labExportHoldings" type="button" data-lab-current-only>CSV 저장</button>
               <button id="labExportHistory" type="button" data-lab-history-only hidden>월별 CSV</button>
@@ -51,6 +51,8 @@
         </div>
       </div>
       <p id="labHistoryStatus" role="status" data-lab-history-only hidden></p>
+      <p id="labStatus" class="server-sync-desc" role="status"></p>
+      <p id="labSyncStatus" class="server-sync-desc" role="status" hidden></p>
       <div class="lab-actions" id="labSnapshotControls" hidden>
         <button id="labImportSnapshot" type="button">Supabase 백업 열기</button>
         <input id="labSnapshotFile" type="file" accept=".json,application/json" hidden>
@@ -67,8 +69,6 @@
           </div>
         </div>
         <div id="labHoldings"></div>
-        <p id="labStatus" role="status"></p>
-        <p id="labSyncStatus" class="server-sync-desc" role="status" hidden></p>
       </section>
     </section>
     <section id="assetsPanel" class="panel">

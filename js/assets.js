@@ -811,7 +811,7 @@
       refreshAssetView();
     }
 
-    async function fetchJsonWithFallback(url) {
+    async function fetchJsonWithFallback(url, signal) {
       const urls = [
         { label: "Yahoo 직접", url },
         { label: "AllOrigins", url: `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}` },
@@ -820,19 +820,20 @@
       const errors = [];
       for (const item of urls) {
         try {
-          const response = await fetch(item.url, { cache: "no-store" });
+          const response = await fetch(item.url, { cache: "no-store", signal });
           if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
           const text = await response.text();
           return { data: JSON.parse(text), source: item.label };
         } catch (error) {
+          if (signal?.aborted) throw error;
           errors.push(`${item.label}: ${error.message}`);
         }
       }
       throw new Error(errors.join(" / "));
     }
 
-    async function fetchPriceApi(path) {
-      const response = await fetch(path, { cache: "no-store" });
+    async function fetchPriceApi(path, signal) {
+      const response = await fetch(path, { cache: "no-store", signal });
       if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
       return await response.json();
     }
@@ -861,17 +862,18 @@
       }
     }
 
-    async function fetchYahooClose(symbol) {
+    async function fetchYahooClose(symbol, signal) {
       try {
-        const data = await fetchPriceApi(`/api/close?symbol=${encodeURIComponent(symbol.trim())}`);
+        const data = await fetchPriceApi(`/api/close?symbol=${encodeURIComponent(symbol.trim())}`, signal);
         if (Number.isFinite(data.price)) return { price: data.price, date: data.date, source: `가격 API/${data.source || "close"}` };
       } catch (_error) {
+        if (signal?.aborted) throw _error;
         // 가격 API가 없으면 브라우저 직접 호출 경로로 이어간다.
       }
 
       const encoded = encodeURIComponent(symbol.trim());
       const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encoded}?range=5d&interval=1d`;
-      const { data, source } = await fetchJsonWithFallback(url);
+      const { data, source } = await fetchJsonWithFallback(url, signal);
       const result = data.chart && data.chart.result && data.chart.result[0];
       const closes = result && result.indicators && result.indicators.quote && result.indicators.quote[0].close;
       const timestamps = result && result.timestamp;
@@ -915,11 +917,12 @@
       return 0;
     }
 
-    async function fetchKrxGoldClose() {
+    async function fetchKrxGoldClose(signal) {
       try {
-        const data = await fetchPriceApi("/api/gold");
+        const data = await fetchPriceApi("/api/gold", signal);
         if (Number.isFinite(data.price)) return { price: data.price, date: data.date, source: `가격 API/${data.source || "gold"}` };
       } catch (_error) {
+        if (signal?.aborted) throw _error;
         // 가격 API가 없으면 브라우저 직접 호출 경로로 이어간다.
       }
 
@@ -943,10 +946,11 @@
             money: "1"
           });
           try {
-            const { data, source } = await fetchJsonWithFallback(`${endpoint}?${params}`);
+            const { data, source } = await fetchJsonWithFallback(`${endpoint}?${params}`, signal);
             const price = findGoldCloseInJson(data);
             if (price > 0) return { price, date: trdDd, source: `KRX/${source}` };
           } catch (error) {
+            if (signal?.aborted) throw error;
             errors.push(error.message);
           }
         }
@@ -974,6 +978,19 @@
       }
     }
 
+    async function withPriceDeadline(fetchQuote) {
+      const controller = new AbortController();
+      const timer = window.setTimeout(() => controller.abort(), 12000);
+      try {
+        return await fetchQuote(controller.signal);
+      } catch (error) {
+        if (controller.signal.aborted) throw new Error("시세 조회 시간 초과");
+        throw error;
+      } finally {
+        window.clearTimeout(timer);
+      }
+    }
+
     async function updateInvestmentRecordPrices(data) {
       let ok = 0;
       const errors = [];
@@ -987,13 +1004,13 @@
             continue;
           }
           try {
-            const quote = await fetchYahooClose(holding.symbol);
+            const quote = await withPriceDeadline(signal => fetchYahooClose(holding.symbol, signal));
             holding.price = Math.round(quote.price);
             holding.updatedAt = quote.date;
             sources.add(quote.source);
             ok += 1;
           } catch (error) {
-            errors.push(error.message);
+            errors.push(`${holding.name || holding.symbol}: ${error.message}`);
           }
         }
       }
@@ -1003,14 +1020,15 @@
         for (const item of items) {
           if (item.kind !== "금") continue;
           try {
-            if (!goldQuote) goldQuote = await fetchKrxGoldClose();
-            item.price = Math.round(goldQuote.price);
-            item.updatedAt = goldQuote.date;
-            item.source = goldQuote.source;
-            sources.add(goldQuote.source);
+            goldQuote ||= withPriceDeadline(fetchKrxGoldClose);
+            const quote = await goldQuote;
+            item.price = Math.round(quote.price);
+            item.updatedAt = quote.date;
+            item.source = quote.source;
+            sources.add(quote.source);
             ok += 1;
           } catch (error) {
-            errors.push(error.message);
+            errors.push(`금: ${error.message}`);
           }
         }
         data.items = items;
@@ -1022,27 +1040,38 @@
       return { ok, errors, sources };
     }
 
-    async function updateInvestmentPeriodPrices(period, { rowId = null } = {}) {
+    async function updateInvestmentPeriodPrices(period, { rowId = null, immediate = false } = {}) {
       let ok = 0;
       const errors = [];
       const sources = new Set();
       const targets = Object.entries(investmentData).filter(([key, data]) => {
         const [keyRowId, keyPeriod] = key.split(":");
         if (keyPeriod !== period) return false;
-        if (assetRows.find(row => row.id === keyRowId)?.retiredFrom) return false;
+        const row = assetRows.find(item => item.id === keyRowId);
+        if (!row || row.retiredFrom) return false;
         if (rowId && keyRowId !== rowId) return false;
         return data && (data.type === "stock" || data.type === "gold");
       });
-      for (const [key, data] of targets) {
+      const results = await Promise.all(targets.map(async ([key, original]) => {
+        const data = structuredClone(original);
+        const baseline = JSON.stringify(original);
+        return { key, baseline, data, result: await updateInvestmentRecordPrices(data) };
+      }));
+      for (const { key, baseline, data, result } of results) {
         const [keyRowId, keyPeriod] = key.split(":");
-        const result = await updateInvestmentRecordPrices(data);
-        ok += result.ok;
         result.errors.forEach((error) => errors.push(error));
+        if (!result.ok) continue;
+        const row = assetRows.find(item => item.id === keyRowId);
+        if (!row || row.retiredFrom || JSON.stringify(investmentData[key]) !== baseline) {
+          errors.push("조회 중 보유 내역이 변경되었습니다. 다시 시도해 주세요.");
+          continue;
+        }
+        ok += result.ok;
         result.sources.forEach((source) => sources.add(source));
         setInvestment(keyRowId, keyPeriod, data);
         syncInvestmentValue(keyRowId, keyPeriod);
       }
-      refreshAssetView();
+      if (ok) refreshAssetView({ immediate });
       return { ok, errors, sources };
     }
 
@@ -1050,15 +1079,27 @@
       return period === currentPeriod();
     }
 
-    async function updateLatestYearPrices() {
+    let latestPriceUpdateInFlight = false;
+
+    async function updateLatestYearPrices({ report } = {}) {
+      if (latestPriceUpdateInFlight) return;
+      latestPriceUpdateInFlight = true;
       const status = document.getElementById("priceStatus");
+      const notify = message => {
+        if (status) status.textContent = message;
+        report?.(message);
+      };
       const period = latestManagedPeriod();
-      if (status) status.textContent = `${periodLabel(period)} 투자 자산 가격 업데이트 중...`;
-      const result = await updateInvestmentPeriodPrices(period);
-      if (status) {
-        status.textContent = result.ok
-          ? `${periodLabel(period)} 현재 자산 ${result.ok}개 가격 업데이트 및 자동 저장됨${result.errors.length ? `, 실패 ${result.errors.length}개` : ""}`
-          : `${periodLabel(period)}에 업데이트할 투자 자산이 없거나 가격 조회에 실패했습니다.`;
+      notify("투자 자산 가격 조회 중…");
+      try {
+        const { ok, errors } = await updateInvestmentPeriodPrices(period, { immediate: true });
+        const failed = errors.length ? ` · 조회 실패 ${errors.length}개: ${errors[0]} (기존 단가 유지)` : "";
+        notify(ok ? `${ok}개 가격을 업데이트했습니다.${failed}` :
+          errors.length ? `가격을 업데이트하지 못했습니다.${failed}` : "업데이트할 투자 종목이 없습니다.");
+      } catch (error) {
+        notify(`가격 업데이트 실패: ${error.message}`);
+      } finally {
+        latestPriceUpdateInFlight = false;
       }
     }
 

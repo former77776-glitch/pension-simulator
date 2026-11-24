@@ -490,8 +490,7 @@ function initPensionLab() {
     const button = labField("labUpdatePrices");
     button.disabled = true;
     try {
-      await updateLatestYearPrices();
-      labField("labStatus").textContent = labField("priceStatus").textContent;
+      await updateLatestYearPrices({ report: message => { labField("labStatus").textContent = message; } });
     } finally { button.disabled = false; }
   };
   labField("labHistoryPeriod").onchange = () => {
