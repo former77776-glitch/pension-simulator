@@ -461,8 +461,7 @@ function initPensionLab() {
   }
   labField("labSyncLink").onclick = event => {
     event.preventDefault();
-    if (isMobileLayout()) activateMobileView("settings", { scroll: false });
-    else activateTab("assets");
+    activateTab("assets");
     labField("serverSyncCard").scrollIntoView({ block: "start" });
   };
   labField("labFilter").onclick = event => {
@@ -502,6 +501,5 @@ function initPensionLab() {
   labField("labFinalize").onclick = finalizeLabHistory;
   labField("labExportHoldings").onclick = () => exportLabCsv();
   labField("labExportHistory").onclick = () => exportLabCsv(true);
-  if (isMobileLayout()) activateMobileView("labDashboard", { scroll: false });
-  renderLabDashboard();
+  activateTab("labDashboard");
 }

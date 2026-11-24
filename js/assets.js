@@ -374,8 +374,8 @@
       const head = document.getElementById("assetHead");
       const body = document.getElementById("assetBody");
       if (!cols || !head || !body) return;
-      body.closest("table").style.minWidth = `${248 + periods.length * 124}px`;
-      cols.innerHTML = `<col style="width:70px"><col style="width:178px">${periods.map(() => "<col>").join("")}`;
+      body.closest("table").style.setProperty("--asset-period-count", periods.length);
+      cols.innerHTML = `<col class="asset-category-col"><col class="asset-label-col">${periods.map(() => "<col>").join("")}`;
       head.innerHTML = `<tr><th>대분류</th><th>소분류</th>${periods.map((period) => `<th title="${periodTitle(period)}">${periodLabel(period)}</th>`).join("")}</tr>`;
       const spans = categorySpans();
       const used = new Set();
@@ -395,7 +395,7 @@
           } else if (isInvestmentRow(row)) {
             const selected = selectedInvestment && selectedInvestment.rowId === row.id && selectedInvestment.period === period;
             const hasData = !!getInvestment(row.id, period);
-            cells.push(`<td class="value investment-cell${neg}${selected ? " selected-investment" : ""}${hasData ? " has-investment" : ""}" data-row="${escLab(row.id)}" data-period="${period}" title="${periodTitle(period)} ${escLab(row.category)} 상세 정보 편집">${won(value)}</td>`);
+            cells.push(`<td class="value investment-cell${neg}${selected ? " selected-investment" : ""}${hasData ? " has-investment" : ""}" data-row="${escLab(row.id)}" data-period="${period}"><button type="button" class="investment-cell-button" aria-haspopup="dialog" aria-label="${escLab(row.label)} 상세 정보 편집, ${won(value)}">${won(value)}</button></td>`);
           } else {
             cells.push(`<td class="value manual${neg}"><input class="money" data-row="${escLab(row.id)}" data-period="${period}" value="${won(value)}"></td>`);
           }
@@ -434,8 +434,12 @@
       // 칸 선택은 "조회/편집 준비" 동작만 한다.
       // 기존 표 금액을 0으로 덮어쓰지 않도록, 상세 투자 정보는 사용자가 실제로 추가/반영할 때만 만든다.
       resetInvestmentDrafts();
-      renderAssetTable({ charts: false });
+      cell.closest("tbody").querySelector(".selected-investment")?.classList.remove("selected-investment");
+      cell.classList.add("selected-investment");
       renderInvestmentPanel();
+      document.getElementById("investmentPriceStatus").textContent = "";
+      const popup = document.getElementById("investmentCard");
+      if (!popup.open) popup.showModal();
     }
 
     function renderAssetSummary() {
@@ -464,115 +468,15 @@
         if (stockEl) stockEl.textContent = compactWon(stock);
         if (debtEl) debtEl.textContent = compactWon(debt);
       }
-      renderMobileAssetOverview(period, prevPeriod);
       renderManagedYearUi(period);
-    }
-
-    function renderMobileAssetOverview(period = latestManagedPeriod(), prevPeriod = null) {
-      const categoriesWrap = document.getElementById("mobileAssetCategories");
-      if (!categoriesWrap) return;
-      const totals = assetCategoryTotals(period);
-      const net = Object.values(totals).reduce((sum, value) => sum + value, 0);
-      const exactPreviousMonth = previousMonthPeriod(period);
-      const monthComparisonPeriod = assetPeriods.includes(exactPreviousMonth) ? exactPreviousMonth : null;
-      const previousYearPeriods = assetPeriods.filter((item) => periodYear(item) === periodYear(period) - 1);
-      const yearComparisonPeriod = previousYearPeriods.at(-1) || null;
-      const netAt = (targetPeriod) => targetPeriod
-        ? Object.values(assetCategoryTotals(targetPeriod)).reduce((sum, value) => sum + value, 0)
-        : 0;
-      const setDelta = (id, label, comparisonPeriod) => {
-        const element = document.getElementById(id);
-        if (!element) return;
-        element.hidden = !comparisonPeriod;
-        if (!comparisonPeriod) return;
-        const delta = net - netAt(comparisonPeriod);
-        element.textContent = `${label} ${delta > 0 ? "+" : ""}${compactWon(delta)}`;
-        element.classList.toggle("positive", delta > 0);
-        element.classList.toggle("negative", delta < 0);
-      };
-      const homePeriod = document.getElementById("mobileHomePeriod");
-      const homeNet = document.getElementById("mobileHomeNetWorth");
-      const assetPeriod = document.getElementById("mobileAssetPeriod");
-      if (homePeriod) homePeriod.textContent = `${periodLabel(period)} 기준`;
-      if (homeNet) homeNet.textContent = compactWon(net);
-      if (assetPeriod) assetPeriod.textContent = `${periodLabel(period)} 기준`;
-      setDelta("mobileHomeMonthDelta", "전월 대비", monthComparisonPeriod);
-      setDelta("mobileHomeYearDelta", "전년 대비", yearComparisonPeriod);
-      const homeCards = document.getElementById("mobileHomeAssetCards");
-      if (homeCards) {
-        const homeKeys = ["주식", "부동산", "현금", "연금", "대출/부채"];
-        homeCards.innerHTML = homeKeys.map((key) => `
-          <div class="card mobile-home-asset ${key === "대출/부채" ? "debt" : ""}">
-            <span>${key === "대출/부채" ? "대출" : key}</span>
-            <strong>${compactWon(totals[key] || 0)}</strong>
-          </div>
-        `).join("");
-      }
-      const detailRows = (row) => {
-        const data = getInvestment(row.id, period);
-        if (data?.type === "stock" && Array.isArray(data.holdings) && data.holdings.length) {
-          return data.holdings.map((holding) => {
-            const shares = toNumber(holding.shares);
-            const price = toNumber(holding.price);
-            const meta = `${shares.toLocaleString("ko-KR", { maximumFractionDigits: 4 })}주 · 현재가 ${won(price)}`;
-            return `<li class="mobile-category-detail"><span>${escapeHtml(holding.name || row.label)}<small>${meta}</small></span><b>${compactWon(shares * price)}</b></li>`;
-          });
-        }
-        const items = goldItems(data);
-        if (items.length) {
-          return items.map((item) => {
-            const quantity = toNumber(item.quantity);
-            const price = toNumber(item.price);
-            const meta = `${quantity.toLocaleString("ko-KR", { maximumFractionDigits: 4 })}g · 현재가 ${won(price)}/g`;
-            return `<li class="mobile-category-detail"><span>${escapeHtml(item.kind || row.label)}<small>${meta}</small></span><b>${compactWon(quantity * price)}</b></li>`;
-          });
-        }
-        return [`<li class="mobile-category-detail"><span>${escapeHtml(row.label)}</span><b>${compactWon(rowValue(row, period))}</b></li>`];
-      };
-      const gross = ["부동산", "주식", "연금", "금", "현금"].reduce((sum, key) => sum + Math.max(0, totals[key] || 0), 0);
-      const keys = ["부동산", "주식", "연금", "금", "현금", "대출/부채"];
-      categoriesWrap.innerHTML = keys.map((key) => {
-        const value = totals[key] || 0;
-        const isDebt = key === "대출/부채";
-        const share = !isDebt && gross ? pct(Math.max(0, value) / gross) : "비중 제외";
-        const rows = assetRows
-          .filter((row) => assetCategoryKey(row, period) === key)
-          .filter((row) => rowValue(row, period) !== 0)
-          .sort((a, b) => Math.abs(rowValue(b, period)) - Math.abs(rowValue(a, period)));
-        const items = rows.length
-          ? rows.flatMap(detailRows).join("")
-          : `<li><span>표시할 항목 없음</span><b>-</b></li>`;
-        const detailId = `mobile-category-detail-${encodeURIComponent(key)}`;
-        return `
-          <article class="card mobile-category-card ${isDebt ? "debt" : ""}">
-            <button type="button" class="mobile-category-toggle" aria-expanded="true" aria-controls="${detailId}">
-              <div class="mobile-category-head">
-                <div><span>${key}</span><strong>${compactWon(value)}</strong></div>
-                <div class="mobile-category-share">${share}</div>
-              </div>
-            </button>
-            <ul class="mobile-category-items" id="${detailId}">${items}</ul>
-          </article>
-        `;
-      }).join("");
-      categoriesWrap.querySelectorAll(".mobile-category-toggle").forEach((button) => {
-        button.addEventListener("click", () => {
-          const expanded = button.getAttribute("aria-expanded") === "true";
-          button.setAttribute("aria-expanded", String(!expanded));
-          const details = document.getElementById(button.getAttribute("aria-controls"));
-          if (details) details.hidden = expanded;
-        });
-      });
     }
 
     function renderManagedYearUi(period = latestManagedPeriod()) {
       const badge = document.getElementById("managedYearBadge");
-      const latestButton = document.getElementById("updateLatestPrices");
       const selectedButton = document.getElementById("updateSelectedYearPrices");
       const endInput = document.getElementById("assetEndYear");
       if (badge) badge.textContent = `관리 월 ${periodLabel(period)}`;
       if (endInput) endInput.value = periodLabel(period);
-      if (latestButton) latestButton.textContent = "최신 월 가격 업데이트";
       if (selectedButton) selectedButton.textContent = "선택 월 가격 업데이트";
     }
 
@@ -691,8 +595,7 @@
       const detailText = data ? "상세정보 있음" : "상세정보 없음, 기존 표 금액 유지";
       const selectedParts = [periodLabel(selectedInvestment.period), row.category, row.label];
       if (isPastManagedPeriod(selectedInvestment.period)) selectedParts.push("과거 기록");
-      const mobileReadOnly = window.matchMedia("(max-width: 768px)").matches && !document.body.classList.contains("mobile-edit-mode");
-      title.textContent = `${periodLabel(selectedInvestment.period)} ${row.category} 자산 ${mobileReadOnly ? "조회" : "편집"}${isPastManagedPeriod(selectedInvestment.period) ? " · 과거 기록" : ""}`;
+      title.textContent = `${row.label} 상세 정보`;
       badge.textContent = selectedParts.join(" · ");
       label.textContent = `${row.label} / 현재 표 금액 ${won(currentValue)} / ${detailText}`;
       renderInvestmentSummary(row, currentValue);

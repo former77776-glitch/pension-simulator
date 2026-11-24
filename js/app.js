@@ -5,14 +5,11 @@
         if (element) element.addEventListener(eventName, handler);
       };
       document.querySelectorAll(".tab").forEach((tab) => tab.addEventListener("click", () => activateTab(tab.dataset.tab)));
-      document.querySelectorAll(".mobile-nav-btn").forEach((button) => button.addEventListener("click", () => activateMobileView(button.dataset.mobileView)));
-      document.querySelectorAll("[data-mobile-edit-toggle]").forEach((button) => button.addEventListener("click", () => setMobileAssetEditMode(!mobileAssetEditMode)));
-      bind("mobileOpenHousePlan", "click", () => activateMobileView("housePlan"));
+      document.querySelectorAll(".mobile-nav-btn").forEach((button) => button.addEventListener("click", () => activateTab(button.dataset.mobileView, { scroll: true })));
       window.addEventListener("resize", syncResponsiveDetails);
       bind("rebuildAssetYears", "click", rebuildAssetYears);
       bind("closeCurrentMonth", "click", closeCurrentMonthSnapshot);
       bind("checkProxy", "click", checkLocalProxy);
-      bind("updateLatestPrices", "click", updateLatestYearPrices);
       bind("updateSelectedYearPrices", "click", updateSelectedYearPrices);
       bind("exportAssetCsv", "click", exportAssetCsv);
       bind("holdingName", "input", updateHoldingAutocomplete);
@@ -44,7 +41,15 @@
       document.getElementById("houseRatioList")?.addEventListener("input", onHouseRatioInput);
       document.getElementById("houseRatioList")?.addEventListener("change", onHouseRatioInput);
       bindRetirementPlanEvents();
-      protectMobileAssetDetailEditing();
+      const priceStatus = document.getElementById("priceStatus");
+      const popupStatus = document.getElementById("investmentPriceStatus");
+      const investmentDialog = document.getElementById("investmentCard");
+      new MutationObserver(() => {
+        if (investmentDialog.open) popupStatus.textContent = priceStatus.textContent;
+      }).observe(priceStatus, { childList: true, characterData: true, subtree: true });
+      investmentDialog.addEventListener("close", () => {
+        document.querySelector("#assetBody .selected-investment button")?.focus({ preventScroll: true });
+      });
     }
 
     renderSimInputs();

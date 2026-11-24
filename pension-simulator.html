@@ -38,7 +38,7 @@
         <div class="lab-actions">
           <label class="lab-period-picker"><select id="labHistoryPeriod" aria-label="조회 기간"><option value="">현재 자산</option></select></label>
           <button class="primary" id="labAddAsset" data-lab-current-only>자산 추가</button>
-          <button id="labUpdatePrices" type="button" data-lab-current-only>가격 업데이트</button>
+          <button id="labUpdatePrices" type="button" data-lab-current-only>최신 월 가격 업데이트</button>
           <button id="labFinalize" data-lab-history-only hidden>월말 기록 확정</button>
           <details class="lab-more">
             <summary>더보기</summary>
@@ -70,6 +70,13 @@
         </div>
         <div id="labHoldings"></div>
       </section>
+      <section class="card asset-chart-card lab-latest-mix" id="assetMixChartCard">
+        <div class="asset-chart-head">
+          <div class="chart-copy"><h2 class="chart-title">최근 자산 비중</h2><div class="chart-desc">최신 월 기준</div></div>
+          <div class="asset-chart-stat">주식 비중<strong id="assetMixChartValue">-</strong></div>
+        </div>
+        <div class="asset-chart-box"><canvas id="assetMixChart"></canvas></div>
+      </section>
     </section>
     <section id="assetsPanel" class="panel">
       <div class="period-view-toggle" role="group" aria-label="자산 기록 표시 기간">
@@ -83,34 +90,7 @@
         <div class="card metric empty"><span>대출 잔액</span><strong id="latestDebt">데이터 입력 후 표시됩니다</strong></div>
       </div>
 
-      <section class="mobile-only mobile-view-section mobile-home-dashboard" id="mobileHomeDashboard" data-mobile-section="home">
-        <div class="card mobile-home-hero">
-          <div class="mobile-home-eyebrow"><span>순자산</span><span id="mobileHomePeriod">-</span></div>
-          <strong id="mobileHomeNetWorth">-</strong>
-          <div class="mobile-home-deltas">
-            <span id="mobileHomeMonthDelta" hidden></span>
-            <span id="mobileHomeYearDelta" hidden></span>
-          </div>
-        </div>
-        <div class="mobile-home-assets" id="mobileHomeAssetCards"></div>
-        <div class="mobile-net-chart-slot" id="mobileNetChartSlot"></div>
-        <button type="button" class="mobile-house-link" id="mobileOpenHousePlan">부동산 구매 계획 보기</button>
-      </section>
-
-      <section class="mobile-only mobile-view-section mobile-asset-view" id="mobileAssetView" hidden>
-        <div class="mobile-view-heading">
-          <div><strong>자산 현황</strong><span id="mobileAssetPeriod">최신 월 기준</span></div>
-          <button type="button" class="mobile-edit-toggle" data-mobile-edit-toggle aria-pressed="false">편집</button>
-        </div>
-        <div class="mobile-category-list" id="mobileAssetCategories"></div>
-      </section>
-
-      <div class="mobile-only mobile-view-section mobile-settings-heading" data-mobile-section="settings">
-        <strong>설정 및 데이터 관리</strong>
-        <span>서버 동기화와 가격 업데이트를 관리합니다.</span>
-      </div>
-
-      <div class="card server-sync-card" id="serverSyncCard" data-mobile-section="settings">
+      <div class="card server-sync-card" id="serverSyncCard">
         <div class="server-sync-head">
           <div>
             <div class="server-sync-title">가족 서버 동기화</div>
@@ -133,12 +113,9 @@
       </div>
 
       <div class="asset-grid">
-        <section>
-          <div class="card toolbar" data-mobile-section="settings">
+        <section class="asset-record-main">
+          <div class="card toolbar">
             <span class="managed-year-badge" id="managedYearBadge">관리 월 -</span>
-            <div class="primary-actions">
-              <button type="button" class="primary" id="updateLatestPrices">최신 월 가격 업데이트</button>
-            </div>
             <span class="status save-status" id="saveStatus"></span>
             <span class="status" id="priceStatus">가격 API 연결 상태를 확인 중입니다.</span>
             <details class="advanced-actions">
@@ -152,16 +129,6 @@
               </div>
             </details>
           </div>
-          <details class="asset-table-details" id="assetTableDetails" data-mobile-section="assets">
-            <summary>상세 자산표 보기</summary>
-            <div class="card asset-table-wrap">
-              <table class="asset-table">
-                <colgroup id="assetCols"></colgroup>
-                <thead id="assetHead"></thead>
-                <tbody id="assetBody"></tbody>
-              </table>
-            </div>
-          </details>
           <div class="asset-charts" id="assetCharts">
             <div class="card asset-chart-card" id="assetNetChartCard">
               <div class="asset-chart-head">
@@ -193,27 +160,35 @@
                 <canvas id="assetCompositionChart"></canvas>
               </div>
             </div>
-            <div class="card asset-chart-card" id="assetMixChartCard">
+            <div class="card asset-chart-card" id="assetLongTermChartCard">
               <div class="asset-chart-head">
                 <div class="chart-copy">
-                  <div class="chart-title">최근 자산 비중</div>
-                  <div class="chart-desc">최신 월의 주요 자산군 구성을 보여줍니다.</div>
+                  <div class="chart-title">장기 순자산 추이</div>
+                  <div class="chart-desc">선택된 기록 · 기록 간 균등 간격</div>
                 </div>
-                <div class="asset-chart-stat">주식 비중<strong id="assetMixChartValue">-</strong></div>
               </div>
               <div class="asset-chart-box">
-                <canvas id="assetMixChart"></canvas>
+                <canvas id="assetLongTermChart" role="img" aria-label="선택된 기록의 장기 순자산 추이"></canvas>
               </div>
             </div>
           </div>
+          <section class="asset-table-details" id="assetTableDetails" aria-labelledby="assetTableTitle">
+            <h2 id="assetTableTitle">상세 자산표</h2>
+            <div class="card asset-table-wrap" tabindex="0" role="region" aria-labelledby="assetTableTitle">
+              <table class="asset-table">
+                <colgroup id="assetCols"></colgroup>
+                <thead id="assetHead"></thead>
+                <tbody id="assetBody"></tbody>
+              </table>
+            </div>
+          </section>
         </section>
-
-        <aside class="card holdings-card waiting" id="investmentCard" data-mobile-section="investment">
-          <div class="mobile-only mobile-investment-tools">
-            <span>최신 월 투자자산</span>
-            <button type="button" class="mobile-edit-toggle" data-mobile-edit-toggle aria-pressed="false">편집</button>
+      </div>
+        <dialog class="card holdings-card waiting" id="investmentCard" aria-labelledby="investmentTitle">
+          <div class="investment-dialog-head">
+            <h2 id="investmentTitle">투자 자산 정보</h2>
+            <form method="dialog"><button type="submit" autofocus>닫기</button></form>
           </div>
-          <h2 id="investmentTitle">투자 자산 정보</h2>
           <div class="investment-empty" id="investmentEmpty">
             주식 또는 금 행의 월 칸을 선택하면 상세 정보를 입력할 수 있습니다.
           </div>
@@ -224,6 +199,7 @@
               <div><span id="investmentSummaryCountLabel">보유 종목</span><strong id="investmentSummaryCount">-</strong></div>
             </div>
             <p class="status" id="selectedInvestmentLabel">선택된 칸 없음</p>
+            <p class="status" id="investmentPriceStatus" role="status"></p>
             <div id="stockInvestmentPanel">
               <div class="holding-form">
                 <label class="wide search-field">종목명 검색
@@ -266,19 +242,7 @@
               선택한 월의 상세 정보는 추가/고정 또는 반영/고정 후 자동 저장됩니다. 칸을 선택하는 것만으로 기존 표 금액은 바뀌지 않습니다.
             </p>
           </div>
-        </aside>
-      </div>
-      <div class="card asset-chart-card" id="assetLongTermChartCard">
-        <div class="asset-chart-head">
-          <div class="chart-copy">
-            <div class="chart-title">장기 순자산 추이</div>
-            <div class="chart-desc">선택된 기록 · 기록 간 균등 간격</div>
-          </div>
-        </div>
-        <div class="asset-chart-box">
-          <canvas id="assetLongTermChart" role="img" aria-label="선택된 기록의 장기 순자산 추이"></canvas>
-        </div>
-      </div>
+        </dialog>
     </section>
 
     <section id="pensionPanel" class="panel">
@@ -535,11 +499,9 @@
   <nav class="mobile-bottom-nav" aria-label="모바일 주요 탭">
     <button type="button" class="mobile-nav-btn active" data-mobile-view="labDashboard">대시보드</button>
     <button type="button" class="mobile-nav-btn" data-mobile-view="assets">월별 기록</button>
-    <button type="button" class="mobile-nav-btn" data-mobile-view="investment">투자</button>
     <button type="button" class="mobile-nav-btn" data-mobile-view="pension">연금</button>
     <button type="button" class="mobile-nav-btn" data-mobile-view="housePlan">부동산</button>
     <button type="button" class="mobile-nav-btn" data-mobile-view="retirement">은퇴 계획</button>
-    <button type="button" class="mobile-nav-btn" data-mobile-view="settings">설정</button>
   </nav>
   <dialog id="labDialog"></dialog>
   <div class="tooltip" id="tooltip"></div>
